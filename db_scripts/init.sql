@@ -45,7 +45,16 @@ CREATE TABLE locations (
     long numeric(9,6) NOT NULL,
     menu TEXT NULL,
     rating_pct NUMERIC(4, 2) NULL,
+    ratings_number INTEGER NOT NULL DEFAULT 0;
     FOREIGN KEY (category_id) REFERENCES location_categories (category_id) ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+CREATE TABLE locations_location_categories (
+    location_id INTEGER NOT NULL,
+    category_id INTEGER NOT NULL,
+    PRIMARY KEY (category_id, location_id),
+    FOREIGN KEY (category_id) REFERENCES location_categories (category_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (location_id) REFERENCES locations (location_id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 CREATE TABLE events (
@@ -83,4 +92,45 @@ CREATE TABLE location_ratings (
     FOREIGN KEY (user_id) REFERENCES users (user_id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
+CREATE OR REPLACE FUNCTION insert_location_rating() RETURNS TRIGGER AS
+$$
+DECLARE
+    lc_ratings_number INTEGER;
+    lc_is_positive INTEGER;
+BEGIN
+    SELECT COUNT(location_id) INTO lc_ratings_number, SUM(is_positive::int) INTO lc_is_positive FROM location_ratings WHERE location_id = new.location_id;
+    UPDATE locations SET 
+    ratings_number = lc_ratings_number,
+    rating_pct = (lc_is_positive/lc_ratings_number) * 100
+    WHERE location_id = new.location_id;
+    RETURN new;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER insert_location_rating_tgr
+    AFTER INSERT, UPDATE ON is_positive
+    ON location_ratings
+    FOR EACH ROW
+EXECUTE PROCEDURE insert_location_rating();
+
+CREATE OR REPLACE FUNCTION delete_location_rating() RETURNS TRIGGER AS
+$$
+DECLARE
+    lc_ratings_number INTEGER;
+    lc_is_positive INTEGER;
+BEGIN
+    SELECT COUNT(location_id) INTO lc_ratings_number, SUM(is_positive::int) INTO lc_is_positive FROM location_ratings WHERE location_id = old.location_id;
+    UPDATE locations SET 
+    ratings_number = lc_ratings_number,
+    rating_pct = (lc_is_positive/lc_ratings_number) * 100
+    WHERE location_id = old.location_id;
+    RETURN old;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER delete_location_rating_tgr
+    AFTER DELETE
+    ON location_ratings
+    FOR EACH ROW
+EXECUTE PROCEDURE delete_location_rating();
 
