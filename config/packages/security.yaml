@@ -7,6 +7,8 @@ security:
     providers:
         database:
             id: App\Security\Provider\DatabaseUserProvider
+        jwt:
+            lexik_jwt: ~
     firewalls:
         login:
             pattern: ^/api/login
@@ -19,7 +21,7 @@ security:
         api:
             pattern: ^/api
             stateless: true
-            provider: database
+            provider: jwt
             jwt: ~
         dev:
             pattern: ^/(_(profiler|wdt)|css|images|js)/
