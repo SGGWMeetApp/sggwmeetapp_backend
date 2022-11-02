@@ -1,11 +1,7 @@
 index:
     path: /
-    controller: App\Controller\ApiController::appInfo
+    controller: App\Controller\AppInfoController::appInfo
     methods: GET
 api_login_check:
     path: /api/login_check
     methods: POST
-api_test:
-    path: /api/test
-    controller: App\Controller\ApiController::appInfo
-    methods: GET

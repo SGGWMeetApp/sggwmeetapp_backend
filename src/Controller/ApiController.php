@@ -5,19 +5,9 @@ namespace App\Controller;
 use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\HttpFoundation\Response;
 
 class ApiController extends AbstractController
 {
-
-    public function appInfo(): Response
-    {
-        return $this->response([
-            'version' => '0.1',
-            'name' => 'SGGW MeetApp REST API',
-            'status' => 'WIP'
-        ]);
-    }
 
     protected int $statusCode = 200;
 
