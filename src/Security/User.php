@@ -3,12 +3,13 @@
 namespace App\Security;
 
 use Symfony\Component\Security\Core\User\EquatableInterface;
+use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 
 /**
  * @method string getUserIdentifier()
  */
-class User implements UserInterface, EquatableInterface
+class User implements UserInterface, EquatableInterface, PasswordAuthenticatedUserInterface
 {
     private string  $firstName;
     private string  $lastName;
@@ -103,4 +104,13 @@ class User implements UserInterface, EquatableInterface
     {
         $this->lastName = $lastName;
     }
+
+    /**
+     * @param string $password
+     */
+    public function setPassword(string $password): void
+    {
+        $this->password = $password;
+    }
+
 }

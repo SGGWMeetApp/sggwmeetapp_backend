@@ -3,6 +3,8 @@ security:
     # https://symfony.com/doc/current/security.html#registering-the-user-hashing-passwords
     encoders:
         App\Security\User: bcrypt
+    password_hashers:
+        App\Security\User: bcrypt
     # https://symfony.com/doc/current/security.html#loading-the-user-the-user-provider
     providers:
         database:
