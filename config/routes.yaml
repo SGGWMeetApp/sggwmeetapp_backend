@@ -2,6 +2,10 @@ index:
     path: /
     controller: App\Controller\AppInfoController::appInfo
     methods: GET
+register:
+    path: /register
+    controller: App\Controller\SecurityController::register
+    methods: POST
 api_login_check:
     path: /api/login_check
     methods: POST
