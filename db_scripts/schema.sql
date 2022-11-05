@@ -19,6 +19,7 @@ DROP TABLE IF EXISTS users_user_groups;
 CREATE TABLE users (
     user_id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     username varchar(255) NOT NULL,
+    password text NOT NULL,
     first_name varchar(255) NOT NULL,
     last_name varchar(255) NOT NULL,
     location_sharing_mode integer NOT NULL DEFAULT 0,
