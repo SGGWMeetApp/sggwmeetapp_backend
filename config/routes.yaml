@@ -9,3 +9,13 @@ register:
 api_login_check:
     path: /api/login_check
     methods: POST
+places_get_all:
+    path: /api/places
+    controller: App\Controller\PlaceController::getPlacesAction
+    methods: GET
+place_get_details:
+    path: /api/place/{place_id}
+    controller: App\Controller\PlaceController::getPlaceDetails
+    requirements:
+        place_id: '\d+'
+    methods: GET
