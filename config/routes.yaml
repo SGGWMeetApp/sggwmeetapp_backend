@@ -19,3 +19,27 @@ place_get_details:
     requirements:
         place_id: '\d+'
     methods: GET
+events_get_all:
+    path: /api/events
+    controller: App\Controller\EventController::getPublicEventsAction
+    methods: GET
+place_get_events:
+    path: /api/places/{place_id}/events
+    controller: App\Controller\PlaceController:getPlaceEventsAction
+    methods: GET
+group_get_events:
+    path: /api/groups/{group_id}/events
+    controller: App\Controller\GroupController:getGroupPrivateEventsAction
+    methods: GET
+event_create:
+    path: /api/events
+    controller: App\Controller\EventController::createPublicEventAction
+    methods: POST
+group_create_event:
+    path: /api/groups/{group_id}/events
+    controller: App\Controller\GroupController::createPrivateEventAction
+    methods: POST
+event_update:
+    path: /api/events/{event_id}
+    controller: App\Controller\EventController:updateEventAction
+    methods: POST
