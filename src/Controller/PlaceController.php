@@ -7,7 +7,7 @@ use Symfony\Component\HttpFoundation\Request;
 
 class PlaceController extends ApiController
 {
-    public function getPlaceDetailsAction(int $place_id): JsonResponse
+    public function getPlaceDetails(int $place_id): JsonResponse //bylo getPlaceDetailsAction ale mi nie działało w postmanie wiec zmieniłem nazwe funkcji
     {
         // 1. Try to get place by id from db
         // 2. If null return 404 not found
@@ -54,6 +54,7 @@ class PlaceController extends ApiController
         ]);
     }
 
+
     public function getPlacesAction(Request $request): JsonResponse
     {
         // 1. Get filters from request (converted to filters object)
@@ -94,5 +95,39 @@ class PlaceController extends ApiController
                 ]
             ],
         ]]);
+    }
+
+
+    public function editReview(Request $request, int $place_id, int $review_id): JsonResponse
+    {
+        $requestData = json_decode($request->getContent(),true);
+
+
+        return $this -> response([
+            
+                "id" => $review_id,
+                "comment" => $requestData["comment"],
+                "author" => [
+                    "firstName" => "Jan",
+                    "lastName" => "Kowalski",
+                    "email" => "email@example.com",
+                    "avatarUrl" => ""
+                ],
+                "upvoteCount" => 100,
+                "downvoteCount" => 5,
+                "publicationDate" => "2022-11-02T12:34:56.500Z",
+                "isPositive" => $requestData["isPositive"]
+            
+        ]);
+    }
+
+    public function reviewAssessment(Request $request, int $place_id, int $review_id): JsonResponse
+    {
+        $requestData = json_decode($request->getContent(),true);
+        //TODO porpawic
+        if($review_id==1)
+            return $this->response(["code"=>"200"]);
+        else
+        return $this->respondNotFound();
     }
 }

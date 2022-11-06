@@ -19,3 +19,47 @@ place_get_details:
     requirements:
         place_id: '\d+'
     methods: GET
+place_review_edit:
+    path: /api/place/{place_id}/reviews/{review_id}
+    controller: App\Controller\PlaceController::editReview
+    requirements:
+        place_id: '\d+'
+        reviewId: '\d+'
+    methods: PUT
+place_review_assessment_votes:
+    path: /api/places/{place_id}/reviews/{review_id}/votes
+    controller: App\Controller\PlaceController::reviewAssessment
+    requirements:
+        place_id: '\d+'
+        review_id: '\d+'
+    methods: POST
+groups_get_all:
+    path: /api/groups
+    controller: App\Controller\GroupController::getGroups
+    methods: GET
+create_group:
+    path: /api/groups
+    controller: App\Controller\GroupController::CreateGroup
+    methods: POST
+group_users_get_all:
+    path: /api/group/{group_id}
+    controller: App\Controller\GroupController::getGroupUsers
+    requirements:
+        place_id: '\d+'
+    methods: GET
+add_user_to_group:
+    path: /api/group/{group_id}/users
+    controller: App\Controller\GroupController::addGroupUser
+    requirements:
+        group_id: '\d+'
+    methods: POST
+leave_group:
+    path: /api/groups/{group_id}/users
+    controller: App\Controller\GroupController::leaveGroup
+    requirements:
+        group_id: '\d+'
+    methods: DELETE
+search_users:
+    path: /api/users
+    controller: App\Controller\UserController::researchUsers
+    methods: GET
