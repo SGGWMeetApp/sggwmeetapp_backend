@@ -92,4 +92,27 @@ class EventController extends ApiController {
         ]);
     }
 
+    public function getUpcomingEventsAction(): JsonResponse {
+        // get events where startDate < sysdate + 1 week
+
+        // return events
+        return $this->response(["events" => [
+            [
+                "id" => 2,
+                "name" => "Środowe Disco",
+                "description" => "Już w tą środę widzimy się na parkiecie w Dziekanacie! Dobra zabawa gwarantowana! Do 22:00 bilet 10 zł, Po 22:00 15 zł.",
+                "startDate" => "2022-11-06T21:00:00.000Z",
+                "locationData" => [
+                    "name" => "Dziekanat 161"
+                ],
+                "author" => [
+                    "firstName" => "Jerzy",
+                    "lastName" => "Dudek",
+                    "email" => "jerzy.dudek@example.com"
+                ],
+                "canEdit" => false
+            ],
+        ]]);
+    }
+
 }

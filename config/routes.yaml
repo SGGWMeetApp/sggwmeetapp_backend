@@ -43,3 +43,7 @@ event_update:
     path: /api/events/{event_id}
     controller: App\Controller\EventController:updateEventAction
     methods: POST
+events_get_upcoming:
+    path: /api/events/upcoming
+    controller: App\Controller\EventController:getUpcomingEventsAction
+    methods: GET
