@@ -14,8 +14,8 @@ places_get_all:
     controller: App\Controller\PlaceController::getPlacesAction
     methods: GET
 place_get_details:
-    path: /api/place/{place_id}
-    controller: App\Controller\PlaceController::getPlaceDetails
+    path: /api/places/{place_id}
+    controller: App\Controller\PlaceController::getPlaceDetailsAction
     requirements:
         place_id: '\d+'
     methods: GET
