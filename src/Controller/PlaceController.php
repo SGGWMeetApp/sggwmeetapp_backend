@@ -95,4 +95,39 @@ class PlaceController extends ApiController
             ],
         ]]);
     }
+
+    public function getPlaceEventsAction(int $place_id): JsonResponse {
+        return $this->response(["events" => [
+            [
+                "id" => 1,
+                "name" => "Planszówki",
+                "description" => "Zapraszamy na świąteczną edycję planszówek! Wybierz jedną z setek gier i baw się razem z nami!",
+                "startDate" => "2022-12-23T18:30:00.000Z",
+                "locationData" => [
+                    "name" => "Dziekanat 161"
+                ],
+                "author" => [
+                    "firstName" => "Joanna",
+                    "lastName" => "Nowak",
+                    "email" => "joanna.nowak@email.com"
+                ],
+                "canEdit" => true
+            ],
+            [
+                "id" => 2,
+                "name" => "Środowe Disco",
+                "description" => "Już w tą środę widzimy się na parkiecie w Dziekanacie! Dobra zabawa gwarantowana! Do 22:00 bilet 10 zł, Po 22:00 15 zł.",
+                "startDate" => "2022-11-06T21:00:00.000Z",
+                "locationData" => [
+                    "name" => "Dziekanat 161"
+                ],
+                "author" => [
+                    "firstName" => "Jerzy",
+                    "lastName" => "Dudek",
+                    "email" => "jerzy.dudek@example.com"
+                ],
+                "canEdit" => false
+            ]
+        ]]);
+    }
 }
