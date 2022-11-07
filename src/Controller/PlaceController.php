@@ -130,4 +130,37 @@ class PlaceController extends ApiController
             ]
         ]]);
     }
+
+    public function editReview(Request $request, int $place_id, int $review_id): JsonResponse
+    {
+        $requestData = json_decode($request->getContent(),true);
+
+
+        return $this -> response([
+
+            "id" => $review_id,
+            "comment" => $requestData["comment"],
+            "author" => [
+                "firstName" => "Jan",
+                "lastName" => "Kowalski",
+                "email" => "email@example.com",
+                "avatarUrl" => ""
+            ],
+            "upvoteCount" => 100,
+            "downvoteCount" => 5,
+            "publicationDate" => "2022-11-02T12:34:56.500Z",
+            "isPositive" => $requestData["isPositive"]
+
+        ]);
+    }
+
+    public function reviewAssessment(Request $request, int $place_id, int $review_id): JsonResponse
+    {
+        $requestData = json_decode($request->getContent(),true);
+        //TODO poprawic
+        if($review_id==1)
+            return $this->response([]);
+        else
+            return $this->respondNotFound();
+    }
 }
