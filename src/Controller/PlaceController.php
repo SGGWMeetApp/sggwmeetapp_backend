@@ -131,13 +131,31 @@ class PlaceController extends ApiController
         ]]);
     }
 
+    public function addReview(Request $request, int $place_id): JsonResponse
+    {
+        $requestData = json_decode($request->getContent(),true);
+
+        return $this->response([
+            "id" => 1,
+            "comment" => "Fantastyczne miejsce :)",
+            "author" => [
+                "firstName" => "Jan",
+                "lastName" => "Kowalski",
+                "email" => "email@example.com",
+                "avatarUrl" => ""
+            ],
+            "upvoteCount" => 0,
+            "downvoteCount" => 0,
+            "publicationDate" => (new \DateTime('now'))->format('Y-m-d\TH:i:s\Z'),
+            "isPositive" => true
+        ]);
+    }
+
     public function editReview(Request $request, int $place_id, int $review_id): JsonResponse
     {
         $requestData = json_decode($request->getContent(),true);
 
-
-        return $this -> response([
-
+        return $this->response([
             "id" => $review_id,
             "comment" => $requestData["comment"],
             "author" => [
@@ -150,7 +168,6 @@ class PlaceController extends ApiController
             "downvoteCount" => 5,
             "publicationDate" => "2022-11-02T12:34:56.500Z",
             "isPositive" => $requestData["isPositive"]
-
         ]);
     }
 

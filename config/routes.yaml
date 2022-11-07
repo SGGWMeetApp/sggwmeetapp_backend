@@ -47,6 +47,12 @@ events_get_upcoming:
     path: /api/events/upcoming
     controller: App\Controller\EventController::getUpcomingEventsAction
     methods: GET
+place_review_add:
+    path: /api/places/{place_id}/reviews
+    controller: App\Controller\PlaceController::addReview
+    requirements:
+        place_id: '\d+'
+    methods: POST
 place_review_edit:
     path: /api/places/{place_id}/reviews/{review_id}
     controller: App\Controller\PlaceController::editReview
