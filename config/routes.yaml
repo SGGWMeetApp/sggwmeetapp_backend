@@ -42,7 +42,7 @@ group_create_event:
 event_update:
     path: /api/events/{event_id}
     controller: App\Controller\EventController::updateEventAction
-    methods: POST
+    methods: PUT
 events_get_upcoming:
     path: /api/events/upcoming
     controller: App\Controller\EventController::getUpcomingEventsAction
