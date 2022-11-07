@@ -14,13 +14,13 @@ places_get_all:
     controller: App\Controller\PlaceController::getPlacesAction
     methods: GET
 place_get_details:
-    path: /api/place/{place_id}
+    path: /api/places/{place_id}
     controller: App\Controller\PlaceController::getPlaceDetails
     requirements:
         place_id: '\d+'
     methods: GET
 place_review_edit:
-    path: /api/place/{place_id}/reviews/{review_id}
+    path: /api/places/{place_id}/reviews/{review_id}
     controller: App\Controller\PlaceController::editReview
     requirements:
         place_id: '\d+'
@@ -42,13 +42,13 @@ create_group:
     controller: App\Controller\GroupController::CreateGroup
     methods: POST
 group_users_get_all:
-    path: /api/group/{group_id}
+    path: /api/groups/{group_id}/users
     controller: App\Controller\GroupController::getGroupUsers
     requirements:
         place_id: '\d+'
     methods: GET
 add_user_to_group:
-    path: /api/group/{group_id}/users
+    path: /api/groups/{group_id}/users
     controller: App\Controller\GroupController::addGroupUser
     requirements:
         group_id: '\d+'

@@ -124,9 +124,9 @@ class PlaceController extends ApiController
     public function reviewAssessment(Request $request, int $place_id, int $review_id): JsonResponse
     {
         $requestData = json_decode($request->getContent(),true);
-        //TODO porpawic
+        //TODO poprawic
         if($review_id==1)
-            return $this->response(["code"=>"200"]);
+            return $this->response([]);
         else
         return $this->respondNotFound();
     }
