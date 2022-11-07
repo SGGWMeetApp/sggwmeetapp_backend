@@ -97,3 +97,29 @@ search_users:
     path: /api/users
     controller: App\Controller\UserController::researchUsers
     methods: GET
+get_user_data:
+    path: /api/users/{user_id}
+    controller: App\Controller\UserController::getUserData
+    requirements:
+        user_id: '\d+'
+    methods: GET
+edit_user_data:
+    path: /api/users/{user_id}
+    controller: App\Controller\UserController::editUserData
+    requirements:
+        user_id: '\d+'
+    methods: PATCH
+enable_event_notifications:
+    path: /api/groups/{group_id}/events/{event_id}/notifications
+    controller: App\Controller\GroupController::enableGroupEventNotifications
+    requirements:
+        group_id: '\d+'
+        event_id: '\d+'
+    methods: POST
+leave_group_event:
+    path: /api/groups/{group_id}/events/{event_id}
+    controller: App\Controller\GroupController::leaveGroupEvent
+    requirements:
+        group_id: '\d+'
+        event_id: '\d+'
+    methods: DELETE

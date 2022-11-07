@@ -26,7 +26,8 @@ class EventController extends ApiController {
                     "lastName" => "Nowak",
                     "email" => "joanna.nowak@email.com"
                 ],
-                "canEdit" => true
+                "canEdit" => true,
+                "notification24hEnabled" => true
             ],
             [
                 "id" => 2,
@@ -41,7 +42,8 @@ class EventController extends ApiController {
                     "lastName" => "Dudek",
                     "email" => "jerzy.dudek@example.com"
                 ],
-                "canEdit" => false
+                "canEdit" => false,
+                "notification24hEnabled" => true
             ],
         ]]);
     }
@@ -65,7 +67,8 @@ class EventController extends ApiController {
                 "lastName" => "Nowak",
                 "email" => "joanna.nowak@email.com"
             ],
-            "canEdit" => true
+            "canEdit" => true,
+            "notification24hEnabled" => true
         ]);
     }
 
@@ -88,7 +91,8 @@ class EventController extends ApiController {
                 "lastName" => "Dudek",
                 "email" => "jerzy.dudek@example.com"
             ],
-            "canEdit" => true
+            "canEdit" => true,
+            "notification24hEnabled" => true
         ]);
     }
 
@@ -110,7 +114,8 @@ class EventController extends ApiController {
                     "lastName" => "Dudek",
                     "email" => "jerzy.dudek@example.com"
                 ],
-                "canEdit" => false
+                "canEdit" => false,
+                "notification24hEnabled" => true
             ],
         ]]);
     }

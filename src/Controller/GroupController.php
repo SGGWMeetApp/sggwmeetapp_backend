@@ -23,7 +23,8 @@ class GroupController extends ApiController {
                     "lastName" => "Kowalska",
                     "email" => "mkowalska123@email.com"
                 ],
-                "canEdit" => false
+                "canEdit" => false,
+                "notification24hEnabled" => true
             ]
         ]]);
     }
@@ -47,17 +48,39 @@ class GroupController extends ApiController {
                 "lastName" => "Kowalska",
                 "email" => "mkowalska123@email.com"
             ],
-            "canEdit" => true
+            "canEdit" => true,
+            "notification24hEnabled" => false
         ]);
     }
+
+    public function enableGroupEventNotifications(Request $request, int $group_id, int $event_id): JsonResponse
+    {
+        return $this->response([
+            "id" => 1,
+            "name" => "Urodziny Marleny",
+            "description" => "W sobotę 5 listopada imprezka w klubie Niebo z okazji moich urodzin! Wpadajcie o 19 na bifor na miasteczko SGGW!",
+            "startDate" => "2022-11-05T20:00:00.000Z",
+            "locationData" => [
+                "name" => "Klub Niebo"
+            ],
+            "author" => [
+                "firstName" => "Marlena",
+                "lastName" => "Kowalska",
+                "email" => "mkowalska123@email.com"
+            ],
+            "canEdit" => true,
+            "notification24hEnabled" => true
+        ]);
+    }
+
 
     public function CreateGroup(Request $request): JsonResponse
     {
         $requestData = json_decode($request->getContent(),true);
 
         return $this->response([
-            "id"=> "1", //String
-            "name"=> $requestData['name'] //String
+            "id"=> "1",
+            "name"=> $requestData['name']
         ]);
     }
 
@@ -69,11 +92,11 @@ class GroupController extends ApiController {
                 "name" => "WielkieChlopy",
                 "memberCount" => 5, 
                 "adminData"=> [
-                    "firstName"=> "Paweł", //String
-                    "lastName"=> "Górczewski", //String
-                    "isUserAdmin"=> true //bool
+                    "firstName"=> "Paweł",
+                    "lastName"=> "Górczewski",
+                    "isUserAdmin"=> true
                 ],
-                "incomingEventsCount"=> 5 //int
+                "incomingEventsCount"=> 5
 
             ],
             [
@@ -81,11 +104,11 @@ class GroupController extends ApiController {
                 "name" => "InformatykaSem1Rok1",
                 "memberCount" => 75, 
                 "adminData"=> [
-                    "firstName"=> "Jan", //String
-                    "lastName"=> "Kowalski", //String
-                    "isUserAdmin"=> true //bool
+                    "firstName"=> "Jan",
+                    "lastName"=> "Kowalski",
+                    "isUserAdmin"=> true
                 ],
-                "incomingEventsCount"=> 0 //int
+                "incomingEventsCount"=> 0
             ],
         ]]);
     }
@@ -95,21 +118,21 @@ class GroupController extends ApiController {
         return $this->response([
             "id" => $group_id,
             "name" => "WielkieChlopy",
-            "isUserAdmin" => true, //to bym wyjebał
+            "isUserAdmin" => true,
             "users" => [
                 [
-                    "id"=> "1", //String  jaki string ma być?
-                    "firstName" => "Paweł", //String
-                    "lastName"=> "Górczewski", //String
-                    "email" => "WielkiCHłop@mail.pl", //String
-                    "isAdmin" => true //bool
+                    "id"=> 1,
+                    "firstName" => "Paweł",
+                    "lastName"=> "Górczewski",
+                    "email" => "WielkiCHłop@mail.pl",
+                    "isAdmin" => true
                 ],
                 [
-                    "id"=> "2", //String  jaki string ma być?
-                    "firstName" => "Jan", //String
-                    "lastName"=> "Kowalski", //String
-                    "email" => "WielkiCHłop2@mail.pl", //String
-                    "isAdmin" => false //bool
+                    "id"=> 2,
+                    "firstName" => "Jan",
+                    "lastName"=> "Kowalski",
+                    "email" => "WielkiCHłop2@mail.pl",
+                    "isAdmin" => false
                 ],
             ]
         ]);
@@ -122,10 +145,10 @@ class GroupController extends ApiController {
         //Pobranie danych zbazy po userID 
 
         return $this->response([
-            "id"=> $requestData["userId"], //String
-            "firstName"=> "Maciek", //String
-            "lastName"=> "Kucharski", //String
-            "email"=> "mkmkmk@mieuł.qw", //String
+            "id"=> $requestData["userId"],
+            "firstName"=> "Maciek",
+            "lastName"=> "Kucharski",
+            "email"=> "mkmkmk@mieuł.qw",
             "isAdmin"=> false, //bool
             "JoinDate" => date("Y-m-d")
         ]);
@@ -139,23 +162,28 @@ class GroupController extends ApiController {
                 "name" => "WielkieChlopy",
                 "memberCount" => 5, 
                 "adminData"=> [
-                    "firstName"=> "Paweł", //String
-                    "lastName"=> "Górczewski", //String
-                    "isUserAdmin"=> true //bool
+                    "firstName"=> "Paweł",
+                    "lastName"=> "Górczewski",
+                    "isUserAdmin"=> true
                 ],
-                "incomingEventsCount"=> 5 //int
+                "incomingEventsCount"=> 5
             ],
             [
                 "id" => 2,
                 "name" => "InformatykaSem1Rok1",
                 "memberCount" => 75, 
                 "adminData"=> [
-                    "firstName"=> "Jan", //String
-                    "lastName"=> "Kowalski", //String
-                    "isUserAdmin"=> true //bool
+                    "firstName"=> "Jan",
+                    "lastName"=> "Kowalski",
+                    "isUserAdmin"=> true
                 ],
-                "incomingEventsCount"=> 0 //int
+                "incomingEventsCount"=> 0
             ],
         ]]);
+    }
+
+    public function leaveGroupEvent(int $event_id): JsonResponse
+    {
+        return $this->setStatusCode(204)->response([]);
     }
 }
