@@ -19,11 +19,17 @@ DROP TABLE IF EXISTS users_user_groups;
 CREATE TABLE users (
     user_id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     username varchar(255) NOT NULL,
+    email varchar(255) NOT NULL,
     password text NOT NULL,
     first_name varchar(255) NOT NULL,
     last_name varchar(255) NOT NULL,
+    phone_number_prefix CHAR(4) NOT NULL,
+    phone_number VARCHAR(15) NOT NULL,
     location_sharing_mode integer NOT NULL DEFAULT 0,
-    UNIQUE (username)
+    description TEXT NOT NULL,
+    UNIQUE (lower(username)),
+    UNIQUE (phone_number_prefix, phone_number),
+    UNIQUE (lower(email))
 );
 
 CREATE TABLE user_groups (
@@ -46,7 +52,7 @@ CREATE INDEX group_id_inx ON users_user_groups (group_id);
 CREATE TABLE location_categories (
     category_id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     name varchar(255) NOT NULL,
-    UNIQUE (name)
+    UNIQUE (lower(name))
 );
 
 CREATE TABLE locations (
@@ -57,7 +63,8 @@ CREATE TABLE locations (
     lat numeric(9, 6) NOT NULL,
     long numeric(9, 6) NOT NULL,
     menu text NULL,
-    rating_pct numeric(4, 2) NULL
+    rating_pct numeric(4, 2) NULL,
+    address TEXT NOT NULL
 );
 
 CREATE TABLE locations_location_categories (
@@ -70,13 +77,15 @@ CREATE TABLE locations_location_categories (
 
 CREATE TABLE events (
     event_id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    group_id integer NOT NULL,
+    group_id integer NULL,
     location_id integer NOT NULL,
-    start_date timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    start_date timestamp with time zone NOT NULL,
     name varchar(255) NOT NULL,
     description text NULL,
     is_public boolean NOT NULL DEFAULT FALSE,
     owner_id integer NOT NULL,
+    can_edit boolean NOT NULL DEFAULT FALSE,
+    creation_date timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (location_id) REFERENCES locations (location_id) ON DELETE SET NULL ON UPDATE CASCADE,
     FOREIGN KEY (group_id) REFERENCES user_groups (group_id) ON DELETE CASCADE ON UPDATE CASCADE,
     FOREIGN KEY (owner_id) REFERENCES users (user_id) ON DELETE CASCADE ON UPDATE CASCADE
