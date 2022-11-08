@@ -64,7 +64,7 @@ CREATE TABLE locations (
     long numeric(9, 6) NOT NULL,
     menu text NULL,
     rating_pct numeric(4, 2) NULL,
-    address TEXT NOT NULL
+    text_location TEXT NOT NULL
 );
 
 CREATE TABLE locations_location_categories (
