@@ -2,6 +2,14 @@
 
 namespace App\Controller;
 
+use App\Exception\FormException;
+use App\Form\PlaceReviewType;
+use App\Model\PlaceReview;
+use App\Repository\EntityNotFoundException;
+use App\Repository\PlaceReviewRepositoryInterface;
+use App\Repository\UserRepositoryInterface;
+use App\Request\ReviewPlaceRequest;
+use App\Response\PlaceReviewResponse;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 
@@ -131,44 +139,64 @@ class PlaceController extends ApiController
         ]]);
     }
 
-    public function addReview(Request $request, int $place_id): JsonResponse
+    public function addReview(
+        Request $request,
+        int $place_id,
+        PlaceReviewRepositoryInterface $placeReviewRepository,
+        UserRepositoryInterface $userRepository
+    ): JsonResponse
     {
         $requestData = json_decode($request->getContent(),true);
-
-        return $this->response([
-            "id" => 1,
-            "comment" => "Fantastyczne miejsce :)",
-            "author" => [
-                "firstName" => "Jan",
-                "lastName" => "Kowalski",
-                "email" => "email@example.com",
-                "avatarUrl" => ""
-            ],
-            "upvoteCount" => 0,
-            "downvoteCount" => 0,
-            "publicationDate" => (new \DateTime('now'))->format('Y-m-d\TH:i:s\Z'),
-            "isPositive" => true
-        ]);
+        $addReviewRequest = new ReviewPlaceRequest();
+        $this->handleAddPlaceReviewRequest($addReviewRequest, $requestData);
+        // TODO: Find out if the place with given id exists
+        $jwtUser = $this->getUser();
+        try {
+            $user = $userRepository->findOrFail($jwtUser->getUserIdentifier());
+        } catch (EntityNotFoundException $e) {
+            return $this->respondInternalServerError($e);
+        }
+        $placeReview = new PlaceReview($place_id, $user->getId(), $addReviewRequest->isPositive, $addReviewRequest->comment);
+        $placeReview->setReviewId(1);
+        $placeReviewRepository->add($placeReview);
+        return new PlaceReviewResponse($placeReview, $user);
     }
 
-    public function editReview(Request $request, int $place_id, int $review_id): JsonResponse
+    private function handleAddPlaceReviewRequest(ReviewPlaceRequest $request, mixed $requestData): void
+    {
+        $form = $this->createForm(PlaceReviewType::class, $request);
+        $form->submit($requestData);
+        if (!$form->isValid()) {
+            throw new FormException($form);
+        }
+    }
+
+    public function editReview (
+        Request $request,
+        int $place_id,
+        PlaceReviewRepositoryInterface $placeReviewRepository,
+        UserRepositoryInterface $userRepository
+    ): JsonResponse
     {
         $requestData = json_decode($request->getContent(),true);
-
-        return $this->response([
-            "id" => $review_id,
-            "comment" => $requestData["comment"],
-            "author" => [
-                "firstName" => "Jan",
-                "lastName" => "Kowalski",
-                "email" => "email@example.com",
-                "avatarUrl" => ""
-            ],
-            "upvoteCount" => 100,
-            "downvoteCount" => 5,
-            "publicationDate" => "2022-11-02T12:34:56.500Z",
-            "isPositive" => $requestData["isPositive"]
-        ]);
+        $updateReviewRequest = new ReviewPlaceRequest();
+        $this->handleAddPlaceReviewRequest($updateReviewRequest, $requestData);
+        $jwtUser = $this->getUser();
+        try {
+            $user = $userRepository->findOrFail($jwtUser->getUserIdentifier());
+        } catch (EntityNotFoundException $e) {
+            return $this->respondInternalServerError($e);
+        }
+        try {
+            $placeReview = $placeReviewRepository->findOrFail($place_id, $user->getId());
+        } catch (EntityNotFoundException $e) {
+            return $this->respondNotFound();
+        }
+        $placeReview
+            ->setIsPositive($updateReviewRequest->isPositive)
+            ->setComment($updateReviewRequest->comment);
+        $placeReviewRepository->update($placeReview);
+        return new PlaceReviewResponse($placeReview, $user);
     }
 
     public function reviewAssessment(Request $request, int $place_id, int $review_id): JsonResponse
