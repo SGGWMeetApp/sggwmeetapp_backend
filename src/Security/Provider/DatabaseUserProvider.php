@@ -2,9 +2,9 @@
 
 namespace App\Security\Provider;
 
+use App\Repository\EntityNotFoundException;
+use App\Repository\UserRepositoryInterface;
 use App\Security\User;
-use Doctrine\DBAL\Connection;
-use Doctrine\DBAL\Exception as DbalException;
 use Symfony\Component\Security\Core\Exception\UnsupportedUserException;
 use Symfony\Component\Security\Core\Exception\UserNotFoundException;
 use Symfony\Component\Security\Core\User\UserInterface;
@@ -15,11 +15,11 @@ use Symfony\Component\Security\Core\User\UserProviderInterface;
  */
 class DatabaseUserProvider implements UserProviderInterface
 {
-    private Connection $connection;
+    private UserRepositoryInterface $userRepository;
 
-    public function __construct(Connection $connection)
+    public function __construct(UserRepositoryInterface $userRepository)
     {
-        $this->connection = $connection;
+        $this->userRepository = $userRepository;
     }
 
     /**
@@ -30,33 +30,15 @@ class DatabaseUserProvider implements UserProviderInterface
         return $this->getUser($username);
     }
 
-    /**
-     * @throws DbalException
-     */
     private function getUser(string $username): User
     {
-        $sql = "SELECT * FROM app_owner.users WHERE username = :username";
-        $statement = $this->connection->prepare($sql);
-        $statement->bindValue('username', $username);
-        $result = $statement->executeQuery();
-        $row = $result->fetchAssociative();
-        $exception = new UserNotFoundException(sprintf('Username "%s" not found in the database.', $username));
-        $exception->setUserIdentifier($username);
-        if ($row !== false) {
-            if (!$row['username']) {
-                throw $exception;
-            } else {
-                //TODO: Replace fixed password value with password hash from db
-                return new User(
-                    $row['first_name'],
-                    $row['last_name'],
-                    $username,
-                    '$2y$13$ZGORNacvE1FwJxId3hNKIe5jlx1GR57antmza.kRr9lmmYQ6gc3J2',
-                    ['ROLE_USER']
-                );
-            }
+        try {
+            return $this->userRepository->findOrFail($username);
+        } catch (EntityNotFoundException $e) {
+            $exception = new UserNotFoundException(sprintf('Username "%s" not found in the database.', $username));
+            $exception->setUserIdentifier($username);
+            throw $exception;
         }
-        throw $exception;
     }
 
     /**

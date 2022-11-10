@@ -24,6 +24,7 @@ class SecurityController extends ApiController
             throw new FormException($form);
         }
         $user = new User(
+            null,
             $registrationRequest->userData['firstName'],
             $registrationRequest->userData['lastName'],
             $registrationRequest->email,

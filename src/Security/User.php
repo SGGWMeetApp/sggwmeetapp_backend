@@ -11,19 +11,37 @@ use Symfony\Component\Security\Core\User\UserInterface;
  */
 class User implements UserInterface, EquatableInterface, PasswordAuthenticatedUserInterface
 {
+    private ?int    $id;
     private string  $firstName;
     private string  $lastName;
     private string  $email;
     private string  $password;
     private array   $roles;
 
-    public function __construct($firstName, $lastName, $email, $password, $roles)
+    public function __construct($id, $firstName, $lastName, $email, $password, $roles)
     {
+        $this->id = $id;
         $this->firstName = $firstName;
         $this->lastName = $lastName;
         $this->email = $email;
         $this->password = $password;
         $this->roles = $roles;
+    }
+
+    /**
+     * @return int|null
+     */
+    public function getId(): ?int
+    {
+        return $this->id;
+    }
+
+    /**
+     * @param int|null $id
+     */
+    public function setId(?int $id): void
+    {
+        $this->id = $id;
     }
 
     /**
