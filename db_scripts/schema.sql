@@ -1,20 +1,20 @@
-DROP TABLE IF EXISTS event_notifications;
+DROP TABLE IF EXISTS event_notifications CASCADE;
 
-DROP TABLE IF EXISTS events;
+DROP TABLE IF EXISTS events CASCADE;
 
-DROP TABLE IF EXISTS location_categories;
+DROP TABLE IF EXISTS locations_location_categories CASCADE;
 
-DROP TABLE IF EXISTS location_ratings;
+DROP TABLE IF EXISTS location_categories CASCADE;
 
-DROP TABLE IF EXISTS locations;
+DROP TABLE IF EXISTS locations CASCADE;
 
-DROP TABLE IF EXISTS locations_location_categories;
+DROP TABLE IF EXISTS location_ratings CASCADE;
 
-DROP TABLE IF EXISTS user_groups;
+DROP TABLE IF EXISTS users_user_groups CASCADE;
 
-DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS user_groups CASCADE;
 
-DROP TABLE IF EXISTS users_user_groups;
+DROP TABLE IF EXISTS users CASCADE;
 
 CREATE TABLE users (
     user_id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
@@ -27,10 +27,11 @@ CREATE TABLE users (
     phone_number VARCHAR(15) NOT NULL,
     location_sharing_mode integer NOT NULL DEFAULT 0,
     description TEXT NOT NULL,
-    UNIQUE (lower(username)),
-    UNIQUE (phone_number_prefix, phone_number),
-    UNIQUE (lower(email))
+    UNIQUE (phone_number_prefix, phone_number)
 );
+
+CREATE UNIQUE INDEX username_inx ON users(lower(username));
+CREATE UNIQUE INDEX email_inx ON users(lower(username));
 
 CREATE TABLE user_groups (
     group_id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
@@ -51,9 +52,10 @@ CREATE INDEX group_id_inx ON users_user_groups (group_id);
 
 CREATE TABLE location_categories (
     category_id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    name varchar(255) NOT NULL,
-    UNIQUE (lower(name))
+    name varchar(255) NOT NULL
 );
+
+CREATE UNIQUE INDEX location_category_name_inx ON location_categories(lower(name));
 
 CREATE TABLE locations (
     location_id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
@@ -115,7 +117,6 @@ CREATE TABLE location_ratings (
 );
 
 CREATE INDEX location_inx ON location_ratings (location_id);
-
 
 CREATE OR REPLACE FUNCTION insert_location_rating ()
     RETURNS TRIGGER
