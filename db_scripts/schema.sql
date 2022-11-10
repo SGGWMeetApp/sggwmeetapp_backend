@@ -108,9 +108,13 @@ CREATE TABLE location_ratings (
     down_votes integer NOT NULL DEFAULT 0,
     description text NOT NULL,
     publication_date timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (user_id, location_id),
     FOREIGN KEY (location_id) REFERENCES locations (location_id) ON DELETE CASCADE ON UPDATE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users (user_id) ON DELETE CASCADE ON UPDATE CASCADE
 );
+
+CREATE INDEX location_inx ON location_ratings (location_id);
+
 
 CREATE OR REPLACE FUNCTION insert_location_rating ()
     RETURNS TRIGGER
