@@ -63,6 +63,7 @@ CREATE TABLE locations (
     lat numeric(9, 6) NOT NULL,
     long numeric(9, 6) NOT NULL,
     menu text NULL,
+    ratings_number integer not null default 0,
     rating_pct numeric(4, 2) NULL,
     text_location TEXT NOT NULL
 );
