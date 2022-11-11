@@ -153,9 +153,6 @@ CREATE TRIGGER insert_location_rating_tgr
 CREATE OR REPLACE FUNCTION delete_location_rating ()
     RETURNS TRIGGER
     AS $$
-DECLARE
-    lc_ratings_number integer;
-    lc_is_positive integer;
 BEGIN
     WITH ratings AS (SELECT SUM(is_positive::int) AS positives, COUNT(rating_id) AS ratings_num FROM location_ratings WHERE location_id = OLD.location_id)
     UPDATE locations
