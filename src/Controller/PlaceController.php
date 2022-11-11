@@ -157,7 +157,6 @@ class PlaceController extends ApiController
             return $this->respondInternalServerError($e);
         }
         $placeReview = new PlaceReview($place_id, $user->getId(), $addReviewRequest->isPositive, $addReviewRequest->comment);
-        $placeReview->setReviewId(1);
         $placeReviewRepository->add($placeReview);
         return new PlaceReviewResponse($placeReview, $user);
     }

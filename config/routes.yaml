@@ -54,11 +54,10 @@ place_review_add:
         place_id: '\d+'
     methods: POST
 place_review_edit:
-    path: /api/places/{place_id}/reviews/{review_id}
+    path: /api/places/{place_id}/reviews/my
     controller: App\Controller\PlaceController::editReview
     requirements:
         place_id: '\d+'
-        reviewId: '\d+'
     methods: PUT
 place_review_assessment_votes:
     path: /api/places/{place_id}/reviews/{review_id}/votes

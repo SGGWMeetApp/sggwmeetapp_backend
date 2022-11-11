@@ -87,8 +87,7 @@ class PlaceReviewRepository extends BaseRepository implements PlaceReviewReposit
             $statement->bindValue('downVotes', $placeReview->getDownvoteCount());
             $statement->bindValue('description', "-");
             $statement->bindValue('publicationDate', $placeReview->getPublicationDate()->format(self::DEFAULT_DATETIME_FORMAT));
-            // TODO: Uncomment below line when sql gets fixed
-            //$statement->executeQuery();
+            $statement->executeQuery();
         } catch (DbalException\DriverException $e) {
             $this->handleDriverException($e);
         }
