@@ -2,6 +2,8 @@
 
 namespace App\Model;
 
+use App\Security\User;
+
 class PlaceReview
 {
     private int $placeId;
@@ -10,17 +12,17 @@ class PlaceReview
     private int $upvoteCount = 0;
     private int $downvoteCount = 0;
     private \DateTime $publicationDate;
-    private int $authorId;
+    private User $author;
 
     public function __construct(
         int $placeId,
-        int $authorId,
+        User $author,
         bool $isPositive,
         ?string $comment = null,
         ?\DateTime $publicationDate = null
     ){
         $this->placeId = $placeId;
-        $this->authorId = $authorId;
+        $this->author = $author;
         $this->isPositive = $isPositive;
         $this->comment = $comment;
         $this->publicationDate = $publicationDate === null ? new \DateTime('now') : $publicationDate;
@@ -92,9 +94,9 @@ class PlaceReview
         return $this->publicationDate;
     }
 
-    public function getAuthorId(): int
+    public function getAuthor(): User
     {
-        return $this->authorId;
+        return $this->author;
     }
 
 }

@@ -7,104 +7,74 @@ use App\Form\PlaceReviewType;
 use App\Form\ReviewAssessmentType;
 use App\Model\PlaceReview;
 use App\Repository\EntityNotFoundException;
+use App\Repository\PlaceRepositoryInterface;
 use App\Repository\PlaceReviewRepositoryInterface;
 use App\Repository\ReviewAssessmentRepositoryInterface;
 use App\Repository\UserRepositoryInterface;
 use App\Request\ReviewAssessmentRequest;
 use App\Request\ReviewPlaceRequest;
 use App\Response\PlaceReviewResponse;
+use App\Serializer\PlaceNormalizer;
+use App\Serializer\PlaceReviewNormalizer;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\Serializer\Exception\ExceptionInterface as SerializerExceptionInterface;
 
 class PlaceController extends ApiController
 {
-    public function getPlaceDetailsAction(int $place_id): JsonResponse
+    /**
+     * @throws SerializerExceptionInterface
+     */
+    public function getPlaceDetailsAction(
+        int $place_id,
+        PlaceRepositoryInterface $placeRepository,
+        PlaceReviewRepositoryInterface $placeReviewRepository
+    ): JsonResponse
     {
-        // 1. Try to get place by id from db
-        // 2. If null return 404 not found
-        // 3. Return transformed place
+        try {
+            $place = $placeRepository->findOrFail($place_id);
+        } catch (EntityNotFoundException) {
+            return $this->respondNotFound();
+        }
+        $placeNormalizer = new PlaceNormalizer();
+        $normalizedPlace = $placeNormalizer->normalize($place);
+        $placeReviews = $placeReviewRepository->findAllForPlace($place_id);
+        $placeReviewsNormalizer = new PlaceReviewNormalizer();
+        $normalizedReviews = [];
+        foreach($placeReviews as $placeReview) {
+            $normalizedReviews [] = $placeReviewsNormalizer->normalize($placeReview);
+        }
+
         return $this->response([
-            "id" => $place_id,
-            "name" => "Kartka",
-            "description" => "Bufet w budynku 34",
-            "photoPath" => "",
-            "textLocation" => "Nowoursynowska 161, budynek 34",
+            ...$normalizedPlace,
             "rating" => [
-                "positivePercent" => 67.12,
-                "reviews" => [
-                    [
-                        "id" => 1,
-                        "comment" => "Bardzo dobre jedzenie",
-                        "author" => [
-                            "firstName" => "Jan",
-                            "lastName" => "Kowalski",
-                            "email" => "email@example.com",
-                            "avatarUrl" => ""
-                        ],
-                        "upvoteCount" => 100,
-                        "downvoteCount" => 5,
-                        "publicationDate" => "2022-11-01T12:34:56.500Z",
-                        "isPositive" => true
-                    ],
-                    [
-                        "id" => 2,
-                        "comment" => "Automat z kawą mnie oszukał!",
-                        "author" => [
-                            "firstName" => "Piotr",
-                            "lastName" => "Czarny",
-                            "email" => "czarny@email.com",
-                            "avatarUrl" => ""
-                        ],
-                        "upvoteCount" => 80,
-                        "downvoteCount" => 35,
-                        "publicationDate" => "2022-08-13T15:34:26.130Z",
-                        "isPositive" => false
-                    ],
-                ]
+                "positivePercent" => $place->getRatingPercent(),
+                "reviews" => $normalizedReviews
             ]
         ]);
     }
 
-    public function getPlacesAction(Request $request): JsonResponse
+    /**
+     * @throws SerializerExceptionInterface
+     */
+    public function getPlacesAction(Request $request, PlaceRepositoryInterface $placeRepository): JsonResponse
     {
-        // 1. Get filters from request (converted to filters object)
-
-        // 2. Get filtered places from database
-        return $this->response(['places' => [
-            [
-                "id" => 1,
-                "name" => "Kartka",
-                "geolocation" => [
-                    "latitude" => 12.345,
-                    "longitude" => 12.345
-                ],
-                "locationCategoryCodes" => [
-                    "RESTAURANT"
-                ],
-                "photoPath" => "",
+        // TODO: Get filters from request (converted to filters object)
+        // TODO: Get filtered places from database
+        $places = $placeRepository->findAll();
+        $placeNormalizer = new PlaceNormalizer();
+        $normalizedPlaces = [];
+        foreach($places as $place) {
+            $normalizedPlace = $placeNormalizer->normalize($place);
+            $normalizedPlaces [] = [
+                ...$normalizedPlace,
                 "reviewSummary" => [
-                    "positivePercent" => 67.12,
-                    "reviewsCount" => 12
+                    "positivePercent" => $place->getRatingPercent(),
+                    "reviewsCount" => $place->getReviewsCount()
                 ]
-            ],
-            [
-                "id" => 2,
-                "name" => "Dziekanat 161",
-                "geolocation" => [
-                    "latitude" => 34.152,
-                    "longitude" => 12.345
-                ],
-                "locationCategoryCodes" => [
-                    "RESTAURANT",
-                    "BAR"
-                ],
-                "photoPath" => "",
-                "reviewSummary" => [
-                    "positivePercent" => 67.12,
-                    "reviewsCount" => 12
-                ]
-            ],
-        ]]);
+            ];
+        }
+        return $this->response(['places' => $normalizedPlaces]);
     }
 
     public function getPlaceEventsAction(int $place_id): JsonResponse {
@@ -145,6 +115,7 @@ class PlaceController extends ApiController
     public function addReview(
         Request $request,
         int $place_id,
+        PlaceRepositoryInterface $placeRepository,
         PlaceReviewRepositoryInterface $placeReviewRepository,
         UserRepositoryInterface $userRepository
     ): JsonResponse
@@ -152,16 +123,20 @@ class PlaceController extends ApiController
         $requestData = json_decode($request->getContent(),true);
         $addReviewRequest = new ReviewPlaceRequest();
         $this->handleAddPlaceReviewRequest($addReviewRequest, $requestData);
-        // TODO: Find out if the place with given id exists
+        try {
+            $placeRepository->findOrFail($place_id);
+        } catch (EntityNotFoundException) {
+            return $this->respondNotFound();
+        }
         $jwtUser = $this->getUser();
         try {
             $user = $userRepository->findOrFail($jwtUser->getUserIdentifier());
         } catch (EntityNotFoundException $e) {
             return $this->respondInternalServerError($e);
         }
-        $placeReview = new PlaceReview($place_id, $user->getId(), $addReviewRequest->isPositive, $addReviewRequest->comment);
+        $placeReview = new PlaceReview($place_id, $user, $addReviewRequest->isPositive, $addReviewRequest->comment);
         $placeReviewRepository->add($placeReview);
-        return new PlaceReviewResponse($placeReview, $user);
+        return new PlaceReviewResponse($placeReview);
     }
 
     private function handleAddPlaceReviewRequest(ReviewPlaceRequest $request, mixed $requestData): void
@@ -198,7 +173,7 @@ class PlaceController extends ApiController
             ->setIsPositive($updateReviewRequest->isPositive)
             ->setComment($updateReviewRequest->comment);
         $placeReviewRepository->update($placeReview);
-        return new PlaceReviewResponse($placeReview, $user);
+        return new PlaceReviewResponse($placeReview);
     }
 
     public function reviewAssessment(

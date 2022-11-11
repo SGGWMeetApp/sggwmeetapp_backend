@@ -3,6 +3,7 @@
 namespace App\Serializer;
 
 use App\Model\PlaceReview;
+use App\Security\User;
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 
@@ -18,7 +19,7 @@ class PlaceReviewNormalizer implements NormalizerInterface, DenormalizerInterfac
     {
         return [
             'place_id' => $object->getPlaceId(),
-            'author_id' => $object->getAuthorId(),
+            'author_id' => $object->getAuthor()->getId(),
             'comment' => $object->getComment(),
             'upvoteCount' => $object->getUpvoteCount(),
             'downvoteCount' => $object->getDownvoteCount(),
@@ -43,9 +44,11 @@ class PlaceReviewNormalizer implements NormalizerInterface, DenormalizerInterfac
     {
         switch ($type) {
             case 'PlaceReview':
+                // TODO: Update this user initialization when db gets updated (password + roles)
+                $user = new User($data['user_id'], $data['first_name'], $data['last_name'], $data['username'], '...', ['ROLE_USER']);
                 $placeReview = new PlaceReview(
                     $data['location_id'],
-                    $data['user_id'],
+                    $user,
                     $data['is_positive'],
                     $data['comment'],
                     new \DateTime($data['publication_date'])

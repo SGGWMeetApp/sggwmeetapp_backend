@@ -29,7 +29,10 @@ class PlaceReviewRepository extends BaseRepository implements PlaceReviewReposit
     public function findOrFail(int $placeId, int $authorId): PlaceReview
     {
         try {
-            $sql = 'SELECT * FROM ' . $this->tableName . ' WHERE location_id = :locationId AND user_id = :authorId';
+            $sql = 'SELECT * FROM ' . $this->tableName . ' pr
+            INNER JOIN app_owner.users u
+            ON pr.user_id = u.user_id
+            WHERE pr.location_id = :locationId AND pr.user_id = :authorId';
             $statement = $this->connection->prepare($sql);
             $statement->bindValue('locationId', $placeId);
             $statement->bindValue('authorId', $authorId);
@@ -52,7 +55,10 @@ class PlaceReviewRepository extends BaseRepository implements PlaceReviewReposit
      */
     public function findAllForPlace(int $placeId): array
     {
-        $sql = 'SELECT * FROM ' . $this->tableName . ' WHERE location_id = :locationId';
+        $sql = 'SELECT * FROM ' . $this->tableName . ' pr
+         INNER JOIN app_owner.users u
+         ON pr.user_id = u.user_id
+         WHERE location_id = :locationId';
         try {
             $statement = $this->connection->prepare($sql);
             $statement->bindValue('locationId', $placeId);
@@ -80,7 +86,7 @@ class PlaceReviewRepository extends BaseRepository implements PlaceReviewReposit
         try {
             $statement = $this->connection->prepare($sql);
             $statement->bindValue('locationId', $placeReview->getPlaceId());
-            $statement->bindValue('userId', $placeReview->getAuthorId());
+            $statement->bindValue('userId', $placeReview->getAuthor()->getId());
             $statement->bindValue('isPositive', $placeReview->isPositive(), ParameterType::BOOLEAN);
             $statement->bindValue('comment', $placeReview->getComment());
             $statement->bindValue('upVotes', $placeReview->getUpvoteCount());
@@ -107,7 +113,7 @@ class PlaceReviewRepository extends BaseRepository implements PlaceReviewReposit
             $statement->bindValue('isPositive', $placeReview->isPositive(), ParameterType::BOOLEAN);
             $statement->bindValue('comment', $placeReview->getComment());
             $statement->bindValue('locationId', $placeReview->getPlaceId());
-            $statement->bindValue('authorId', $placeReview->getAuthorId());
+            $statement->bindValue('authorId', $placeReview->getAuthor()->getId());
             $statement->executeQuery();
         } catch (DbalException\DriverException $e) {
             $this->handleDriverException($e);
@@ -124,7 +130,7 @@ class PlaceReviewRepository extends BaseRepository implements PlaceReviewReposit
         $sql = 'DELETE FROM ' . $this->tableName . ' WHERE user_id = :userId AND location_id = :locationId';
         try {
             $statement = $this->connection->prepare($sql);
-            $statement->bindValue('userId', $placeReview->getAuthorId());
+            $statement->bindValue('userId', $placeReview->getAuthor()->getId());
             $statement->bindValue('locationId', $placeReview->getPlaceId());
             $statement->executeQuery();
         } catch (DbalException\DriverException $e) {
