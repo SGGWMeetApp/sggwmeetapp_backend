@@ -59,7 +59,6 @@ CREATE UNIQUE INDEX location_category_name_inx ON location_categories(lower(name
 
 CREATE TABLE locations (
     location_id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    category_id integer NOT NULL,
     name text NOT NULL,
     description text NOT NULL,
     lat numeric(9, 6) NOT NULL,
