@@ -93,9 +93,25 @@ class PlaceReviewRepository extends BaseRepository implements PlaceReviewReposit
         }
     }
 
+    /**
+     * @throws DbalException\DriverException
+     * @throws EntityNotFoundException
+     * @throws DbalException
+     */
     public function update(PlaceReview $placeReview): void
     {
-        // TODO: Implement update() method.
+        $sql = 'UPDATE ' . $this->tableName .
+            ' SET is_positive = :isPositive, comment = :comment WHERE location_id = :locationId AND user_id = :authorId';
+        try {
+            $statement = $this->connection->prepare($sql);
+            $statement->bindValue('isPositive', $placeReview->isPositive(), ParameterType::BOOLEAN);
+            $statement->bindValue('comment', $placeReview->getComment());
+            $statement->bindValue('locationId', $placeReview->getPlaceId());
+            $statement->bindValue('authorId', $placeReview->getAuthorId());
+            $statement->executeQuery();
+        } catch (DbalException\DriverException $e) {
+            $this->handleDriverException($e);
+        }
     }
 
     /**
