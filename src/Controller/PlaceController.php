@@ -4,10 +4,13 @@ namespace App\Controller;
 
 use App\Exception\FormException;
 use App\Form\PlaceReviewType;
+use App\Form\ReviewAssessmentType;
 use App\Model\PlaceReview;
 use App\Repository\EntityNotFoundException;
 use App\Repository\PlaceReviewRepositoryInterface;
+use App\Repository\ReviewAssessmentRepositoryInterface;
 use App\Repository\UserRepositoryInterface;
+use App\Request\ReviewAssessmentRequest;
 use App\Request\ReviewPlaceRequest;
 use App\Response\PlaceReviewResponse;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -188,7 +191,7 @@ class PlaceController extends ApiController
         }
         try {
             $placeReview = $placeReviewRepository->findOrFail($place_id, $user->getId());
-        } catch (EntityNotFoundException $e) {
+        } catch (EntityNotFoundException) {
             return $this->respondNotFound();
         }
         $placeReview
@@ -198,13 +201,29 @@ class PlaceController extends ApiController
         return new PlaceReviewResponse($placeReview, $user);
     }
 
-    public function reviewAssessment(Request $request, int $place_id, int $review_id): JsonResponse
+    public function reviewAssessment(
+        Request $request,
+        int $place_id,
+        int $author_id,
+        PlaceReviewRepositoryInterface $placeReviewRepository,
+        ReviewAssessmentRepositoryInterface $reviewAssessmentRepository
+    ): JsonResponse
     {
         $requestData = json_decode($request->getContent(),true);
-        //TODO poprawic
-        if($review_id==1)
-            return $this->response([]);
-        else
+        $reviewAssessmentRequest = new ReviewAssessmentRequest();
+        $form = $this->createForm(ReviewAssessmentType::class, $reviewAssessmentRequest);
+        $form->submit($requestData);
+        if (!$form->isValid()) {
+            throw new FormException($form);
+        }
+        try {
+            $placeReview = $placeReviewRepository->findOrFail($place_id, $author_id);
+        } catch (EntityNotFoundException) {
             return $this->respondNotFound();
+        }
+        // Below TODOs will be feasible when db schema gets updated
+        // TODO: Check if user already reviewed (update his review if necessary)
+        // TODO: if user did not review add his review
+        return $this->response([]);
     }
 }
