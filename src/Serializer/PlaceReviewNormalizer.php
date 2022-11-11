@@ -17,7 +17,8 @@ class PlaceReviewNormalizer implements NormalizerInterface, DenormalizerInterfac
     public function normalize(mixed $object, string $format = null, array $context = []): array
     {
         return [
-            'id' => $object->getReviewId(),
+            'place_id' => $object->getPlaceId(),
+            'author_id' => $object->getAuthorId(),
             'comment' => $object->getComment(),
             'upvoteCount' => $object->getUpvoteCount(),
             'downvoteCount' => $object->getDownvoteCount(),
@@ -29,7 +30,7 @@ class PlaceReviewNormalizer implements NormalizerInterface, DenormalizerInterfac
     /**
      * @inheritDoc
      */
-    public function supportsNormalization(mixed $data, string $format = null): bool
+    public function supportsNormalization(mixed $data, string $format = null, array $context = []): bool
     {
         return $data instanceof PlaceReview;
     }
@@ -49,7 +50,6 @@ class PlaceReviewNormalizer implements NormalizerInterface, DenormalizerInterfac
                     $data['comment'],
                     new \DateTime($data['publication_date'])
                 );
-                $placeReview->setReviewId($data['rating_id']);
                 $placeReview->setUpvoteCount($data['up_votes']);
                 $placeReview->setDownvoteCount($data['down_votes']);
                 return $placeReview;
@@ -59,7 +59,7 @@ class PlaceReviewNormalizer implements NormalizerInterface, DenormalizerInterfac
 
     }
 
-    public function supportsDenormalization(mixed $data, string $type, string $format = null): bool
+    public function supportsDenormalization(mixed $data, string $type, string $format = null, array $context = []): bool
     {
         if(!in_array($type, self::SUPPORTED_DENORMALIZER_TYPES)) {
             return false;
