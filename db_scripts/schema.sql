@@ -1,3 +1,5 @@
+DROP TABLE IF EXISTS rating_reviews CASCADE;
+
 DROP TABLE IF EXISTS event_notifications CASCADE;
 
 DROP TABLE IF EXISTS events CASCADE;
@@ -102,6 +104,7 @@ CREATE TABLE event_notifications (
 );
 
 CREATE TABLE location_ratings (
+    rating_id integer NOT NULL PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     location_id integer NOT NULL,
     user_id integer NOT NULL,
     is_positive boolean DEFAULT TRUE,
@@ -110,35 +113,33 @@ CREATE TABLE location_ratings (
     down_votes integer NOT NULL DEFAULT 0,
     description text NOT NULL,
     publication_date timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (user_id, location_id),
     FOREIGN KEY (location_id) REFERENCES locations (location_id) ON DELETE CASCADE ON UPDATE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users (user_id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
+CREATE UNIQUE INDEX rating_unq_inx ON location_ratings (user_id, location_id);
 CREATE INDEX location_inx ON location_ratings (location_id);
+
+CREATE TABLE rating_reviews (
+    rating_id integer NOT NULL,
+    user_id integer NOT NULL,
+    is_up_vote BOOLEAN NOT NULL DEFAULT TRUE,
+    creation_date timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (rating_id, user_id),
+    FOREIGN KEY (rating_id) REFERENCES location_ratings (rating_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users (user_id) ON DELETE CASCADE ON UPDATE CASCADE
+);
 
 CREATE OR REPLACE FUNCTION insert_location_rating ()
     RETURNS TRIGGER
     AS $$
-DECLARE
-    lc_ratings_number integer;
-    lc_is_positive integer;
 BEGIN
-    SELECT
-        COUNT(location_id),
-        SUM(is_positive::int) INTO lc_ratings_number,
-        lc_is_positive
-    FROM
-        location_ratings
-    WHERE
-        location_id = NEW.location_id;
-    UPDATE
-        locations
-    SET
-        ratings_number = lc_ratings_number,
-        rating_pct = (lc_is_positive / lc_ratings_number) * 100
-    WHERE
-        location_id = NEW.location_id;
+    WITH ratings AS (SELECT SUM(is_positive::int) AS positives, COUNT(rating_id) AS ratings_num FROM location_ratings WHERE location_id = NEW.location_id)
+    UPDATE locations
+    SET ratings_number = ratings.positives,
+        rating_pct = (ratings.positives / ratings.ratings_num) * 100
+    FROM ratings
+    WHERE location_id = NEW.location_id;
     RETURN new;
 END;
 $$
@@ -156,21 +157,12 @@ DECLARE
     lc_ratings_number integer;
     lc_is_positive integer;
 BEGIN
-    SELECT
-        COUNT(location_id),
-        SUM(is_positive::int) INTO lc_ratings_number,
-        lc_is_positive
-    FROM
-        location_ratings
-    WHERE
-        location_id = OLD.location_id;
-    UPDATE
-        locations
-    SET
-        ratings_number = lc_ratings_number,
-        rating_pct = (lc_is_positive / lc_ratings_number) * 100
-    WHERE
-        location_id = OLD.location_id;
+    WITH ratings AS (SELECT SUM(is_positive::int) AS positives, COUNT(rating_id) AS ratings_num FROM location_ratings WHERE location_id = OLD.location_id)
+    UPDATE locations
+    SET ratings_number = ratings.positives,
+        rating_pct = (ratings.positives / ratings.ratings_num) * 100
+    FROM ratings
+    WHERE location_id = OLD.location_id;
     RETURN old;
 END;
 $$
@@ -180,3 +172,43 @@ CREATE TRIGGER delete_location_rating_tgr
     AFTER DELETE ON location_ratings
     FOR EACH ROW
     EXECUTE PROCEDURE delete_location_rating ();
+
+CREATE OR REPLACE FUNCTION insert_rating_review ()
+    RETURNS TRIGGER
+    AS $$
+BEGIN
+    WITH ratings_ratio AS (SELECT SUM(is_up_vote::int) AS up_votes, COUNT(is_up_vote) AS votes FROM rating_reviews WHERE rating_id = NEW.rating_id AND user_id = NEW.user_id)
+    UPDATE location_ratings
+    SET up_votes = ratings_ratio.up_votes,
+        down_votes = ratings_ratio.votes - ratings_ratio.up_votes
+    FROM ratings_ratio
+    WHERE rating_id = NEW.rating_id;
+    RETURN new;
+END;
+$$
+LANGUAGE plpgsql;
+
+CREATE TRIGGER insert_rating_review_tgr
+    AFTER INSERT OR UPDATE OF is_up_vote ON rating_reviews
+    FOR EACH ROW
+    EXECUTE PROCEDURE insert_rating_review ();
+
+CREATE OR REPLACE FUNCTION delete_rating_review ()
+    RETURNS TRIGGER
+    AS $$
+BEGIN
+    WITH ratings_ratio AS (SELECT SUM(is_up_vote::int) AS up_votes, COUNT(is_up_vote) AS votes FROM rating_reviews WHERE rating_id = OLD.rating_id AND user_id = OLD.user_id)
+    UPDATE location_ratings
+    SET up_votes = ratings_ratio.up_votes,
+        down_votes = ratings_ratio.votes - ratings_ratio.up_votes
+    FROM ratings_ratio
+    WHERE rating_id = OLD.rating_id;
+    RETURN old;
+END;
+$$
+LANGUAGE plpgsql;
+
+CREATE TRIGGER delete_rating_review_tgr
+    AFTER DELETE ON rating_reviews
+    FOR EACH ROW
+    EXECUTE PROCEDURE delete_rating_review ();
