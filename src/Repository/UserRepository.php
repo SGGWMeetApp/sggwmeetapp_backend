@@ -60,9 +60,9 @@ class UserRepository extends BaseRepository implements UserRepositoryInterface
     public function add(User $user): void
     {
         $sql = "INSERT INTO " . $this->tableName .
-        " (username, email, password, first_name, last_name, phone_number_prefix, phone_number, location_sharing_mode, description)
+        " (username, email, password, first_name, last_name, phone_number_prefix, phone_number, description)
         VALUES
-        (:username, :email, :password, :firstName, :lastName, :phonePrefix, :phone, :locationSharingMode, :description)";
+        (:username, :email, :password, :firstName, :lastName, :phonePrefix, :phone, :description)";
         try {
             $statement = $this->connection->prepare($sql);
             $statement->bindValue('username', $user->getUserIdentifier());
@@ -72,7 +72,6 @@ class UserRepository extends BaseRepository implements UserRepositoryInterface
             $statement->bindValue('lastName', $user->getLastName());
             $statement->bindValue('phonePrefix', $user->getPhonePrefix());
             $statement->bindValue('phone', $user->getPhone());
-            $statement->bindValue('locationSharingMode', 1);
             $statement->bindValue('description', $user->getDescription());
             $statement->executeQuery();
         } catch (DriverException $e) {
