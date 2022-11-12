@@ -25,10 +25,10 @@ class UserRepository extends BaseRepository implements UserRepositoryInterface
      */
     public function findOrFail(string $identifier): User
     {
-        $sql = "SELECT * FROM ' . $this->tableName . ' WHERE email = :username";
+        $sql = 'SELECT * FROM ' . $this->tableName . ' WHERE email = :username';
         try {
             $statement = $this->connection->prepare($sql);
-            $statement->bindValue('username', $identifier);
+            $statement->bindValue("username", $identifier);
             $result = $statement->executeQuery();
         } catch (DriverException $e) {
             $this->handleDriverException($e);
