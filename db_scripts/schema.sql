@@ -69,7 +69,7 @@ CREATE TABLE locations (
     long numeric(9, 6) NOT NULL,
     menu text NULL,
     ratings_number integer NOT NULL DEFAULT 0,
-    rating_pct numeric(4, 2) NULL,
+    rating_pct numeric(5, 2) NULL,
     text_location text NOT NULL
 );
 
@@ -149,7 +149,11 @@ BEGIN
         locations
     SET
         ratings_number = ratings.positives,
-        rating_pct = ROUND((ratings.positives / ratings.ratings_num) * 100, 2)
+        rating_pct = CASE WHEN (ratings.ratings_num = 0) THEN
+            NULL
+        ELSE
+            ROUND((ratings.positives / ratings.ratings_num) * 100, 2)
+        END
     FROM
         ratings
     WHERE
@@ -180,7 +184,11 @@ BEGIN
         locations
     SET
         ratings_number = ratings.positives,
-        rating_pct = ROUND((ratings.positives / ratings.ratings_num) * 100, 2)
+        rating_pct = CASE WHEN (ratings.ratings_num = 0) THEN
+            NULL
+        ELSE
+            ROUND((ratings.positives / ratings.ratings_num) * 100, 2)
+        END
     FROM
         ratings
     WHERE
