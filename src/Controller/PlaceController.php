@@ -6,10 +6,12 @@ use App\Exception\FormException;
 use App\Form\PlaceReviewType;
 use App\Form\ReviewAssessmentType;
 use App\Model\PlaceReview;
+use App\Model\ReviewAssessment;
 use App\Repository\EntityNotFoundException;
 use App\Repository\PlaceRepositoryInterface;
 use App\Repository\PlaceReviewRepositoryInterface;
 use App\Repository\ReviewAssessmentRepositoryInterface;
+use App\Repository\UniqueConstraintViolationException;
 use App\Repository\UserRepositoryInterface;
 use App\Request\ReviewAssessmentRequest;
 use App\Request\ReviewPlaceRequest;
@@ -134,8 +136,17 @@ class PlaceController extends ApiController
         } catch (EntityNotFoundException $e) {
             return $this->respondInternalServerError($e);
         }
-        $placeReview = new PlaceReview($place_id, $user, $addReviewRequest->isPositive, $addReviewRequest->comment);
-        $placeReviewRepository->add($placeReview);
+        $placeReview = new PlaceReview(null, $place_id, $user, $addReviewRequest->isPositive, $addReviewRequest->comment);
+        try {
+            $placeReviewRepository->add($placeReview);
+        } catch (UniqueConstraintViolationException $e) {
+            return match ($e->getViolatedConstraint()) {
+                'rating_unq_inx' => $this->setStatusCode(409)
+                    ->respondWithError('BAD_REQUEST', 'Rating by this user already exists for this place.'),
+                default => $this->setStatusCode(409)
+                    ->respondWithError('BAD_REQUEST', $e->getMessage()),
+            };
+        }
         return new PlaceReviewResponse($placeReview);
     }
 
@@ -151,6 +162,7 @@ class PlaceController extends ApiController
     public function editReview (
         Request $request,
         int $place_id,
+        int $review_id,
         PlaceReviewRepositoryInterface $placeReviewRepository,
         UserRepositoryInterface $userRepository
     ): JsonResponse
@@ -165,9 +177,12 @@ class PlaceController extends ApiController
             return $this->respondInternalServerError($e);
         }
         try {
-            $placeReview = $placeReviewRepository->findOrFail($place_id, $user->getId());
+            $placeReview = $placeReviewRepository->findOrFail($place_id, $review_id);
         } catch (EntityNotFoundException) {
             return $this->respondNotFound();
+        }
+        if ($placeReview->getAuthor()->getId() != $user->getId()) {
+            return $this->respondUnauthorized();
         }
         $placeReview
             ->setIsPositive($updateReviewRequest->isPositive)
@@ -179,7 +194,8 @@ class PlaceController extends ApiController
     public function reviewAssessment(
         Request $request,
         int $place_id,
-        int $author_id,
+        int $review_id,
+        UserRepositoryInterface $userRepository,
         PlaceReviewRepositoryInterface $placeReviewRepository,
         ReviewAssessmentRepositoryInterface $reviewAssessmentRepository
     ): JsonResponse
@@ -191,14 +207,41 @@ class PlaceController extends ApiController
         if (!$form->isValid()) {
             throw new FormException($form);
         }
+        if ($requestData['isPositive'] === null) {
+            $reviewAssessmentRequest->isPositive = null;
+        }
+        $jwtUser = $this->getUser();
         try {
-            $placeReview = $placeReviewRepository->findOrFail($place_id, $author_id);
+            $reviewer = $userRepository->findOrFail($jwtUser->getUserIdentifier());
+        } catch (EntityNotFoundException $e) {
+            return $this->respondInternalServerError($e);
+        }
+        try {
+            $placeReview = $placeReviewRepository->findOrFail($place_id, $review_id);
         } catch (EntityNotFoundException) {
             return $this->respondNotFound();
         }
-        // Below TODOs will be feasible when db schema gets updated
-        // TODO: Check if user already reviewed (update his review if necessary)
-        // TODO: if user did not review add his review
+        try {
+            // Update old assessment if exists
+            $assessment = $reviewAssessmentRepository->findOrFail($place_id, $review_id, $reviewer->getId());
+            if($reviewAssessmentRequest->isPositive !== null) {
+                $assessment->setIsPositive($reviewAssessmentRequest->isPositive);
+                $reviewAssessmentRepository->update($assessment);
+            } else {
+                $reviewAssessmentRepository->delete($assessment);
+            }
+        } catch (EntityNotFoundException) {
+            // Otherwise, add new assessment
+            if($reviewAssessmentRequest->isPositive !== null) {
+                $assessment = new ReviewAssessment(
+                    $review_id,
+                    $placeReview->getAuthor()->getId(),
+                    $reviewer->getId(),
+                    $reviewAssessmentRequest->isPositive
+                );
+                $reviewAssessmentRepository->add($assessment);
+            }
+        }
         return $this->response([]);
     }
 }

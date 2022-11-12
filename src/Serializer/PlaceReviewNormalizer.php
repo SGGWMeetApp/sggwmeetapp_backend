@@ -18,8 +18,7 @@ class PlaceReviewNormalizer implements NormalizerInterface, DenormalizerInterfac
     public function normalize(mixed $object, string $format = null, array $context = []): array
     {
         return [
-            'place_id' => $object->getPlaceId(),
-            'author_id' => $object->getAuthor()->getId(),
+            'id' => $object->getReviewId(),
             'comment' => $object->getComment(),
             'upvoteCount' => $object->getUpvoteCount(),
             'downvoteCount' => $object->getDownvoteCount(),
@@ -44,7 +43,6 @@ class PlaceReviewNormalizer implements NormalizerInterface, DenormalizerInterfac
     {
         switch ($type) {
             case 'PlaceReview':
-                // TODO: Update this user initialization when db gets updated (password + roles)
                 $user = new User(
                     $data['user_id'],
                     $data['first_name'],
@@ -56,6 +54,7 @@ class PlaceReviewNormalizer implements NormalizerInterface, DenormalizerInterfac
                     $data['description'],
                     ['ROLE_USER']);
                 $placeReview = new PlaceReview(
+                    $data['rating_id'],
                     $data['location_id'],
                     $user,
                     $data['is_positive'],

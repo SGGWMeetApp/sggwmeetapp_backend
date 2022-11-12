@@ -6,6 +6,7 @@ use App\Security\User;
 
 class PlaceReview
 {
+    private ?int $reviewId;
     private int $placeId;
     private bool $isPositive;
     private ?string $comment;
@@ -15,17 +16,27 @@ class PlaceReview
     private User $author;
 
     public function __construct(
-        int $placeId,
-        User $author,
-        bool $isPositive,
-        ?string $comment = null,
-        ?\DateTime $publicationDate = null
-    ){
+        ?int        $reviewId,
+        int         $placeId,
+        User        $author,
+        bool        $isPositive,
+        ?string     $comment = null,
+        ?\DateTime  $publicationDate = null
+    ) {
+        $this->reviewId = $reviewId;
         $this->placeId = $placeId;
         $this->author = $author;
         $this->isPositive = $isPositive;
         $this->comment = $comment;
         $this->publicationDate = $publicationDate === null ? new \DateTime('now') : $publicationDate;
+    }
+
+    /**
+     * @return int|null
+     */
+    public function getReviewId(): ?int
+    {
+        return $this->reviewId;
     }
 
     public function getPlaceId(): int

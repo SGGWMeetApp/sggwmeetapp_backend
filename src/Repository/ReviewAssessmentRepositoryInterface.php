@@ -9,7 +9,11 @@ interface ReviewAssessmentRepositoryInterface
     /**
      * @throws EntityNotFoundException
      */
-    public function findOrFail(int $placeId, int $authorId, int $reviewerId): ReviewAssessment;
-    public function addReviewAssessment(ReviewAssessment $reviewAssessment): void;
-    public function updateReviewAssessment(ReviewAssessment $reviewAssessment): void;
+    public function findOrFail(int $placeId, int $reviewId, int $reviewerId): ReviewAssessment;
+
+    public function add(ReviewAssessment $reviewAssessment): void;
+
+    public function update(ReviewAssessment $reviewAssessment): void;
+
+    public function delete(ReviewAssessment $reviewAssessment): void;
 }

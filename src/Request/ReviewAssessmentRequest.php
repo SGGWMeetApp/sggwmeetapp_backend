@@ -7,9 +7,8 @@ use Symfony\Component\Validator\Constraints as Assert;
 class ReviewAssessmentRequest
 {
     /**
-     * @Assert\NotNull()
-     * @Assert\Type("boolean")
+     * @Assert\Type(type="boolean")
      * @var boolean
      */
-    public $isPositive;
+    public $isPositive = null;
 }

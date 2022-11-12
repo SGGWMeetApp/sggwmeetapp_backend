@@ -4,20 +4,20 @@ namespace App\Model;
 
 class ReviewAssessment
 {
-    private int $placeId;
+    private int $reviewId;
     private int $authorId;
     private int $reviewerId;
     private bool $isPositive;
 
     /**
-     * @param int $placeId
+     * @param int $reviewId
      * @param int $authorId
      * @param int $reviewerId
      * @param bool $isPositive
      */
-    public function __construct(int $placeId, int $authorId, int $reviewerId, bool $isPositive)
+    public function __construct(int $reviewId, int $authorId, int $reviewerId, bool $isPositive)
     {
-        $this->placeId = $placeId;
+        $this->reviewId = $reviewId;
         $this->authorId = $authorId;
         $this->reviewerId = $reviewerId;
         $this->isPositive = $isPositive;
@@ -26,9 +26,9 @@ class ReviewAssessment
     /**
      * @return int
      */
-    public function getPlaceId(): int
+    public function getReviewId(): int
     {
-        return $this->placeId;
+        return $this->reviewId;
     }
 
     /**

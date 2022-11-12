@@ -27,16 +27,16 @@ class PlaceReviewRepository extends BaseRepository implements PlaceReviewReposit
      * @throws DbalException
      * @throws UniqueConstraintViolationException
      */
-    public function findOrFail(int $placeId, int $authorId): PlaceReview
+    public function findOrFail(int $placeId, int $reviewId): PlaceReview
     {
         try {
             $sql = 'SELECT * FROM ' . $this->tableName . ' pr
             INNER JOIN app_owner.users u
             ON pr.user_id = u.user_id
-            WHERE pr.location_id = :locationId AND pr.user_id = :authorId';
+            WHERE pr.rating_id = :reviewId AND pr.location_id = :placeId';
             $statement = $this->connection->prepare($sql);
-            $statement->bindValue('locationId', $placeId);
-            $statement->bindValue('authorId', $authorId);
+            $statement->bindValue('reviewId', $reviewId);
+            $statement->bindValue('placeId', $placeId);
             $result = $statement->executeQuery();
             $data = $result->fetchAssociative();
             if(!$data) {
@@ -79,22 +79,20 @@ class PlaceReviewRepository extends BaseRepository implements PlaceReviewReposit
      * @throws DbalException\DriverException
      * @throws EntityNotFoundException
      * @throws DbalException
+     * @throws UniqueConstraintViolationException
      */
     public function add(PlaceReview $placeReview): void
     {
         $sql = 'INSERT INTO ' . $this->tableName .
-            '(location_id, user_id, is_positive, comment, up_votes, down_votes, description, publication_date)
-            VALUES(:locationId, :userId, :isPositive, :comment, :upVotes, :downVotes, :description, :publicationDate)';
+            '(location_id, user_id, is_positive, comment, description)
+            VALUES(:locationId, :userId, :isPositive, :comment, :description)';
         try {
             $statement = $this->connection->prepare($sql);
             $statement->bindValue('locationId', $placeReview->getPlaceId());
             $statement->bindValue('userId', $placeReview->getAuthor()->getId());
             $statement->bindValue('isPositive', $placeReview->isPositive(), ParameterType::BOOLEAN);
             $statement->bindValue('comment', $placeReview->getComment());
-            $statement->bindValue('upVotes', $placeReview->getUpvoteCount());
-            $statement->bindValue('downVotes', $placeReview->getDownvoteCount());
             $statement->bindValue('description', "-");
-            $statement->bindValue('publicationDate', $placeReview->getPublicationDate()->format(self::DEFAULT_DATETIME_FORMAT));
             $statement->executeQuery();
         } catch (DbalException\DriverException $e) {
             $this->handleDriverException($e);
@@ -110,13 +108,12 @@ class PlaceReviewRepository extends BaseRepository implements PlaceReviewReposit
     public function update(PlaceReview $placeReview): void
     {
         $sql = 'UPDATE ' . $this->tableName .
-            ' SET is_positive = :isPositive, comment = :comment WHERE location_id = :locationId AND user_id = :authorId';
+            ' SET is_positive = :isPositive, comment = :comment WHERE rating_id = :reviewId';
         try {
             $statement = $this->connection->prepare($sql);
             $statement->bindValue('isPositive', $placeReview->isPositive(), ParameterType::BOOLEAN);
             $statement->bindValue('comment', $placeReview->getComment());
-            $statement->bindValue('locationId', $placeReview->getPlaceId());
-            $statement->bindValue('authorId', $placeReview->getAuthor()->getId());
+            $statement->bindValue('reviewId', $placeReview->getReviewId());
             $statement->executeQuery();
         } catch (DbalException\DriverException $e) {
             $this->handleDriverException($e);
@@ -131,14 +128,39 @@ class PlaceReviewRepository extends BaseRepository implements PlaceReviewReposit
      */
     public function delete(PlaceReview $placeReview): void
     {
-        $sql = 'DELETE FROM ' . $this->tableName . ' WHERE user_id = :userId AND location_id = :locationId';
+        $sql = 'DELETE FROM ' . $this->tableName . ' WHERE rating_id = :reviewId';
         try {
             $statement = $this->connection->prepare($sql);
-            $statement->bindValue('userId', $placeReview->getAuthor()->getId());
-            $statement->bindValue('locationId', $placeReview->getPlaceId());
+            $statement->bindValue('reviewId', $placeReview->getReviewId());
             $statement->executeQuery();
         } catch (DbalException\DriverException $e) {
             $this->handleDriverException($e);
         }
     }
+
+    /**
+     * @throws DbalException\DriverException
+     * @throws UniqueConstraintViolationException
+     * @throws EntityNotFoundException
+     * @throws DbalException
+     * @throws UnsupportedDenormalizerTypeException
+     */
+    public function findUserReviewForPlace(int $placeId, int $authorId): PlaceReview
+    {
+        $sql = 'SELECT * FROM ' . $this->tableName . ' WHERE user_id = :authorId';
+        try {
+            $statement = $this->connection->prepare($sql);
+            $statement->bindValue('authorId', $authorId);
+            $result = $statement->executeQuery();
+            $data = $result->fetchAssociative();
+            if(!$data) {
+                throw new EntityNotFoundException();
+            }
+            return $this->objectNormalizer->denormalize($data, 'PlaceReview');
+        } catch (DbalException\DriverException $e) {
+            $this->handleDriverException($e);
+        }
+    }
+
+
 }
