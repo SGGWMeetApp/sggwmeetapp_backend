@@ -1,3 +1,4 @@
+-- RUN AS app_owner USER
 DROP TABLE IF EXISTS rating_reviews CASCADE;
 
 DROP TABLE IF EXISTS event_notifications CASCADE;
