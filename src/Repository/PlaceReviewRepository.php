@@ -25,6 +25,7 @@ class PlaceReviewRepository extends BaseRepository implements PlaceReviewReposit
      * @throws EntityNotFoundException
      * @throws UnsupportedDenormalizerTypeException
      * @throws DbalException
+     * @throws UniqueConstraintViolationException
      */
     public function findOrFail(int $placeId, int $authorId): PlaceReview
     {
@@ -52,6 +53,7 @@ class PlaceReviewRepository extends BaseRepository implements PlaceReviewReposit
      * @throws EntityNotFoundException
      * @throws DbalException
      * @throws UnsupportedDenormalizerTypeException
+     * @throws UniqueConstraintViolationException
      */
     public function findAllForPlace(int $placeId): array
     {
@@ -103,6 +105,7 @@ class PlaceReviewRepository extends BaseRepository implements PlaceReviewReposit
      * @throws DbalException\DriverException
      * @throws EntityNotFoundException
      * @throws DbalException
+     * @throws UniqueConstraintViolationException
      */
     public function update(PlaceReview $placeReview): void
     {
@@ -124,6 +127,7 @@ class PlaceReviewRepository extends BaseRepository implements PlaceReviewReposit
      * @throws DbalException\DriverException
      * @throws EntityNotFoundException
      * @throws DbalException
+     * @throws UniqueConstraintViolationException
      */
     public function delete(PlaceReview $placeReview): void
     {

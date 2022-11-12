@@ -30,6 +30,7 @@ class PlaceRepository extends BaseRepository implements PlaceRepositoryInterface
      * @throws DriverException
      * @throws DbalException
      * @throws SerializerExceptionInterface
+     * @throws UniqueConstraintViolationException
      */
     public function findOrFail(int $placeId): Place
     {
@@ -67,6 +68,7 @@ class PlaceRepository extends BaseRepository implements PlaceRepositoryInterface
      * @throws DriverException
      * @throws EntityNotFoundException
      * @throws DbalException
+     * @throws UniqueConstraintViolationException
      */
     public function findAll(): array
     {
@@ -111,6 +113,7 @@ class PlaceRepository extends BaseRepository implements PlaceRepositoryInterface
      * @throws DriverException
      * @throws EntityNotFoundException
      * @throws DbalException
+     * @throws UniqueConstraintViolationException
      */
     public function delete(Place $place): void
     {
