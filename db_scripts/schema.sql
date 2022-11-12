@@ -139,7 +139,7 @@ CREATE OR REPLACE FUNCTION insert_location_rating ()
 BEGIN
     WITH ratings AS (
         SELECT
-            SUM(is_positive::int) AS positives,
+            COALESCE(SUM(is_positive::int), 0) AS positives,
             COUNT(rating_id) AS ratings_num
         FROM
             location_ratings
@@ -174,7 +174,7 @@ CREATE OR REPLACE FUNCTION delete_location_rating ()
 BEGIN
     WITH ratings AS (
         SELECT
-            SUM(is_positive::int) AS positives,
+            COALESCE(SUM(is_positive::int), 0) AS positives,
             COUNT(rating_id) AS ratings_num
         FROM
             location_ratings
@@ -209,7 +209,7 @@ CREATE OR REPLACE FUNCTION insert_rating_review ()
 BEGIN
     WITH ratings_ratio AS (
         SELECT
-            SUM(is_up_vote::int) AS up_votes,
+            COALESCE(SUM(is_up_vote::int), 0) AS up_votes,
             COUNT(is_up_vote) AS votes
         FROM
             rating_reviews
@@ -241,7 +241,7 @@ CREATE OR REPLACE FUNCTION delete_rating_review ()
 BEGIN
     WITH ratings_ratio AS (
         SELECT
-            SUM(is_up_vote::int) AS up_votes,
+            COALESCE(SUM(is_up_vote::int), 0) AS up_votes,
             COUNT(is_up_vote) AS votes
         FROM
             rating_reviews
