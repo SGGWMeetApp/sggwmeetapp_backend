@@ -25,15 +25,16 @@ CREATE TABLE users (
     password text NOT NULL,
     first_name varchar(255) NOT NULL,
     last_name varchar(255) NOT NULL,
-    phone_number_prefix CHAR(4) NOT NULL,
-    phone_number VARCHAR(15) NOT NULL,
+    phone_number_prefix char(4) NOT NULL,
+    phone_number varchar(15) NOT NULL,
     location_sharing_mode integer NOT NULL DEFAULT 0,
-    description TEXT NOT NULL,
+    description text NOT NULL,
     UNIQUE (phone_number_prefix, phone_number)
 );
 
-CREATE UNIQUE INDEX username_inx ON users(lower(username));
-CREATE UNIQUE INDEX email_inx ON users(lower(username));
+CREATE UNIQUE INDEX username_inx ON users (lower(username));
+
+CREATE UNIQUE INDEX email_inx ON users (lower(username));
 
 CREATE TABLE user_groups (
     group_id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
@@ -57,7 +58,7 @@ CREATE TABLE location_categories (
     name varchar(255) NOT NULL
 );
 
-CREATE UNIQUE INDEX location_category_name_inx ON location_categories(lower(name));
+CREATE UNIQUE INDEX location_category_name_inx ON location_categories (lower(name));
 
 CREATE TABLE locations (
     location_id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
@@ -66,9 +67,9 @@ CREATE TABLE locations (
     lat numeric(9, 6) NOT NULL,
     long numeric(9, 6) NOT NULL,
     menu text NULL,
-    ratings_number integer not null default 0,
+    ratings_number integer NOT NULL DEFAULT 0,
     rating_pct numeric(4, 2) NULL,
-    text_location TEXT NOT NULL
+    text_location text NOT NULL
 );
 
 CREATE TABLE locations_location_categories (
@@ -118,12 +119,13 @@ CREATE TABLE location_ratings (
 );
 
 CREATE UNIQUE INDEX rating_unq_inx ON location_ratings (user_id, location_id);
+
 CREATE INDEX location_inx ON location_ratings (location_id);
 
 CREATE TABLE rating_reviews (
     rating_id integer NOT NULL,
     user_id integer NOT NULL,
-    is_up_vote BOOLEAN NOT NULL DEFAULT TRUE,
+    is_up_vote boolean NOT NULL DEFAULT TRUE,
     creation_date timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (rating_id, user_id),
     FOREIGN KEY (rating_id) REFERENCES location_ratings (rating_id) ON DELETE CASCADE ON UPDATE CASCADE,
@@ -134,12 +136,23 @@ CREATE OR REPLACE FUNCTION insert_location_rating ()
     RETURNS TRIGGER
     AS $$
 BEGIN
-    WITH ratings AS (SELECT SUM(is_positive::int) AS positives, COUNT(rating_id) AS ratings_num FROM location_ratings WHERE location_id = NEW.location_id)
-    UPDATE locations
-    SET ratings_number = ratings.positives,
-        rating_pct = ROUND((ratings.positives / ratings.ratings_num) * 100,2)
-    FROM ratings
-    WHERE location_id = NEW.location_id;
+    WITH ratings AS (
+        SELECT
+            SUM(is_positive::int) AS positives,
+            COUNT(rating_id) AS ratings_num
+        FROM
+            location_ratings
+        WHERE
+            location_id = NEW.location_id)
+    UPDATE
+        locations
+    SET
+        ratings_number = ratings.positives,
+        rating_pct = ROUND((ratings.positives / ratings.ratings_num) * 100, 2)
+    FROM
+        ratings
+    WHERE
+        location_id = NEW.location_id;
     RETURN new;
 END;
 $$
@@ -154,12 +167,23 @@ CREATE OR REPLACE FUNCTION delete_location_rating ()
     RETURNS TRIGGER
     AS $$
 BEGIN
-    WITH ratings AS (SELECT SUM(is_positive::int) AS positives, COUNT(rating_id) AS ratings_num FROM location_ratings WHERE location_id = OLD.location_id)
-    UPDATE locations
-    SET ratings_number = ratings.positives,
-        rating_pct = ROUND((ratings.positives / ratings.ratings_num) * 100,2)
-    FROM ratings
-    WHERE location_id = OLD.location_id;
+    WITH ratings AS (
+        SELECT
+            SUM(is_positive::int) AS positives,
+            COUNT(rating_id) AS ratings_num
+        FROM
+            location_ratings
+        WHERE
+            location_id = OLD.location_id)
+    UPDATE
+        locations
+    SET
+        ratings_number = ratings.positives,
+        rating_pct = ROUND((ratings.positives / ratings.ratings_num) * 100, 2)
+    FROM
+        ratings
+    WHERE
+        location_id = OLD.location_id;
     RETURN old;
 END;
 $$
@@ -174,12 +198,24 @@ CREATE OR REPLACE FUNCTION insert_rating_review ()
     RETURNS TRIGGER
     AS $$
 BEGIN
-    WITH ratings_ratio AS (SELECT SUM(is_up_vote::int) AS up_votes, COUNT(is_up_vote) AS votes FROM rating_reviews WHERE rating_id = NEW.rating_id AND user_id = NEW.user_id)
-    UPDATE location_ratings
-    SET up_votes = ratings_ratio.up_votes,
+    WITH ratings_ratio AS (
+        SELECT
+            SUM(is_up_vote::int) AS up_votes,
+            COUNT(is_up_vote) AS votes
+        FROM
+            rating_reviews
+        WHERE
+            rating_id = NEW.rating_id
+            AND user_id = NEW.user_id)
+    UPDATE
+        location_ratings
+    SET
+        up_votes = ratings_ratio.up_votes,
         down_votes = ratings_ratio.votes - ratings_ratio.up_votes
-    FROM ratings_ratio
-    WHERE rating_id = NEW.rating_id;
+    FROM
+        ratings_ratio
+    WHERE
+        rating_id = NEW.rating_id;
     RETURN new;
 END;
 $$
@@ -194,12 +230,24 @@ CREATE OR REPLACE FUNCTION delete_rating_review ()
     RETURNS TRIGGER
     AS $$
 BEGIN
-    WITH ratings_ratio AS (SELECT SUM(is_up_vote::int) AS up_votes, COUNT(is_up_vote) AS votes FROM rating_reviews WHERE rating_id = OLD.rating_id AND user_id = OLD.user_id)
-    UPDATE location_ratings
-    SET up_votes = ratings_ratio.up_votes,
+    WITH ratings_ratio AS (
+        SELECT
+            SUM(is_up_vote::int) AS up_votes,
+            COUNT(is_up_vote) AS votes
+        FROM
+            rating_reviews
+        WHERE
+            rating_id = OLD.rating_id
+            AND user_id = OLD.user_id)
+    UPDATE
+        location_ratings
+    SET
+        up_votes = ratings_ratio.up_votes,
         down_votes = ratings_ratio.votes - ratings_ratio.up_votes
-    FROM ratings_ratio
-    WHERE rating_id = OLD.rating_id;
+    FROM
+        ratings_ratio
+    WHERE
+        rating_id = OLD.rating_id;
     RETURN old;
 END;
 $$
@@ -209,3 +257,4 @@ CREATE TRIGGER delete_rating_review_tgr
     AFTER DELETE ON rating_reviews
     FOR EACH ROW
     EXECUTE PROCEDURE delete_rating_review ();
+
