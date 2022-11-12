@@ -30,3 +30,18 @@ services:
     App\Factory\NormalizerFactory:
         arguments: [ !tagged serializer.normalizer ]
         public: true
+    App\Controller\ApiController:
+        calls:
+            - setLogger: ['@logger']
+    App\Controller\AppInfoController:
+        parent: App\Controller\ApiController
+    App\Controller\EventController:
+        parent: App\Controller\ApiController
+    App\Controller\GroupController:
+        parent: App\Controller\ApiController
+    App\Controller\PlaceController:
+        parent: App\Controller\ApiController
+    App\Controller\SecurityController:
+        parent: App\Controller\ApiController
+    App\Controller\UserController:
+        parent: App\Controller\ApiController
