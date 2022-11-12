@@ -56,6 +56,11 @@ class ApiController extends AbstractController
         return $this->setStatusCode(401)->respondWithError('MISSING_AUTH', $message);
     }
 
+    public function respondUnauthorized(string $message = 'Unauthorized.'): JsonResponse
+    {
+        return $this->setStatusCode(401)->respondWithError('UNAUTHORIZED', $message);
+    }
+
     public function respondNotFound(string $message = 'Resource not found.'): JsonResponse
     {
         return $this->setStatusCode(404)->response(['message' => $message]);
