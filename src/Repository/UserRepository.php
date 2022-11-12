@@ -10,6 +10,7 @@ use Doctrine\DBAL\Exception\DriverException;
 class UserRepository extends BaseRepository implements UserRepositoryInterface
 {
     private Connection $connection;
+    private string $tableName = 'app_owner.users';
 
     public function __construct(Connection $connection)
     {
@@ -20,10 +21,11 @@ class UserRepository extends BaseRepository implements UserRepositoryInterface
      * @throws DriverException
      * @throws EntityNotFoundException
      * @throws DbalException
+     * @throws UniqueConstraintViolationException
      */
     public function findOrFail(string $identifier): User
     {
-        $sql = "SELECT * FROM app_owner.users WHERE username = :username";
+        $sql = "SELECT * FROM ' . $this->tableName . ' WHERE email = :username";
         try {
             $statement = $this->connection->prepare($sql);
             $statement->bindValue('username', $identifier);
@@ -33,17 +35,48 @@ class UserRepository extends BaseRepository implements UserRepositoryInterface
         }
         $data = $result->fetchAssociative();
         if ($data !== false) {
-            // TODO: Replace password hash and roles in below statement with db values
             return new User(
                 $data['user_id'],
                 $data['first_name'],
                 $data['last_name'],
-                $identifier,
-                '$2y$13$ZGORNacvE1FwJxId3hNKIe5jlx1GR57antmza.kRr9lmmYQ6gc3J2',
+                $data['email'],
+                $data['password'],
+                $data['phone_number_prefix'],
+                $data['phone_number'],
+                $data['description'],
                 ['ROLE_USER']
             );
         } else {
             throw new EntityNotFoundException();
+        }
+    }
+
+    /**
+     * @throws DriverException
+     * @throws EntityNotFoundException
+     * @throws DbalException
+     * @throws UniqueConstraintViolationException
+     */
+    public function add(User $user): void
+    {
+        $sql = "INSERT INTO " . $this->tableName .
+        " (username, email, password, first_name, last_name, phone_number_prefix, phone_number, location_sharing_mode, description)
+        VALUES
+        (:username, :email, :password, :firstName, :lastName, :phonePrefix, :phone, :locationSharingMode, :description)";
+        try {
+            $statement = $this->connection->prepare($sql);
+            $statement->bindValue('username', $user->getUserIdentifier());
+            $statement->bindValue('email', $user->getUserIdentifier());
+            $statement->bindValue('password', $user->getPassword());
+            $statement->bindValue('firstName', $user->getFirstName());
+            $statement->bindValue('lastName', $user->getLastName());
+            $statement->bindValue('phonePrefix', $user->getPhonePrefix());
+            $statement->bindValue('phone', $user->getPhone());
+            $statement->bindValue('locationSharingMode', 1);
+            $statement->bindValue('description', $user->getDescription());
+            $statement->executeQuery();
+        } catch (DriverException $e) {
+            $this->handleDriverException($e);
         }
     }
 }

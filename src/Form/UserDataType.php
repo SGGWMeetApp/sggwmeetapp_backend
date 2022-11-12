@@ -13,6 +13,7 @@ class UserDataType extends AbstractType
         $builder
             ->add('firstName', TextType::class)
             ->add('lastName', TextType::class)
+            ->add('phoneNumberPrefix', TextType::class)
             ->add('phoneNumber', TextType::class)
             ->add('description', TextType::class)
         ;

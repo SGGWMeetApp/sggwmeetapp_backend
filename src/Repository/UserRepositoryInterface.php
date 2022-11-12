@@ -12,4 +12,6 @@ interface UserRepositoryInterface
      * @return User
      */
     public function findOrFail(string $identifier): User;
+
+    public function add(User $user): void;
 }

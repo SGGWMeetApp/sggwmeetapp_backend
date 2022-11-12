@@ -17,8 +17,11 @@ class User implements UserInterface, EquatableInterface, PasswordAuthenticatedUs
     private string  $email;
     private string  $password;
     private array   $roles;
+    private string  $phonePrefix;
+    private string  $phone;
+    private ?string $description;
 
-    public function __construct($id, $firstName, $lastName, $email, $password, $roles)
+    public function __construct($id, $firstName, $lastName, $email, $password, $phonePrefix, $phone, $description, $roles)
     {
         $this->id = $id;
         $this->firstName = $firstName;
@@ -26,6 +29,9 @@ class User implements UserInterface, EquatableInterface, PasswordAuthenticatedUs
         $this->email = $email;
         $this->password = $password;
         $this->roles = $roles;
+        $this->phonePrefix = $phonePrefix;
+        $this->phone = $phone;
+        $this->description = $description;
     }
 
     /**
@@ -123,12 +129,29 @@ class User implements UserInterface, EquatableInterface, PasswordAuthenticatedUs
         $this->lastName = $lastName;
     }
 
-    /**
-     * @param string $password
-     */
     public function setPassword(string $password): void
     {
         $this->password = $password;
+    }
+
+    public function getEmail(): string
+    {
+        return $this->email;
+    }
+
+    public function getPhonePrefix(): string
+    {
+        return $this->phonePrefix;
+    }
+
+    public function getPhone(): string
+    {
+        return $this->phone;
+    }
+
+    public function getDescription(): ?string
+    {
+        return $this->description;
     }
 
 }

@@ -45,7 +45,16 @@ class PlaceReviewNormalizer implements NormalizerInterface, DenormalizerInterfac
         switch ($type) {
             case 'PlaceReview':
                 // TODO: Update this user initialization when db gets updated (password + roles)
-                $user = new User($data['user_id'], $data['first_name'], $data['last_name'], $data['username'], '...', ['ROLE_USER']);
+                $user = new User(
+                    $data['user_id'],
+                    $data['first_name'],
+                    $data['last_name'],
+                    $data['email'],
+                    $data['password'],
+                    $data['phone_number_prefix'],
+                    $data['phone_number'],
+                    $data['description'],
+                    ['ROLE_USER']);
                 $placeReview = new PlaceReview(
                     $data['location_id'],
                     $user,
