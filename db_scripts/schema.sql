@@ -137,7 +137,7 @@ BEGIN
     WITH ratings AS (SELECT SUM(is_positive::int) AS positives, COUNT(rating_id) AS ratings_num FROM location_ratings WHERE location_id = NEW.location_id)
     UPDATE locations
     SET ratings_number = ratings.positives,
-        rating_pct = (ratings.positives / ratings.ratings_num) * 100
+        rating_pct = ROUND((ratings.positives / ratings.ratings_num) * 100,2)
     FROM ratings
     WHERE location_id = NEW.location_id;
     RETURN new;
@@ -157,7 +157,7 @@ BEGIN
     WITH ratings AS (SELECT SUM(is_positive::int) AS positives, COUNT(rating_id) AS ratings_num FROM location_ratings WHERE location_id = OLD.location_id)
     UPDATE locations
     SET ratings_number = ratings.positives,
-        rating_pct = (ratings.positives / ratings.ratings_num) * 100
+        rating_pct = ROUND((ratings.positives / ratings.ratings_num) * 100,2)
     FROM ratings
     WHERE location_id = OLD.location_id;
     RETURN old;
