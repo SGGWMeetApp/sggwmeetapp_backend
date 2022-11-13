@@ -33,7 +33,7 @@ group_get_events:
     methods: GET
 event_create:
     path: /api/events
-    controller: App\Controller\EventController::createPublicEventAction
+    controller: App\Controller\EventController::createPublicEvent
     methods: POST
 group_create_event:
     path: /api/groups/{group_id}/events
