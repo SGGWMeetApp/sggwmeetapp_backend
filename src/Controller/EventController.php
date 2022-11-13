@@ -5,9 +5,11 @@ namespace App\Controller;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 
-class EventController extends ApiController {
+class EventController extends ApiController
+{
 
-    public function getPublicEventsAction(Request $request): JsonResponse {
+    public function getPublicEventsAction(Request $request): JsonResponse
+    {
 
         // 1. Get filters from request (converted to filters object)
 
@@ -48,7 +50,8 @@ class EventController extends ApiController {
         ]]);
     }
 
-    public function createPublicEventAction(Request $request): JsonResponse {
+    public function createPublicEventAction(Request $request): JsonResponse
+    {
         // get data from request
 
         // add event to database
@@ -72,7 +75,8 @@ class EventController extends ApiController {
         ]);
     }
 
-    public function updateEventAction(Request $request): JsonResponse {
+    public function updateEventAction(Request $request): JsonResponse
+    {
         // check if can edit (only author)
 
         // edit event
@@ -96,7 +100,8 @@ class EventController extends ApiController {
         ]);
     }
 
-    public function getUpcomingEventsAction(): JsonResponse {
+    public function getUpcomingEventsAction(): JsonResponse
+    {
         // get events where startDate < sysdate + 1 week
 
         // return events

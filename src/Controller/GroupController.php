@@ -6,9 +6,11 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 
 
-class GroupController extends ApiController {
+class GroupController extends ApiController
+{
 
-    public function getGroupPrivateEventsAction(int $group_id): JsonResponse {
+    public function getGroupPrivateEventsAction(int $group_id): JsonResponse
+    {
         return $this->response(["events" => [
             [
                 "id" => 1,
@@ -29,7 +31,8 @@ class GroupController extends ApiController {
         ]]);
     }
 
-    public function createPrivateEventAction(Request $request): JsonResponse {
+    public function createGroupPrivateEventAction(Request $request): JsonResponse
+    {
         // get data from request
 
         // add event to database
