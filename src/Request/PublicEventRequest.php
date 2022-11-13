@@ -31,8 +31,8 @@ class PublicEventRequest
     public $description;
 
     /**
-     * @Assert\Type("\DateTimeType")
-     * @var DateTimeType
+     * @Assert\Type("string")
+     * @var string
      */
     public $startDate;
 }

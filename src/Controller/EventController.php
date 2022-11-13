@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Repository\EntityNotFoundException;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Monolog\DateTimeImmutable;
 use App\Model\PublicEvent;
 use App\Repository\PublicEventRepositoryInterface;
 use App\Repository\UniqueConstraintViolationException;
@@ -97,8 +98,9 @@ class EventController extends ApiController {
         } catch (EntityNotFoundException $e) {
             return $this->respondInternalServerError($e);
         }
-        
-        $publicEvent = new PublicEvent(null, $addPublicEvent->name,$addPublicEvent->locationId,$addPublicEvent->description, $addPublicEvent->startDate ,$user);
+        $hardDate = new DateTimeImmutable("2005-08-15T15:52:01+00:00");  #zwykły DateTime tez nie działał z data na sztywno może dlatego DateTimeType nie puszczał w form????? 
+        #Jest DateTimeImmutableType zeby dodac do forma???
+        $publicEvent = new PublicEvent(null, $addPublicEvent->name,$addPublicEvent->locationId,$addPublicEvent->description, $hardDate,$user);
         
         #startDate zly format
         #$publicEvent = new PublicEvent(null, $requestData['name'],$requestData['locationId'],$requestData['description'], $requestData['startDate'] ,$user);
