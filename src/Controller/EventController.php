@@ -12,6 +12,8 @@ use App\Repository\UserRepositoryInterface;
 use App\Request\PublicEventRequest;
 use App\Response\PublicEventResponse;
 use App\Serializer\PublicEventNormalizer;
+use App\Form\PublicEventType;
+use App\Exception\FormException;
 
 class EventController extends ApiController {
 
@@ -82,30 +84,45 @@ class EventController extends ApiController {
     public function createPublicEvent(
         Request $request,
         UserRepositoryInterface $userRepository,
-        PublicEventRepositoryInterface $publicEventRepository   #<- o tooo mi błedem rzuca
+        PublicEventRepositoryInterface $publicEventRepository   
     ): JsonResponse
     {
         $requestData = json_decode($request->getContent(),true);
-
-
+        $addPublicEvent = new PublicEventRequest();
+        $this->handlePublicEventRequest($addPublicEvent,$requestData);
+        
         $jwtUser = $this->getUser();
         try {
             $user = $userRepository->findOrFail($jwtUser->getUserIdentifier());
         } catch (EntityNotFoundException $e) {
             return $this->respondInternalServerError($e);
         }
-        $publicEvent = new PublicEvent(null, $requestData['locationId'],$requestData['description'], $requestData['startDate'] ,$user);
+        
+        $publicEvent = new PublicEvent(null, $addPublicEvent->name,$addPublicEvent->locationId,$addPublicEvent->description, $addPublicEvent->startDate ,$user);
+        
+        #startDate zly format
+        #$publicEvent = new PublicEvent(null, $requestData['name'],$requestData['locationId'],$requestData['description'], $requestData['startDate'] ,$user);
         try {
             $publicEventRepository->add($publicEvent);
         } catch (UniqueConstraintViolationException $e) {
+            
             return match ($e->getViolatedConstraint()) {
                 'rating_unq_inx' => $this->setStatusCode(409)
-                    ->respondWithError('BAD_REQUEST', 'Rating by this user already exists for this place.'),
+                    ->respondWithError('BAD_REQUEST', 'Nie wiem co wpisac na razie.'),
                 default => $this->setStatusCode(409)
                     ->respondWithError('BAD_REQUEST', $e->getMessage()),
             };
         }
         return new PublicEventResponse($publicEvent);
+    }
+
+    private function handlePublicEventRequest(PublicEventRequest $request, mixed $requestData): void
+    {
+        $form = $this->createForm(PublicEventType::class, $request);
+        $form->submit($requestData);
+        if (!$form->isValid()) {
+            throw new FormException($form);
+        }
     }
 
     public function updateEventAction(Request $request): JsonResponse {
