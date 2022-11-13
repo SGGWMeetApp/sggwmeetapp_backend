@@ -85,7 +85,7 @@ CREATE TABLE events (
     event_id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     group_id integer NULL,
     location_id integer NOT NULL,
-    start_date timestamp with time zone NOT NULL,
+    start_date timestamp NOT NULL,
     name varchar(255) NOT NULL,
     description text NULL,
     is_public boolean NOT NULL DEFAULT FALSE,
