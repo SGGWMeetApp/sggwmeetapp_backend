@@ -1,7 +1,6 @@
 <?php
 
 namespace App\Repository;
-namespace App\Security;
 
 use App\Model\PublicEvent;
 use App\Serializer\PublicEventNormalizer;
@@ -14,7 +13,7 @@ use Symfony\Polyfill\Intl\Icu\Exception\NotImplementedException;
 class PublicEventRepository extends BaseRepository implements PublicEventRepositoryInterface
 {
     private Connection $connection;
-    private PublicEventNormalizer $publicEvnetNormalizer;
+    private PublicEventNormalizer $publicEventNormalizer;
     private string $tableName = 'app_owner.events';
 
     /**
@@ -25,9 +24,6 @@ class PublicEventRepository extends BaseRepository implements PublicEventReposit
         $this->connection = $connection;
         $this->publicEventNormalizer = new PublicEventNormalizer();
     }
-
-    
-
 
     public function add(PublicEvent $publicEvent): void
     {

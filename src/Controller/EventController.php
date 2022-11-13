@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Repository\EntityNotFoundException;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use App\Model\PublicEvent;
@@ -82,34 +83,30 @@ class EventController extends ApiController {
         Request $request,
         UserRepositoryInterface $userRepository,
         PublicEventRepositoryInterface $publicEventRepository   #<- o tooo mi błedem rzuca
-       
-        ): JsonResponse
-        {
-            $requestData = json_decode($request->getContent(),true);
-            
-            
-            $jwtUser = $this->getUser();
-            try {
-                $user = $userRepository->findOrFail($jwtUser->getUserIdentifier());
-            } catch (EntityNotFoundException $e) {
-                return $this->respondInternalServerError($e);
-            }
-            $publicEvent = new PublicEvent(null, $requestData['locationId'],$requestData['description'], $requestData['startDate'] ,$user);
-            try {
-                $publicEventRepository->add($publicEvent);
-            } catch (UniqueConstraintViolationException $e) {
-                return match ($e->getViolatedConstraint()) {
-                    'rating_unq_inx' => $this->setStatusCode(409)
-                        ->respondWithError('BAD_REQUEST', 'Rating by this user already exists for this place.'),
-                    default => $this->setStatusCode(409)
-                        ->respondWithError('BAD_REQUEST', $e->getMessage()),
-                };
-            }
-            return new PublicEventResponse($publicEvent);
+    ): JsonResponse
+    {
+        $requestData = json_decode($request->getContent(),true);
+
+
+        $jwtUser = $this->getUser();
+        try {
+            $user = $userRepository->findOrFail($jwtUser->getUserIdentifier());
+        } catch (EntityNotFoundException $e) {
+            return $this->respondInternalServerError($e);
         }
-    
-
-
+        $publicEvent = new PublicEvent(null, $requestData['locationId'],$requestData['description'], $requestData['startDate'] ,$user);
+        try {
+            $publicEventRepository->add($publicEvent);
+        } catch (UniqueConstraintViolationException $e) {
+            return match ($e->getViolatedConstraint()) {
+                'rating_unq_inx' => $this->setStatusCode(409)
+                    ->respondWithError('BAD_REQUEST', 'Rating by this user already exists for this place.'),
+                default => $this->setStatusCode(409)
+                    ->respondWithError('BAD_REQUEST', $e->getMessage()),
+            };
+        }
+        return new PublicEventResponse($publicEvent);
+    }
 
     public function updateEventAction(Request $request): JsonResponse {
         // check if can edit (only author)

@@ -1,7 +1,8 @@
 <?php
 
 namespace App\Model;
-namespace App\Security;
+
+use App\Security\User;
 
 class PublicEvent
 {
@@ -9,7 +10,7 @@ class PublicEvent
     private string $name;
     private ?string $description;
     private GeoLocation $geoLocation;
-    private data $startDate;
+    private \DateTimeInterface $startDate;
     private User $author;
     private bool $canEdit;
 
@@ -18,11 +19,11 @@ class PublicEvent
      * @param string $name
      * @param GeoLocation $geoLocation
      * @param string|null $description
-     * @param data $startDate
+     * @param \DateTimeInterface $startDate
      * @param User $author
      * @param bool $canEdit
      */
-    public function __construct(?int $id, string $name, GeoLocation $geoLocation, ?string $description, data $startDate, User $author, bool $canEdit=true)
+    public function __construct(?int $id, string $name, GeoLocation $geoLocation, ?string $description, \DateTimeInterface $startDate, User $author, bool $canEdit=true)
     {
         $this->id = $id;
         $this->name = $name;
@@ -57,12 +58,12 @@ class PublicEvent
         $this->description = $description;
     }
 
-    public function getStartDate(): date
+    public function getStartDate(): \DateTimeInterface
     {
         return $this->startDate;
     }
 
-    public function setStartDate(date $startDate): void
+    public function setStartDate(\DateTimeInterface $startDate): void
     {
         $this->startDate =$startDate;
     }
@@ -81,11 +82,5 @@ class PublicEvent
     {
         return $this->canEdit;
     }
-
-   
-
-
-
-    
 
 }

@@ -10,8 +10,6 @@ interface PublicEventRepositoryInterface
      /**
      * @throws EntityNotFoundException
      */
-
-
     public function add(PublicEvent $publicEvent): void;
 
     public function update(PublicEvent $publicEvent): void;
