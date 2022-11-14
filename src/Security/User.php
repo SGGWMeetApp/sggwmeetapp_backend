@@ -2,6 +2,7 @@
 
 namespace App\Security;
 
+use App\Model\UserGroup;
 use Symfony\Component\Security\Core\User\EquatableInterface;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
@@ -20,8 +21,9 @@ class User implements UserInterface, EquatableInterface, PasswordAuthenticatedUs
     private string  $phonePrefix;
     private string  $phone;
     private ?string $description;
+    private array $userGroups;
 
-    public function __construct($id, $firstName, $lastName, $email, $password, $phonePrefix, $phone, $description, $roles)
+    public function __construct($id, $firstName, $lastName, $email, $password, $phonePrefix, $phone, $description, $roles, $userGroups)
     {
         $this->id = $id;
         $this->firstName = $firstName;
@@ -32,6 +34,31 @@ class User implements UserInterface, EquatableInterface, PasswordAuthenticatedUs
         $this->phonePrefix = $phonePrefix;
         $this->phone = $phone;
         $this->description = $description;
+        $this->userGroups[] = $userGroups;
+    }
+
+    /**
+     * @return array
+     */
+    public function getUserGroups(): array
+    {
+        return $this->userGroups;
+    }
+
+    /**
+     * @param array $userGroups
+     */
+    public function setUserGroups(array $userGroups): void
+    {
+        $this->userGroups = $userGroups;
+    }
+
+    /**
+     * @param UserGroup $userGroup
+     */
+    public function addGroup(UserGroup $userGroup): void
+    {
+        $this->userGroups[] = $userGroup;
     }
 
     /**

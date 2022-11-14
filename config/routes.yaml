@@ -29,7 +29,7 @@ place_get_events:
     methods: GET
 group_get_events:
     path: /api/groups/{group_id}/events
-    controller: App\Controller\GroupController::getGroupPrivateEventsAction
+    controller: App\Controller\UserGroupController::getGroupPrivateEventsAction
     methods: GET
 event_create:
     path: /api/events
@@ -37,7 +37,7 @@ event_create:
     methods: POST
 group_create_event:
     path: /api/groups/{group_id}/events
-    controller: App\Controller\GroupController::createPrivateEventAction
+    controller: App\Controller\UserGroupController::createPrivateEventAction
     methods: POST
 event_update:
     path: /api/events/{event_id}
@@ -69,27 +69,27 @@ place_review_assessment_votes:
     methods: POST
 groups_get_all:
     path: /api/groups
-    controller: App\Controller\GroupController::getGroups
+    controller: App\Controller\UserGroupController::getGroups
     methods: GET
 create_group:
     path: /api/groups
-    controller: App\Controller\GroupController::CreateGroup
+    controller: App\Controller\UserGroupController::createGroup
     methods: POST
 group_users_get_all:
     path: /api/groups/{group_id}/users
-    controller: App\Controller\GroupController::getGroupUsers
+    controller: App\Controller\UserGroupController::getGroupUsers
     requirements:
         place_id: '\d+'
     methods: GET
 add_user_to_group:
     path: /api/groups/{group_id}/users
-    controller: App\Controller\GroupController::addGroupUser
+    controller: App\Controller\UserGroupController::addGroupUser
     requirements:
         group_id: '\d+'
     methods: POST
 leave_group:
     path: /api/groups/{group_id}/users
-    controller: App\Controller\GroupController::leaveGroup
+    controller: App\Controller\UserGroupController::leaveGroup
     requirements:
         group_id: '\d+'
     methods: DELETE
@@ -111,14 +111,14 @@ edit_user_data:
     methods: PATCH
 enable_event_notifications:
     path: /api/groups/{group_id}/events/{event_id}/notifications
-    controller: App\Controller\GroupController::enableGroupEventNotifications
+    controller: App\Controller\UserGroupController::enableGroupEventNotifications
     requirements:
         group_id: '\d+'
         event_id: '\d+'
     methods: POST
 leave_group_event:
     path: /api/groups/{group_id}/events/{event_id}
-    controller: App\Controller\GroupController::leaveGroupEvent
+    controller: App\Controller\UserGroupController::leaveGroupEvent
     requirements:
         group_id: '\d+'
         event_id: '\d+'

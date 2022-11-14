@@ -2,11 +2,20 @@
 
 namespace App\Controller;
 
+use App\Exception\FormException;
+use App\Form\UserGroupDataType;
+use App\Model\UserGroup;
+use App\Repository\UniqueConstraintViolationException;
+use App\Repository\UserRepositoryInterface;
+use App\Repository\EntityNotFoundException;
+use App\Repository\UserGroupRepositoryInterface;
+use App\Request\CreateUserGroupRequest;
+use App\Response\UserGroupResponse;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 
 
-class GroupController extends ApiController
+class UserGroupController extends ApiController
 {
 
     public function getGroupPrivateEventsAction(int $group_id): JsonResponse
@@ -77,15 +86,42 @@ class GroupController extends ApiController
     }
 
 
-    public function CreateGroup(Request $request): JsonResponse
+    public function createGroup(
+        Request $request,
+        UserGroupRepositoryInterface $userGroupRepository,
+        UserRepositoryInterface $userRepository
+    ): JsonResponse
     {
         $requestData = json_decode($request->getContent(),true);
+        $userGroupRequest = new CreateUserGroupRequest();
+        $this->handleCreateGroupRequest($userGroupRequest, $requestData);
+        $jwtUser = $this->getUser();
+        try {
+            $user = $userRepository->findOrFail($jwtUser->getUserIdentifier());
+        } catch (EntityNotFoundException $e) {
+            return $this->respondInternalServerError($e);
+        }
 
-        return $this->response([
-            "id"=> "1",
-            "name"=> $requestData['name']
-        ]);
+        $userGroup = new UserGroup(null, $userGroupRequest->name, $user);
+        try {
+            $groupId = $userGroupRepository->add($userGroup);
+            $userGroup->setGroupId($groupId);
+        } catch(\Exception $e) {
+
+        }
+
+        return new UserGroupResponse($userGroup);
     }
+
+    private function handleCreateGroupRequest(CreateUserGroupRequest $request, mixed $requestData): void
+    {
+        $form = $this->createForm(UserGroupDataType::class, $request);
+        $form->submit($requestData);
+        if (!$form->isValid()) {
+            throw new FormException($form);
+        }
+    }
+
 
     public function getGroups(Request $request): JsonResponse
     {
