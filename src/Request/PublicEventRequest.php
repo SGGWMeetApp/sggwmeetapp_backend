@@ -31,6 +31,7 @@ class PublicEventRequest
     public $description;
 
     /**
+     * @Assert\NotNull()
      * @Assert\Type("\DateTime")
      */
     public $startDate;
