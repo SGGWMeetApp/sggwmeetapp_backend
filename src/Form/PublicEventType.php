@@ -16,7 +16,7 @@ class PublicEventType extends AbstractType
             ->add('name', TextType::class)
             ->add('locationId', TextType::class)
             ->add('description', TextType::class)
-            ->add('startDate', TextType::class)
+            ->add('startDate', JsonDateTimeType::class)
         ;
     }
 
