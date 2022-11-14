@@ -13,7 +13,7 @@ interface UserGroupRepositoryInterface
 
     public function findAll(): array;
 
-    public function add(UserGroup $userGroup): int;
+    public function add(UserGroup $userGroup): void;
 
     public function update(UserGroup $userGroup): void;
 

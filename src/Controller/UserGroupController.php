@@ -104,10 +104,9 @@ class UserGroupController extends ApiController
 
         $userGroup = new UserGroup(null, $userGroupRequest->name, $user);
         try {
-            $groupId = $userGroupRepository->add($userGroup);
-            $userGroup->setGroupId($groupId);
-        } catch(\Exception $e) {
-
+            $userGroupRepository->add($userGroup);
+        } catch(UniqueConstraintViolationException $e) {
+            return $this->respondWithError('BAD_REQUEST', $e->getMessage());
         }
 
         return new UserGroupResponse($userGroup);
@@ -123,8 +122,18 @@ class UserGroupController extends ApiController
     }
 
 
-    public function getGroups(Request $request): JsonResponse
+    public function getGroups(
+        UserGroupRepositoryInterface $userGroupRepository,
+        UserRepositoryInterface $userRepository
+    ): JsonResponse
     {
+        $jwtUser = $this->getUser();
+        try {
+            $user = $userRepository->findOrFail($jwtUser->getUserIdentifier());
+        } catch (EntityNotFoundException $e) {
+            return $this->respondInternalServerError($e);
+        }
+
         return $this->response(['groups' => [
             [
                 "id" => 1,
@@ -136,7 +145,6 @@ class UserGroupController extends ApiController
                     "isUserAdmin"=> true
                 ],
                 "incomingEventsCount"=> 5
-
             ],
             [
                 "id" => 2,

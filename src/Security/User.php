@@ -23,7 +23,7 @@ class User implements UserInterface, EquatableInterface, PasswordAuthenticatedUs
     private ?string $description;
     private array $userGroups;
 
-    public function __construct($id, $firstName, $lastName, $email, $password, $phonePrefix, $phone, $description, $roles, $userGroups)
+    public function __construct($id, $firstName, $lastName, $email, $password, $phonePrefix, $phone, $description, $roles, $userGroups=[])
     {
         $this->id = $id;
         $this->firstName = $firstName;

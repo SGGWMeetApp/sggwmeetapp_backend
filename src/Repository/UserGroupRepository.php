@@ -15,6 +15,7 @@ class UserGroupRepository extends BaseRepository implements UserGroupRepositoryI
     private Connection $connection;
     private UserGroupNormalizer $userGroupNormalizer;
     private string $tableName = 'app_owner.user_groups';
+    private string $joinedTableName = 'app_owner.users_user_groups';
 
     /**
      * @param Connection $connection
@@ -68,20 +69,30 @@ class UserGroupRepository extends BaseRepository implements UserGroupRepositoryI
      * @throws DbalException
      * @throws UniqueConstraintViolationException
      */
-    public function add(UserGroup $userGroup): int
+    public function add(UserGroup $userGroup): void
     {
         $sql = 'INSERT INTO ' . $this->tableName .
             '(name, owner_id)
-            VALUES(:name, :owner_id)';
+            VALUES(:name, :owner_id) 
+            RETURNING group_id';
+
+        $sqlJoined = 'INSERT INTO ' . $this->joinedTableName .
+            '(user_id, group_id)
+            VALUES(:user_id, :group_id)';
 
         try {
             $statement = $this->connection->prepare($sql);
             $statement->bindValue('name', $userGroup->getName());
             $statement->bindValue('owner_id', $userGroup->getOwner()->getId(), ParameterType::INTEGER);
-            $statement->executeQuery();
+            $result = $statement->executeQuery();
 
-            $groupId = $this->connection->lastInsertId();
-            // TODO: add data to join table
+            $groupId = $result->fetchAssociative()["group_id"];
+            $userGroup->setGroupId($groupId);
+
+            $statement = $this->connection->prepare($sqlJoined);
+            $statement->bindValue('user_id', $userGroup->getOwner()->getId(), ParameterType::INTEGER);
+            $statement->bindValue('group_id', $userGroup->getGroupId());
+            $statement->executeQuery();
 
         } catch (DbalException\DriverException $e) {
             $this->handleDriverException($e);
