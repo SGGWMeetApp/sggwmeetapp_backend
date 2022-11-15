@@ -5,7 +5,6 @@ namespace App\Controller;
 use App\Repository\EntityNotFoundException;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
-use Monolog\DateTimeImmutable;
 use App\Model\PublicEvent;
 use App\Repository\PublicEventRepositoryInterface;
 use App\Repository\UniqueConstraintViolationException;
@@ -59,29 +58,7 @@ class EventController extends ApiController {
         ]]);
     }
 
-    public function createPublicEventAction(Request $request): JsonResponse {
-        // get data from request
 
-        // add event to database
-
-        // return event
-        return $this->response([
-            "id" => 1,
-            "name" => "Planszówki",
-            "description" => "Zapraszamy na świąteczną edycję planszówek! Wybierz jedną z setek gier i baw się razem z nami!",
-            "startDate" => "2022-12-23T18:30:00.000Z",
-            "locationData" => [
-                "name" => "Dziekanat 161"
-            ],
-            "author" => [
-                "firstName" => "Joanna",
-                "lastName" => "Nowak",
-                "email" => "joanna.nowak@email.com"
-            ],
-            "canEdit" => true,
-            "notification24hEnabled" => true
-        ]);
-    }
     public function createPublicEvent(
         Request $request,
         UserRepositoryInterface $userRepository,
@@ -98,12 +75,8 @@ class EventController extends ApiController {
         } catch (EntityNotFoundException $e) {
             return $this->respondInternalServerError($e);
         }
-        $hardDate = new DateTimeImmutable("2005-08-15T15:52:01+00:00");  #zwykły DateTime tez nie działał z data na sztywno może dlatego DateTimeType nie puszczał w form????? 
-        #Jest DateTimeImmutableType zeby dodac do forma???
-        $publicEvent = new PublicEvent(null, $addPublicEvent->name,$addPublicEvent->locationId,$addPublicEvent->description, $hardDate,$user);
-        
-        #startDate zly format
-        #$publicEvent = new PublicEvent(null, $requestData['name'],$requestData['locationId'],$requestData['description'], $requestData['startDate'] ,$user);
+        $publicEvent = new PublicEvent(null, $addPublicEvent->name,$addPublicEvent->locationId,$addPublicEvent->description, $addPublicEvent->startDate,$user);
+
         try {
             $publicEventRepository->add($publicEvent);
         } catch (UniqueConstraintViolationException $e) {
@@ -149,6 +122,42 @@ class EventController extends ApiController {
             "canEdit" => true,
             "notification24hEnabled" => true
         ]);
+    }
+
+    public function updateEvent( Request $request, int $event_id,
+        UserRepositoryInterface $userRepository,
+        PublicEventRepositoryInterface $publicEventRepository   
+    ): JsonResponse 
+    {
+        $requestData = json_decode($request->getContent(),true);
+        $updataPublicEvent = new PublicEventRequest();
+        $this->handlePublicEventRequest($updataPublicEvent,$requestData);
+
+        $jwtUser = $this->getUser();
+        try {
+            $user = $userRepository->findOrFail($jwtUser->getUserIdentifier());
+        } catch (EntityNotFoundException $e) {
+            return $this->respondInternalServerError($e);
+        }
+        try {
+             $publicEvent = $publicEventRepository ->findOrFail($event_id);
+        } catch (EntityNotFoundException) {
+             return $this->respondNotFound();
+        }
+        
+        $newpublicEvent = new PublicEvent($event_id, $updataPublicEvent->name,$updataPublicEvent->locationId,$updataPublicEvent->description, $updataPublicEvent->startDate,$user);
+        try {
+            $publicEventRepository->update($publicEvent);
+        } catch (UniqueConstraintViolationException $e) {
+            
+            return match ($e->getViolatedConstraint()) {
+                'rating_unq_inx' => $this->setStatusCode(409)
+                    ->respondWithError('BAD_REQUEST', 'Nie wiem co wpisac na razie.'),
+                default => $this->setStatusCode(409)
+                    ->respondWithError('BAD_REQUEST', $e->getMessage()),
+            };
+        }
+        return new PublicEventResponse($publicEvent);
     }
 
     public function getUpcomingEventsAction(): JsonResponse {

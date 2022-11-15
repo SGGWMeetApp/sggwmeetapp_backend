@@ -10,6 +10,10 @@ interface PublicEventRepositoryInterface
      /**
      * @throws EntityNotFoundException
      */
+    public function findOrFail(int $eventId): PublicEvent;
+
+    public function findAll(): array;
+
     public function add(PublicEvent $publicEvent): void;
 
     public function update(PublicEvent $publicEvent): void;

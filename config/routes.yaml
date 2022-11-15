@@ -42,6 +42,8 @@ group_create_event:
 event_update:
     path: /api/events/{event_id}
     controller: App\Controller\EventController::updateEventAction
+    requirements:
+        place_id: '\d+'
     methods: PUT
 events_get_upcoming:
     path: /api/events/upcoming

@@ -7,6 +7,7 @@ use App\Model\PublicEvent;
 use Symfony\Component\Serializer\Exception\InvalidArgumentException;
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
+use Monolog\DateTimeImmutable;
 
 class PublicEventNormalizer implements NormalizerInterface, DenormalizerInterface
 {
@@ -23,10 +24,7 @@ class PublicEventNormalizer implements NormalizerInterface, DenormalizerInterfac
             "id" => $object->getId(),
             "name" => $object->getName(),
             "description" =>$object->getDescription(),
-            "geolocation" => [
-                "latitude" => $object->getGeoLocation()->getLatitude(),
-                "longitude" => $object->getGeoLocation()->getLongitude()
-            ],
+            "geolocation" => $object->getLocationID(),
             "startDate" => $object->getStartDate(),
             "author" => $object->getAuthor(),
             "canEdit" => $object->getCanEdit(),
@@ -44,13 +42,13 @@ class PublicEventNormalizer implements NormalizerInterface, DenormalizerInterfac
     public function denormalize(mixed $data, string $type, string $format = null, array $context = []): PublicEvent
     {
         $publicEvent = new PublicEvent(
-            $data['location_id'],
+            $data['event_id'],
             $data['name'],
-            new GeoLocation($data['lat'], $data['long']),
+            $data['location_id'],
             $data['description'],
-            $data['startDate'],
-            $data['author'],
-            $data['canEdit']
+            new DateTimeImmutable($data['start_date']),
+            //$data['author'],
+            $cenEdit=$data['can_edit'] === 'true'? true: false
         );
         
         return $publicEvent ;
