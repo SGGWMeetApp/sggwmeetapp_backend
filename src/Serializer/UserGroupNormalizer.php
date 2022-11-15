@@ -3,6 +3,8 @@
 namespace App\Serializer;
 
 use App\Model\UserGroup;
+use App\Security\User;
+
 use Symfony\Component\Serializer\Exception\InvalidArgumentException;
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
@@ -18,7 +20,15 @@ class UserGroupNormalizer implements NormalizerInterface, DenormalizerInterface
         return [
             "id" => $object->getGroupId(),
             "name" => $object->getName(),
+            "memberCount" => $object->getMemberCount(),
+            "adminData" => [
+                "firstname" => $object->getOwner()->getFirstName(),
+                "lastname" => $object->getOwner()->getLastName(),
+                "isUserAdmin" => true
+            ],
+            "incomingEventsCount" => 1
         ];
+
     }
 
     public function supportsNormalization(mixed $data, string $format = null)
@@ -28,16 +38,20 @@ class UserGroupNormalizer implements NormalizerInterface, DenormalizerInterface
 
     public function denormalize(mixed $data, string $type, string $format = null, array $context = [])
     {
+        $owner = json_decode($data["admin_data"], true);
+
         return new UserGroup(
             $data["group_id"],
-            $data['name']
+            $data['name'],
+            new User(1, $owner[0], 'lastName', 'email', '', 'phonePrefix', 111111111, 'description', ['ROLE_USER']),
+            $data['member_count']
+            //incoming events count
         );
     }
 
-    public function supportsDenormalization(mixed $data, string $type, string $format = null)
+    public function supportsDenormalization(mixed $data, string $type, string $format = null): bool
     {
-
-        // TODO: Implement supportsDenormalization() method.
+        return is_array($data) && $type == 'UserGroup';
     }
 }
 

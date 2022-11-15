@@ -13,18 +13,38 @@ class UserGroup {
     private array $users;
     private array $meetupEvents;
 
+    private int $memberCount;
+
     /**
      * @param ?int $groupId
      * @param string $name
      * @param User $owner
+     * @param int $memberCount
      */
-    public function __construct(?int $groupId, string $name, User $owner)
+    public function __construct(?int $groupId, string $name, User $owner, int $memberCount = 0)
     {
         $this->groupId = $groupId;
         $this->name = $name;
         $this->owner = $owner;
         $this->addUser($owner);
         $this->meetupEvents = [];
+        $this->memberCount = $memberCount;
+    }
+
+    /**
+     * @return int
+     */
+    public function getMemberCount(): int
+    {
+        return $this->memberCount;
+    }
+
+    /**
+     * @param int $memberCount
+     */
+    public function setMemberCount(int $memberCount): void
+    {
+        $this->memberCount = $memberCount;
     }
 
     /**

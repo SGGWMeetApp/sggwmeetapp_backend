@@ -11,8 +11,10 @@ use App\Repository\EntityNotFoundException;
 use App\Repository\UserGroupRepositoryInterface;
 use App\Request\CreateUserGroupRequest;
 use App\Response\UserGroupResponse;
+use App\Serializer\UserGroupNormalizer;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\Serializer\Exception\ExceptionInterface;
 
 
 class UserGroupController extends ApiController
@@ -85,7 +87,6 @@ class UserGroupController extends ApiController
         ]);
     }
 
-
     public function createGroup(
         Request $request,
         UserGroupRepositoryInterface $userGroupRepository,
@@ -121,7 +122,9 @@ class UserGroupController extends ApiController
         }
     }
 
-
+    /**
+     * @throws ExceptionInterface
+     */
     public function getGroups(
         UserGroupRepositoryInterface $userGroupRepository,
         UserRepositoryInterface $userRepository
@@ -129,35 +132,25 @@ class UserGroupController extends ApiController
     {
         $jwtUser = $this->getUser();
         try {
-            $user = $userRepository->findOrFail($jwtUser->getUserIdentifier());
+            $userRepository->findOrFail($jwtUser->getUserIdentifier());
         } catch (EntityNotFoundException $e) {
             return $this->respondInternalServerError($e);
         }
 
-        return $this->response(['groups' => [
-            [
-                "id" => 1,
-                "name" => "WielkieChlopy",
-                "memberCount" => 5, 
-                "adminData"=> [
-                    "firstName"=> "Paweł",
-                    "lastName"=> "Górczewski",
-                    "isUserAdmin"=> true
-                ],
-                "incomingEventsCount"=> 5
-            ],
-            [
-                "id" => 2,
-                "name" => "InformatykaSem1Rok1",
-                "memberCount" => 75, 
-                "adminData"=> [
-                    "firstName"=> "Jan",
-                    "lastName"=> "Kowalski",
-                    "isUserAdmin"=> true
-                ],
-                "incomingEventsCount"=> 0
-            ],
-        ]]);
+        try {
+            $userGroups = $userGroupRepository->findAll();
+        } catch(UniqueConstraintViolationException $e) {
+            return $this->respondWithError('BAD_REQUEST', $e->getMessage());
+        }
+
+        $userGroupNormalizer = new UserGroupNormalizer();
+        $normalizedUserGroups = [];
+        foreach($userGroups as $userGroup ) {
+            $normalizedUserGroups [] = $userGroupNormalizer->normalize($userGroup);
+        }
+
+        return $this->response(['groups' => $normalizedUserGroups]);
+
     }
 
     public function getGroupUsers(int $group_id): JsonResponse

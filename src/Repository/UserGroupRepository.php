@@ -58,13 +58,43 @@ class UserGroupRepository extends BaseRepository implements UserGroupRepositoryI
 
     }
 
+    /**
+     * @throws SerializerExceptionInterface
+     * @throws DriverException
+     * @throws EntityNotFoundException
+     * @throws DbalException
+     * @throws UniqueConstraintViolationException
+     */
     public function findAll(): array
     {
-        // TODO: Implement findAll() method.
+        $sql = '
+            SELECT 
+                ug.group_id,
+                ug.name,
+                (SELECT COUNT(uug.user_id) FROM app_owner.users_user_groups uug WHERE ug.group_id = uug.group_id) AS member_count,
+                ARRAY_TO_JSON(ARRAY(
+                    SELECT
+                        u.first_name
+--                    u.last_name
+                FROM app_owner.users u
+                WHERE u.user_id = ug.owner_id)) AS admin_data
+            FROM ' . $this->tableName . ' ug';
+        try {
+            $statement = $this->connection->prepare($sql);
+            $result = $statement->executeQuery();
+            $userGroups = [];
+            while($data = $result->fetchAssociative()) {
+                $userGroups [] = $this->userGroupNormalizer->denormalize($data, 'UserGroup');
+            }
+            return $userGroups;
+        } catch (DriverException $e) {
+            $this->handleDriverException($e);
+        }
+
     }
 
     /**
-     * @throws DbalException\DriverException
+     * @throws DriverException
      * @throws EntityNotFoundException
      * @throws DbalException
      * @throws UniqueConstraintViolationException
@@ -94,7 +124,7 @@ class UserGroupRepository extends BaseRepository implements UserGroupRepositoryI
             $statement->bindValue('group_id', $userGroup->getGroupId());
             $statement->executeQuery();
 
-        } catch (DbalException\DriverException $e) {
+        } catch (DriverException $e) {
             $this->handleDriverException($e);
         }
 
