@@ -11,44 +11,92 @@ use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 
 class UserGroupNormalizer implements NormalizerInterface, DenormalizerInterface
 {
-
+    /**
+     * @inheritDoc
+     */
     public function normalize(mixed $object, string $format = null, array $context = [])
     {
         if (!$object instanceof UserGroup) {
             throw new InvalidArgumentException('This normalizer only accepts objects of type App\Model\UserGroup');
         }
-        return [
+
+        // TODO: add "isUserAdmin" property
+        $userGroupData = [
             "id" => $object->getGroupId(),
             "name" => $object->getName(),
             "memberCount" => $object->getMemberCount(),
-            "adminData" => [
-                "firstname" => $object->getOwner()->getFirstName(),
-                "lastname" => $object->getOwner()->getLastName(),
-                "isUserAdmin" => true
-            ],
-            "incomingEventsCount" => 1
+            "incomingEventsCount" => $object->getIncomingEventsCount()
+        ];
+
+
+        $normalizedUsers = [];
+        foreach($object->getUsers() as $user) {
+//            $isUserAdmin = $user->getId() == $object->getOwner()
+            $normalizedUsers [] = [
+                'firstName' => $user->getFirstName(),
+                'lastName' => $user->getLastName(),
+                'email' => $user->getUserIdentifier(),
+                'avatarUrl' => ''
+            ];
+        }
+
+        return [
+            ...$userGroupData,
+            "users" => $normalizedUsers
         ];
 
     }
 
+    /**
+     * @inheritDoc
+     */
     public function supportsNormalization(mixed $data, string $format = null)
     {
         return $data instanceof UserGroup;
     }
 
-    public function denormalize(mixed $data, string $type, string $format = null, array $context = [])
+    /**
+     * @inheritDoc
+     */
+    public function denormalize(mixed $data, string $type, string $format = null, array $context = []): UserGroup
     {
-        $owner = json_decode($data["admin_data"], true);
+        $users = json_decode($data["users"]);
 
-        return new UserGroup(
+        $userGroup = new UserGroup(
             $data["group_id"],
             $data['name'],
-            new User(1, $owner[0], 'lastName', 'email', '', 'phonePrefix', 111111111, 'description', ['ROLE_USER']),
-            $data['member_count']
-            //incoming events count
+            null,
+            count($users)
+        //incoming events count
         );
+
+        foreach($users as $userData) {
+            $user = new User(
+                $userData->user_id,
+                $userData->first_name,
+                $userData->last_name,
+                $userData->email,
+                '',
+                $userData->phone_number_prefix,
+                $userData->phone_number,
+                $userData->description,
+//                $userData->location_sharing_mode,
+                ['ROLE_USER']);
+
+            $userGroup->addUser($user);
+
+            if($user->getId() == $data["owner_id"]) {
+                $userGroup->setOwner($user);
+            }
+
+        }
+
+        return $userGroup;
     }
 
+    /**
+     * @inheritDoc
+     */
     public function supportsDenormalization(mixed $data, string $type, string $format = null): bool
     {
         return is_array($data) && $type == 'UserGroup';

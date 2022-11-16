@@ -8,27 +8,42 @@ class UserGroup {
 
     private ?int $groupId;
     private string $name;
-    private User $owner;
+    private ?User $owner;
 
-    private array $users;
-    private array $meetupEvents;
+    private array $users = [];
+    private array $meetupEvents = [];
 
     private int $memberCount;
+    private int $incomingEventsCount = 0;
 
     /**
      * @param ?int $groupId
      * @param string $name
-     * @param User $owner
+     * @param ?User $owner
      * @param int $memberCount
      */
-    public function __construct(?int $groupId, string $name, User $owner, int $memberCount = 0)
+    public function __construct(?int $groupId, string $name, ?User $owner, int $memberCount = 0)
     {
         $this->groupId = $groupId;
         $this->name = $name;
         $this->owner = $owner;
-        $this->addUser($owner);
-        $this->meetupEvents = [];
         $this->memberCount = $memberCount;
+    }
+
+    /**
+     * @return int
+     */
+    public function getIncomingEventsCount(): int
+    {
+        return $this->incomingEventsCount;
+    }
+
+    /**
+     * @param int $incomingEventsCount
+     */
+    public function setIncomingEventsCount(int $incomingEventsCount): void
+    {
+        $this->incomingEventsCount = $incomingEventsCount;
     }
 
     /**

@@ -37,7 +37,7 @@ event_create:
     methods: POST
 group_create_event:
     path: /api/groups/{group_id}/events
-    controller: App\Controller\UserGroupController::createPrivateEventAction
+    controller: App\Controller\UserGroupController::createGroupPrivateEventAction
     methods: POST
 event_update:
     path: /api/events/{event_id}

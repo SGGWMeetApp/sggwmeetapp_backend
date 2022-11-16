@@ -20,6 +20,7 @@ use Symfony\Component\Serializer\Exception\ExceptionInterface;
 class UserGroupController extends ApiController
 {
 
+    // TODO: getGroupPrivateEventsAction
     public function getGroupPrivateEventsAction(int $group_id): JsonResponse
     {
         return $this->response(["events" => [
@@ -42,6 +43,7 @@ class UserGroupController extends ApiController
         ]]);
     }
 
+    //TODO: createGroupPrivateEventAction
     public function createGroupPrivateEventAction(Request $request): JsonResponse
     {
         // get data from request
@@ -67,6 +69,7 @@ class UserGroupController extends ApiController
         ]);
     }
 
+    //TODO: enableGroupEventNotifications
     public function enableGroupEventNotifications(Request $request, int $group_id, int $event_id): JsonResponse
     {
         return $this->response([
@@ -104,13 +107,18 @@ class UserGroupController extends ApiController
         }
 
         $userGroup = new UserGroup(null, $userGroupRequest->name, $user);
+        $userGroup->addUser($user);
+
         try {
             $userGroupRepository->add($userGroup);
         } catch(UniqueConstraintViolationException $e) {
             return $this->respondWithError('BAD_REQUEST', $e->getMessage());
         }
 
-        return new UserGroupResponse($userGroup);
+        return $this->response([
+            "id" => $userGroup->getGroupId(),
+            "name" => $userGroup->getName()
+        ]);
     }
 
     private function handleCreateGroupRequest(CreateUserGroupRequest $request, mixed $requestData): void
@@ -133,93 +141,114 @@ class UserGroupController extends ApiController
         $jwtUser = $this->getUser();
         try {
             $userRepository->findOrFail($jwtUser->getUserIdentifier());
+            $userGroups = $userGroupRepository->findAll();
         } catch (EntityNotFoundException $e) {
             return $this->respondInternalServerError($e);
         }
 
-        try {
-            $userGroups = $userGroupRepository->findAll();
-        } catch(UniqueConstraintViolationException $e) {
-            return $this->respondWithError('BAD_REQUEST', $e->getMessage());
+        $userGroupNormalizer = new UserGroupNormalizer();
+        $normalizedUserGroups = [];
+        foreach($userGroups as $userGroup) {
+            $normalizedUserGroup = $userGroupNormalizer->normalize($userGroup);
+            unset($normalizedUserGroup["users"]);
+            $normalizedUserGroups [] = $normalizedUserGroup;
         }
+
+        // TODO: add adminData key and isUserAdmin
+        return $this->response(["groups" => $normalizedUserGroups]);
+    }
+
+    public function getGroupUsers(
+        int $group_id,
+        UserGroupRepositoryInterface $userGroupRepository,
+        UserRepositoryInterface $userRepository): JsonResponse
+    {
+        $jwtUser = $this->getUser();
+        try {
+            $userRepository->findOrFail($jwtUser->getUserIdentifier());
+            $userGroup = $userGroupRepository->findOrFail($group_id);
+        } catch (EntityNotFoundException $e) {
+            return $this->respondInternalServerError($e);
+        }
+
+        return new UserGroupResponse($userGroup);
+    }
+
+    public function addGroupUser(
+        Request $request,
+        int $group_id,
+        UserGroupRepositoryInterface $userGroupRepository,
+        UserRepositoryInterface $userRepository
+    ): JsonResponse
+    {
+        $requestData = json_decode($request->getContent(),true);
+        $email = $requestData["email"];
+
+        $jwtUser = $this->getUser();
+        try {
+            $userRepository->findOrFail($jwtUser->getUserIdentifier());
+
+            // TODO: change id to email? or create method to find by id
+            $user = $userRepository->findOrFail($email);
+            $userGroup = $userGroupRepository->findOrFail($group_id);
+        } catch (EntityNotFoundException $e) {
+            return $this->respondInternalServerError($e);
+        }
+
+        $userGroup = new UserGroup($userGroup->getGroupId(), $userGroup->getName(), $userGroup->getOwner());
+        $userGroup->addUser($user);
+        $user->addGroup($userGroup);
+
+        try {
+            $userGroupRepository->addGroupUser($userGroup, $user);
+        } catch (UniqueConstraintViolationException $e) {
+                return match ($e->getViolatedConstraint()) {
+                    'users_user_groups_pkey' =>
+                    $this->setStatusCode(409)
+                        ->respondWithError('INVALID_ENTITY', 'User is already in this group.'),
+                default => $this->setStatusCode(409)
+                    ->respondWithError('INVALID_ENTITY', $e->getMessage()),
+            };
+        }
+
+        return $this->response([
+           "id" => $user->getId(),
+            "firstName" => $user->getFirstName(),
+            "lastName" => $user->getLastName(),
+            "email" => $user->getEmail(),
+            "isAdmin" => false
+        ]);
+    }
+
+    public function leaveGroup(
+        Request $request,
+        int $group_id,
+        UserGroupRepositoryInterface $userGroupRepository,
+        UserRepositoryInterface $userRepository
+    ):JsonResponse
+    {
+        $jwtUser = $this->getUser();
+        try {
+            $user = $userRepository->findOrFail($jwtUser->getUserIdentifier());
+            $userGroup = $userGroupRepository->findOrFail($group_id);
+            $userGroupRepository->deleteUserFromGroup($userGroup->getGroupId(), $user->getId());
+            $userGroups = $userGroupRepository->findAllGroupsForUser($user->getId());
+        } catch (EntityNotFoundException $e) {
+            return $this->respondInternalServerError($e);
+        }
+
+        //TODO: delete user object from users userGroups object array and group object from group User
 
         $userGroupNormalizer = new UserGroupNormalizer();
         $normalizedUserGroups = [];
-        foreach($userGroups as $userGroup ) {
-            $normalizedUserGroups [] = $userGroupNormalizer->normalize($userGroup);
+        foreach($userGroups as $userGroup) {
+            $normalizedUserGroup = $userGroupNormalizer->normalize($userGroup);
+            unset($normalizedUserGroup["users"]);
+            $normalizedUserGroups [] = $normalizedUserGroup;
         }
 
-        return $this->response(['groups' => $normalizedUserGroups]);
+        return $this->response(["groups" => $normalizedUserGroups]);
 
-    }
-
-    public function getGroupUsers(int $group_id): JsonResponse
-    {
-        return $this->response([
-            "id" => $group_id,
-            "name" => "WielkieChlopy",
-            "isUserAdmin" => true,
-            "users" => [
-                [
-                    "id"=> 1,
-                    "firstName" => "Paweł",
-                    "lastName"=> "Górczewski",
-                    "email" => "WielkiCHłop@mail.pl",
-                    "isAdmin" => true
-                ],
-                [
-                    "id"=> 2,
-                    "firstName" => "Jan",
-                    "lastName"=> "Kowalski",
-                    "email" => "WielkiCHłop2@mail.pl",
-                    "isAdmin" => false
-                ],
-            ]
-        ]);
-    }
-
-    public function addGroupUser(Request $request, int $group_id):JsonResponse
-    {
-        $requestData = json_decode($request->getContent(),true);
-
-        //Pobranie danych zbazy po userID 
-
-        return $this->response([
-            "id"=> $requestData["userId"],
-            "firstName"=> "Maciek",
-            "lastName"=> "Kucharski",
-            "email"=> "mkmkmk@mieuł.qw",
-            "isAdmin"=> false, //bool
-            "JoinDate" => date("Y-m-d")
-        ]);
-    }
-
-    public function leaveGroup(Request $request, int $group_id):JsonResponse
-    {
-        return $this->response(['groups' => [
-            [
-                "id" => 1,
-                "name" => "WielkieChlopy",
-                "memberCount" => 5, 
-                "adminData"=> [
-                    "firstName"=> "Paweł",
-                    "lastName"=> "Górczewski",
-                    "isUserAdmin"=> true
-                ],
-                "incomingEventsCount"=> 5
-            ],
-            [
-                "id" => 2,
-                "name" => "InformatykaSem1Rok1",
-                "memberCount" => 75, 
-                "adminData"=> [
-                    "firstName"=> "Jan",
-                    "lastName"=> "Kowalski",
-                    "isUserAdmin"=> true
-                ],
-                "incomingEventsCount"=> 0
-            ],
-        ]]);
     }
 
     public function leaveGroupEvent(int $event_id): JsonResponse

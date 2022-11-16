@@ -3,6 +3,7 @@
 namespace App\Repository;
 
 use App\Model\UserGroup;
+use App\Security\User;
 use App\Serializer\UserGroupNormalizer;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception as DbalException;
@@ -35,24 +36,43 @@ class UserGroupRepository extends BaseRepository implements UserGroupRepositoryI
      */
     public function findOrFail(int $userGroupId): UserGroup
     {
-        // TODO: finish select with users and events
-        $sql = '
-            SELECT
-                ug.group_id,
-                ug.name,
-                ug.owner_id
-            FROM ' . $this->tableName .
-            ' ug WHERE group_id = :userGroupId';
+        $sql = 'SELECT ug.group_id, ug.name, ug.owner_id,
+       ( 
+            SELECT to_json(array_agg(row_to_json(d)))
+            FROM (
+                SELECT 
+                    u2.user_id,
+                    u2.username, 
+                    u2.first_name, 
+                    u2.last_name,
+                    u2.email,
+                    u2.phone_number_prefix,
+                    u2.phone_number,
+                    u2.description
+                FROM user_groups ug2
+                JOIN users_user_groups uug2 on ug2.group_id = uug2.group_id
+                JOIN users u2 on uug2.user_id = u2.user_id
+                WHERE ug2.group_id = ug.group_id
+            ) d 
+        ) as users
+        FROM user_groups ug
+        JOIN users_user_groups uug on ug.group_id = uug.group_id
+        JOIN users u on u.user_id = uug.user_id 
+        WHERE ug.group_id = :group_id
+        GROUP BY ug.group_id ';
 
         try {
             $statement = $this->connection->prepare($sql);
-            $statement->bindValue('userGroupId', $userGroupId);
+            $statement->bindValue('group_id', $userGroupId);
             $result = $statement->executeQuery();
-            if ($data = $result->fetchAssociative()) {
-                return $this->userGroupNormalizer->denormalize($data, 'UserGroup');
+
+            $data = $result->fetchAssociative();
+            if(!$data) {
+                throw new EntityNotFoundException();
             }
-            throw new EntityNotFoundException();
-        } catch (DbalException\DriverException $e) {
+            return $this->userGroupNormalizer->denormalize($data, 'UserGroup');
+
+        } catch (DriverException $e) {
             $this->handleDriverException($e);
         }
 
@@ -67,21 +87,34 @@ class UserGroupRepository extends BaseRepository implements UserGroupRepositoryI
      */
     public function findAll(): array
     {
-        $sql = '
-            SELECT 
-                ug.group_id,
-                ug.name,
-                (SELECT COUNT(uug.user_id) FROM app_owner.users_user_groups uug WHERE ug.group_id = uug.group_id) AS member_count,
-                ARRAY_TO_JSON(ARRAY(
-                    SELECT
-                        u.first_name
---                    u.last_name
-                FROM app_owner.users u
-                WHERE u.user_id = ug.owner_id)) AS admin_data
-            FROM ' . $this->tableName . ' ug';
+        $sql = 'SELECT ug.group_id, ug.name, ug.owner_id,
+       (
+            SELECT to_json(array_agg(row_to_json(d)))
+            FROM (
+                SELECT 
+                    u2.user_id,
+                    u2.username, 
+                    u2.first_name, 
+                    u2.last_name,
+                    u2.email,
+                    u2.phone_number_prefix,
+                    u2.phone_number,
+                    u2.description
+                FROM user_groups ug2
+                JOIN users_user_groups uug2 on ug2.group_id = uug2.group_id
+                JOIN users u2 on uug2.user_id = u2.user_id
+                WHERE ug2.group_id = ug.group_id 
+            ) d 
+        ) as users
+        FROM user_groups ug
+        JOIN users_user_groups uug on ug.group_id = uug.group_id
+        JOIN users u on u.user_id = uug.user_id 
+        GROUP BY ug.group_id ';
+
         try {
             $statement = $this->connection->prepare($sql);
             $result = $statement->executeQuery();
+
             $userGroups = [];
             while($data = $result->fetchAssociative()) {
                 $userGroups [] = $this->userGroupNormalizer->denormalize($data, 'UserGroup');
@@ -99,6 +132,56 @@ class UserGroupRepository extends BaseRepository implements UserGroupRepositoryI
      * @throws DbalException
      * @throws UniqueConstraintViolationException
      */
+    public function findAllGroupsForUser(int $userId): array
+    {
+        $sql = 'SELECT ug.group_id, ug.name, ug.owner_id,
+       (
+            SELECT to_json(array_agg(row_to_json(d)))
+            FROM (
+                SELECT 
+                    u2.user_id,
+                    u2.username, 
+                    u2.first_name, 
+                    u2.last_name,
+                    u2.email,
+                    u2.phone_number_prefix,
+                    u2.phone_number,
+                    u2.description
+                FROM user_groups ug2
+                JOIN users_user_groups uug2 on ug2.group_id = uug2.group_id
+                JOIN users u2 on uug2.user_id = u2.user_id
+                WHERE ug2.group_id = ug.group_id 
+            ) d 
+        ) as users
+        FROM user_groups ug
+        JOIN users_user_groups uug on ug.group_id = uug.group_id
+        JOIN users u on u.user_id = uug.user_id 
+        WHERE uug.user_id = :user_id
+        GROUP BY ug.group_id ';
+
+        try {
+            $statement = $this->connection->prepare($sql);
+            $statement->bindValue("user_id", $userId);
+            $result = $statement->executeQuery();
+
+            $userGroups = [];
+            while($data = $result->fetchAssociative()) {
+                $userGroups [] = $this->userGroupNormalizer->denormalize($data, 'UserGroup');
+            }
+
+            return $userGroups;
+        } catch (DriverException $e) {
+            $this->handleDriverException($e);
+        }
+    }
+
+
+    /**
+     * @throws DriverException
+     * @throws EntityNotFoundException
+     * @throws DbalException
+     * @throws UniqueConstraintViolationException
+     */
     public function add(UserGroup $userGroup): void
     {
         $sql = 'INSERT INTO ' . $this->tableName .
@@ -106,9 +189,9 @@ class UserGroupRepository extends BaseRepository implements UserGroupRepositoryI
             VALUES(:name, :owner_id) 
             RETURNING group_id';
 
-        $sqlJoined = 'INSERT INTO ' . $this->joinedTableName .
-            '(user_id, group_id)
-            VALUES(:user_id, :group_id)';
+//        $sqlJoined = 'INSERT INTO ' . $this->joinedTableName .
+//            '(user_id, group_id)
+//            VALUES(:user_id, :group_id)';
 
         try {
             $statement = $this->connection->prepare($sql);
@@ -119,10 +202,12 @@ class UserGroupRepository extends BaseRepository implements UserGroupRepositoryI
             $groupId = $result->fetchAssociative()["group_id"];
             $userGroup->setGroupId($groupId);
 
-            $statement = $this->connection->prepare($sqlJoined);
-            $statement->bindValue('user_id', $userGroup->getOwner()->getId(), ParameterType::INTEGER);
-            $statement->bindValue('group_id', $userGroup->getGroupId());
-            $statement->executeQuery();
+            $this->addGroupUser($userGroup, $userGroup->getOwner());
+
+//            $statement = $this->connection->prepare($sqlJoined);
+//            $statement->bindValue('user_id', $userGroup->getOwner()->getId(), ParameterType::INTEGER);
+//            $statement->bindValue('group_id', $userGroup->getGroupId());
+//            $statement->executeQuery();
 
         } catch (DriverException $e) {
             $this->handleDriverException($e);
@@ -130,9 +215,53 @@ class UserGroupRepository extends BaseRepository implements UserGroupRepositoryI
 
     }
 
+    /**
+     * @throws DriverException
+     * @throws EntityNotFoundException
+     * @throws DbalException
+     * @throws UniqueConstraintViolationException
+     */
+    public function addGroupUser(UserGroup $userGroup, User $user): void
+    {
+        $sql = 'INSERT INTO ' . $this->joinedTableName .
+            '(user_id, group_id)
+            VALUES(:user_id, :group_id)';
+
+        try {
+            $statement = $this->connection->prepare($sql);
+            $statement->bindValue('user_id', $user->getId(), ParameterType::INTEGER);
+            $statement->bindValue('group_id', $userGroup->getGroupId());
+            $statement->executeQuery();
+
+        } catch (DriverException $e) {
+            $this->handleDriverException($e);
+        }
+    }
+
     public function update(UserGroup $userGroup): void
     {
         // TODO: Implement update() method.
+    }
+
+    /**
+     * @throws DriverException
+     * @throws EntityNotFoundException
+     * @throws DbalException
+     * @throws UniqueConstraintViolationException
+     */
+    public function deleteUserFromGroup(int $userGroupId, int $userId): void
+    {
+        $sql = 'DELETE FROM ' . $this->joinedTableName . ' WHERE user_id = :user_id AND group_id = :group_id';
+
+        try {
+            $statement = $this->connection->prepare($sql);
+            $statement->bindValue('user_id', $userId);
+            $statement->bindValue('group_id', $userGroupId);
+            $statement->executeQuery();
+
+        } catch (DriverException $e) {
+            $this->handleDriverException($e);
+        }
     }
 
     public function delete(UserGroup $userGroup): void
