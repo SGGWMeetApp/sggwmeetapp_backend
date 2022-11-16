@@ -8,6 +8,7 @@ use Symfony\Component\Serializer\Exception\InvalidArgumentException;
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 use Monolog\DateTimeImmutable;
+use App\Security\User;
 
 class PublicEventNormalizer implements NormalizerInterface, DenormalizerInterface
 {
@@ -42,12 +43,22 @@ class PublicEventNormalizer implements NormalizerInterface, DenormalizerInterfac
     public function denormalize(mixed $data, string $type, string $format = null, array $context = []): PublicEvent
     {
         $publicEvent = new PublicEvent(
-            $data['event_id'],
+            (int)$data['event_id'],
             $data['name'],
-            $data['location_id'],
+            (int)$data['location_id'],
             $data['description'],
             new DateTimeImmutable($data['start_date']),
-            //$data['author'],
+            new User(
+                (int)$data['user_id'],
+                $data['first_name'],
+                $data['last_name'],
+                $data['email'],
+                "TRZYMAJ JEZYK ZA ZĘBAMI",
+                $data['phone_number_prefix'],
+                $data['phone_number'],
+                $data['description'],
+                ['ROLE_USER']
+            ),
             $cenEdit=$data['can_edit'] === 'true'? true: false
         );
         

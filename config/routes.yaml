@@ -41,7 +41,7 @@ group_create_event:
     methods: POST
 event_update:
     path: /api/events/{event_id}
-    controller: App\Controller\EventController::updateEventAction
+    controller: App\Controller\EventController::updateEvent
     requirements:
         place_id: '\d+'
     methods: PUT

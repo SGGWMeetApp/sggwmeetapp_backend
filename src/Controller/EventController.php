@@ -144,10 +144,12 @@ class EventController extends ApiController {
         } catch (EntityNotFoundException) {
              return $this->respondNotFound();
         }
-        
-        $newpublicEvent = new PublicEvent($event_id, $updataPublicEvent->name,$updataPublicEvent->locationId,$updataPublicEvent->description, $updataPublicEvent->startDate,$user);
+        //dd($updataPublicEvent);
+        //NOTKA DLA MNIE KURWA nie wiem jak to opisac ale front najpierw wyswietla potem klik edycja (dane juz sa na froncie) i w polaach edycyjnych beda juz wprowadzone??
+        //kurde nawet nie tak za duzo
+        $newpublicEvent = new PublicEvent($event_id, $updataPublicEvent->name,$updataPublicEvent->locationId,$updataPublicEvent->description, $updataPublicEvent->startDate,$publicEvent->getAuthor());
         try {
-            $publicEventRepository->update($publicEvent);
+            $publicEventRepository->update($newpublicEvent);
         } catch (UniqueConstraintViolationException $e) {
             
             return match ($e->getViolatedConstraint()) {
@@ -157,7 +159,7 @@ class EventController extends ApiController {
                     ->respondWithError('BAD_REQUEST', $e->getMessage()),
             };
         }
-        return new PublicEventResponse($publicEvent);
+        return new PublicEventResponse($newpublicEvent);
     }
 
     public function getUpcomingEventsAction(): JsonResponse {

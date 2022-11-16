@@ -35,6 +35,8 @@ class PublicEventRepository extends BaseRepository implements PublicEventReposit
      */
     public function findOrFail(int $eventId): PublicEvent
     {
+        //wyjebalem haslo zeby nie pobieral i w objekcie user ustawiam po prostu ciąg, bo mi tylko do wyswitelania objeckt potrzebny
+        //DO MOJEJ ROZKIMNY nie starajcie sie zrozumieć wytłumacze w piątek na zywo XD jak bedize miała sens to wysatczy zapytanie sql bez zabaqy w dane,
         $sql = '
             SELECT
                 p.event_id,
@@ -43,17 +45,24 @@ class PublicEventRepository extends BaseRepository implements PublicEventReposit
                 p.description,
                 p.start_date,
                 p.can_edit,
-                ARRAY_TO_JSON(ARRAY(SELECT lc.first_name
-                FROM app_owner.users lc
-                WHERE lc.user_id = p.owner_id) ) AS author
-            FROM ' . $this->tableName .
-            ' p WHERE event_id = :eventId';
+                b.user_id,
+                b.first_name,
+                b.last_name,
+                b.email,
+                b.phone_number_prefix,
+                b.phone_number,
+                b.description
+
+                FROM ' . $this->tableName .' p
+                INNER JOIN users b ON p.owner_id = b.user_id
+                WHERE event_id = :eventId
+                ';
         try {
             $statement = $this->connection->prepare($sql);
             $statement->bindValue('eventId', $eventId);
             $result = $statement->executeQuery();
             if ($data = $result->fetchAssociative()) {
-               // dd($data);
+                //dd($data);
                 return $this->publicEventNormalizer->denormalize($data, 'PublicEvent');
             }
             throw new EntityNotFoundException();
@@ -88,15 +97,26 @@ class PublicEventRepository extends BaseRepository implements PublicEventReposit
 
     public function add(PublicEvent $publicEvent): void
     {
-        //Dodanie do bazy
-    
-
-        //throw new NotImplementedException('PublicEventRepository add() method is not yet implemented.');
+        
     }
 
-    public function update(PublicEvent $publicEvent): void
+    public function update(PublicEvent $publicEvent): void //cos mi nie działa na void XD
     {
-        throw new NotImplementedException('PublicEven update() method is not yet implemented.');
+
+        //dd($publicEvent);
+        $sql = 'UPDATE '. $this->tableName .' SET name=:name, description=:descritpion  WHERE event_id=:eventId';
+        
+        try {
+            $statement = $this->connection->prepare($sql);
+            $statement->bindValue('name', $publicEvent->getName());
+            $statement->bindValue('descritpion', $publicEvent->getDescription());
+            $statement->bindValue('eventId', $publicEvent->getId());
+           // dd( $statement);
+            $statement->executeQuery();
+            
+        } catch (DriverException $e) {
+            $this->handleDriverException($e);
+        }
     }
 
     public function delete(PublicEvent $publicEvent): void

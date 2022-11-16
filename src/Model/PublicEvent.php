@@ -23,7 +23,7 @@ class PublicEvent
      * @param User $author
      * @param bool $canEdit
      */
-    public function __construct(?int $id, string $name, string $locationData, ?string $description, \DateTimeInterface $startDate, User $author, bool $canEdit=true)
+    public function __construct(?int $id, string $name, int $locationData, ?string $description, \DateTimeInterface $startDate, User $author, bool $canEdit=true)
     {
         $this->id = $id;
         $this->name = $name;
@@ -43,7 +43,7 @@ class PublicEvent
     {
         return $this->name;
     }
-    public function getLocationID(): string
+    public function getLocationID(): int
     {
         return $this->locationData;
     }
