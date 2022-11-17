@@ -1,0 +1,30 @@
+version: "3"
+
+services:
+    php:
+        build:
+            context: ./php
+            args:
+                TIMEZONE: ${TIMEZONE}
+        volumes:
+            - symfony_dockerized_app_sync:/var/www/symfony/
+        networks:
+            - symfony
+    nginx:
+        build:
+            context: ./nginx
+        volumes:
+            - symfony_dockerized_app_sync:/var/www/symfony/
+        ports:
+            - 80:80
+        networks:
+            - symfony
+        env_file:
+            - .env.nginx.local
+
+volumes:
+    symfony_dockerized_app_sync:
+        external: true
+
+networks:
+    symfony:
