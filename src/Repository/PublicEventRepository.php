@@ -9,6 +9,8 @@ use Doctrine\DBAL\Exception as DbalException;
 use Doctrine\DBAL\Exception\DriverException;
 use Symfony\Component\Serializer\Exception\ExceptionInterface as SerializerExceptionInterface;
 use Symfony\Polyfill\Intl\Icu\Exception\NotImplementedException;
+use Doctrine\DBAL\ParameterType;
+use Monolog\DateTimeImmutable;
 
 class PublicEventRepository extends BaseRepository implements PublicEventRepositoryInterface
 {
@@ -41,8 +43,9 @@ class PublicEventRepository extends BaseRepository implements PublicEventReposit
             SELECT
                 p.event_id,
                 p.location_id,
-                p.name,
-                p.description,
+                l.name AS locName,
+                p.name AS eventName,
+                p.description AS evntDes,
                 p.start_date,
                 p.can_edit,
                 b.user_id,
@@ -51,10 +54,11 @@ class PublicEventRepository extends BaseRepository implements PublicEventReposit
                 b.email,
                 b.phone_number_prefix,
                 b.phone_number,
-                b.description
+                b.description AS userDes
 
                 FROM ' . $this->tableName .' p
                 INNER JOIN users b ON p.owner_id = b.user_id
+                INNER JOIN locations l ON p.location_id =l.location_id
                 WHERE event_id = :eventId
                 ';
         try {
@@ -80,38 +84,84 @@ class PublicEventRepository extends BaseRepository implements PublicEventReposit
      */
     public function findAll(): array
     {
-        $sql = '';
+        $sql = '
+            SELECT
+                p.event_id,
+                p.location_id,
+                l.name AS locName,
+                p.name AS eventName,
+                p.description AS evntDes,
+                p.start_date,
+                p.can_edit,
+                b.user_id,
+                b.first_name,
+                b.last_name,
+                b.email,
+                b.phone_number_prefix,
+                b.phone_number,
+                b.description AS userDes
+
+            FROM ' . $this->tableName .' p
+            INNER JOIN users b ON p.owner_id = b.user_id
+            INNER JOIN locations l ON p.location_id =l.location_id
+            
+            ';
         try {
             $statement = $this->connection->prepare($sql);
+        
             $result = $statement->executeQuery();
-            $events = [];
+            
+            $publicEvents = [];
             while($data = $result->fetchAssociative()) {
-                $events [] = $this->publicEventNormalizer->denormalize($data, 'PublicEvent');
+                
+                $publicEvents [] = $this->publicEventNormalizer->denormalize($data, 'PublicEvent');
             }
-            return $events;
+            return $publicEvents;
+            throw new EntityNotFoundException();
         } catch (DriverException $e) {
-            $this->handleDriverException($e);
+        $this->handleDriverException($e);
         }
     }
 
 
     public function add(PublicEvent $publicEvent): void
     {
+        $data = new DateTimeImmutable('Y-m-d H:i:s');
         
-    }
-
-    public function update(PublicEvent $publicEvent): void //cos mi nie działa na void XD
-    {
-
-        //dd($publicEvent);
-        $sql = 'UPDATE '. $this->tableName .' SET name=:name, description=:descritpion  WHERE event_id=:eventId';
+        $sql = 'INSERT INTO EVENTS
+        ( location_id, start_date, name, description,  creation_date, owner_id)
+        VALUES( :locationID, :startDate, :name, :description, :creation_date, :ownerID)';
         
         try {
             $statement = $this->connection->prepare($sql);
+            $statement->bindValue('startDate', $publicEvent->getStartDate()->format('Y-m-d H:i:s'));
+            $statement->bindValue('name', $publicEvent->getName());
+            $statement->bindValue('description', $publicEvent->getDescription());
+            $statement->bindValue('locationID', $publicEvent->getLocationID());
+            $statement->bindValue('creation_date', $data->format('Y-m-d H:i:s'));
+            $statement->bindValue('ownerID', $publicEvent->getAuthor()->getId());
+            
+            $statement->executeQuery();
+            
+        } catch (DriverException $e) {
+            $this->handleDriverException($e);
+        }
+    }
+
+    public function update(PublicEvent $publicEvent): void 
+    {
+
+        
+        $sql = 'UPDATE '. $this->tableName .' SET   start_date=:startDate, name=:name, description=:descritpion, location_id=:locationId  WHERE event_id=:eventId';
+        
+        try {
+            $statement = $this->connection->prepare($sql);
+            $statement->bindValue('startDate', $publicEvent->getStartDate()->format('Y-m-d H:i:s'));
             $statement->bindValue('name', $publicEvent->getName());
             $statement->bindValue('descritpion', $publicEvent->getDescription());
+            $statement->bindValue('locationId', $publicEvent->getLocationID());
             $statement->bindValue('eventId', $publicEvent->getId());
-           // dd( $statement);
+            
             $statement->executeQuery();
             
         } catch (DriverException $e) {

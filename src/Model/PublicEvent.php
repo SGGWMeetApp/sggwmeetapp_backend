@@ -9,7 +9,8 @@ class PublicEvent
     private ?int $id;
     private string $name;
     private ?string $description;
-    private string $locationDataID;
+    private int $locationID;
+    private string $locationName;
     private \DateTimeInterface $startDate;
     private User $author;
     private bool $canEdit;
@@ -17,17 +18,19 @@ class PublicEvent
     /**
      * @param int|null $id
      * @param string $name
-     * @param string $locationDataID
+     * @param int $locationID
+     * @param string $locationName
      * @param string|null $description
      * @param \DateTimeInterface $startDate
      * @param User $author
      * @param bool $canEdit
      */
-    public function __construct(?int $id, string $name, int $locationData, ?string $description, \DateTimeInterface $startDate, User $author, bool $canEdit=true)
+    public function __construct(?int $id, string $name, int $locationID, string $locationName, ?string $description, \DateTimeInterface $startDate, User $author, bool $canEdit=true)
     {
         $this->id = $id;
         $this->name = $name;
-        $this->locationData = $locationData;
+        $this->locationID = $locationID;
+        $this->locationName=$locationName;
         $this->description = $description;
         $this->startDate = $startDate;
         $this->author = $author;
@@ -45,7 +48,11 @@ class PublicEvent
     }
     public function getLocationID(): int
     {
-        return $this->locationData;
+        return $this->locationID;
+    }
+    public function getLocationName(): string
+    {
+        return $this->locationName;
     }
 
     public function getDescription(): ?string

@@ -9,6 +9,7 @@ use App\Model\PublicEvent;
 use App\Repository\PublicEventRepositoryInterface;
 use App\Repository\UniqueConstraintViolationException;
 use App\Repository\UserRepositoryInterface;
+use App\Repository\PlaceRepositoryInterface;
 use App\Request\PublicEventRequest;
 use App\Response\PublicEventResponse;
 use App\Serializer\PublicEventNormalizer;
@@ -57,12 +58,54 @@ class EventController extends ApiController {
             ],
         ]]);
     }
+    //nie zwraca dobrze autora w odp dlatego ta górna na szytwno 
+    public function getPublicEvents(  Request $request,
+    UserRepositoryInterface $userRepository,
+    PublicEventRepositoryInterface $publicEventRepository,  
+    ): JsonResponse 
+    {
+        $publicEvent = new PublicEventNormalizer();
+            
+
+        $jwtUser = $this->getUser();
+        try {
+            $user = $userRepository->findOrFail($jwtUser->getUserIdentifier());
+        } catch (EntityNotFoundException $e) {
+            return $this->respondInternalServerError($e);
+        }
+        try {
+            $events=$publicEventRepository->findAll();
+            
+            $normalizedEvents = [];
+            foreach($events as $event ) {
+                
+                $eventNormalizer = $publicEvent->normalize($event );
+                
+                $normalizedEvents [] = [
+                    ...$eventNormalizer,
+                    
+                    
+                ];
+            }
+        } catch (UniqueConstraintViolationException $e) {
+            
+            return match ($e->getViolatedConstraint()) {
+                'rating_unq_inx' => $this->setStatusCode(409)
+                    ->respondWithError('BAD_REQUEST', 'Nie wiem co wpisac na razie.'),
+                default => $this->setStatusCode(409)
+                    ->respondWithError('BAD_REQUEST', $e->getMessage()),
+            };
+        }
+        //dd($normalizedEvents);
+        return $this->response(['publicEvents' => $normalizedEvents]);
+    }
 
 
     public function createPublicEvent(
         Request $request,
         UserRepositoryInterface $userRepository,
-        PublicEventRepositoryInterface $publicEventRepository   
+        PublicEventRepositoryInterface $publicEventRepository,  
+        PlaceRepositoryInterface $placeRepository
     ): JsonResponse
     {
         $requestData = json_decode($request->getContent(),true);
@@ -75,7 +118,14 @@ class EventController extends ApiController {
         } catch (EntityNotFoundException $e) {
             return $this->respondInternalServerError($e);
         }
-        $publicEvent = new PublicEvent(null, $addPublicEvent->name,$addPublicEvent->locationId,$addPublicEvent->description, $addPublicEvent->startDate,$user);
+        try {
+            $location = $placeRepository ->findOrFail($addPublicEvent->locationId);
+       } catch (EntityNotFoundException) {
+            return $this->respondNotFound();
+       }
+       
+
+        $publicEvent = new PublicEvent(null, $addPublicEvent->name,$addPublicEvent->locationId,$location->getName(),$addPublicEvent->description, $addPublicEvent->startDate,$user);
 
         try {
             $publicEventRepository->add($publicEvent);
@@ -100,29 +150,6 @@ class EventController extends ApiController {
         }
     }
 
-    public function updateEventAction(Request $request): JsonResponse {
-        // check if can edit (only author)
-
-        // edit event
-
-        // return edited event
-        return $this->response([
-            "id" => 2,
-            "name" => "Środowe Disco",
-            "description" => "Już w tą środę widzimy się na parkiecie w Dziekanacie! Dobra zabawa gwarantowana! Do 22:00 bilet 15 zł, Po 22:00 20 zł.",
-            "startDate" => "2022-11-06T21:00:00.000Z",
-            "locationData" => [
-                "name" => "Dziekanat 161"
-            ],
-            "author" => [
-                "firstName" => "Jerzy",
-                "lastName" => "Dudek",
-                "email" => "jerzy.dudek@example.com"
-            ],
-            "canEdit" => true,
-            "notification24hEnabled" => true
-        ]);
-    }
 
     public function updateEvent( Request $request, int $event_id,
         UserRepositoryInterface $userRepository,
@@ -144,10 +171,9 @@ class EventController extends ApiController {
         } catch (EntityNotFoundException) {
              return $this->respondNotFound();
         }
-        //dd($updataPublicEvent);
-        //NOTKA DLA MNIE KURWA nie wiem jak to opisac ale front najpierw wyswietla potem klik edycja (dane juz sa na froncie) i w polaach edycyjnych beda juz wprowadzone??
-        //kurde nawet nie tak za duzo
-        $newpublicEvent = new PublicEvent($event_id, $updataPublicEvent->name,$updataPublicEvent->locationId,$updataPublicEvent->description, $updataPublicEvent->startDate,$publicEvent->getAuthor());
+        //dd($publicEvent->getLocationName());
+        $newpublicEvent = new PublicEvent($event_id, $updataPublicEvent->name,$updataPublicEvent->locationId,$publicEvent->getLocationName(),$updataPublicEvent->description, $updataPublicEvent->startDate,$publicEvent->getAuthor());
+        
         try {
             $publicEventRepository->update($newpublicEvent);
         } catch (UniqueConstraintViolationException $e) {
@@ -159,13 +185,12 @@ class EventController extends ApiController {
                     ->respondWithError('BAD_REQUEST', $e->getMessage()),
             };
         }
+        
         return new PublicEventResponse($newpublicEvent);
     }
 
     public function getUpcomingEventsAction(): JsonResponse {
-        // get events where startDate < sysdate + 1 week
-
-        // return events
+        
         return $this->response(["events" => [
             [
                 "id" => 2,

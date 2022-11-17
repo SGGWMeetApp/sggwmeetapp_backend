@@ -23,10 +23,13 @@ class PublicEventNormalizer implements NormalizerInterface, DenormalizerInterfac
         }
         return [
             "id" => $object->getId(),
-            "name" => $object->getName(),
-            "description" =>$object->getDescription(),
-            "geolocation" => $object->getLocationID(),
-            "startDate" => $object->getStartDate(),
+            "eventName" => $object->getName(),
+            "evntDes" =>$object->getDescription(),
+            "locationData" => [
+                "ID"=>$object->getLocationID(),
+                "locName"=>$object->getLocationName()
+            ],
+            "startDate" => $object->getStartDate()->format('Y-m-d\TH:i:s.v\Z'),
             "author" => $object->getAuthor(),
             "canEdit" => $object->getCanEdit(),
         ];
@@ -44,9 +47,10 @@ class PublicEventNormalizer implements NormalizerInterface, DenormalizerInterfac
     {
         $publicEvent = new PublicEvent(
             (int)$data['event_id'],
-            $data['name'],
+            $data['eventname'],
             (int)$data['location_id'],
-            $data['description'],
+            $data['locname'],
+            $data['evntdes'],
             new DateTimeImmutable($data['start_date']),
             new User(
                 (int)$data['user_id'],
@@ -56,11 +60,12 @@ class PublicEventNormalizer implements NormalizerInterface, DenormalizerInterfac
                 "TRZYMAJ JEZYK ZA ZĘBAMI",
                 $data['phone_number_prefix'],
                 $data['phone_number'],
-                $data['description'],
+                $data['userdes'],
                 ['ROLE_USER']
             ),
             $cenEdit=$data['can_edit'] === 'true'? true: false
         );
+        
         
         return $publicEvent ;
     }
