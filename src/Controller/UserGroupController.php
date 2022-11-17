@@ -195,14 +195,12 @@ class UserGroupController extends ApiController
     ): JsonResponse
     {
         $requestData = json_decode($request->getContent(),true);
-        $email = $requestData["email"];
+        $userId = $requestData["userId"];
 
         $jwtUser = $this->getUser();
         try {
             $userRepository->findOrFail($jwtUser->getUserIdentifier());
-
-            // TODO: change id to email? or create method to find by id
-            $user = $userRepository->findOrFail($email);
+            $user = $userRepository->findByIdOrFail($userId);
             $userGroup = $userGroupRepository->findOrFail($group_id);
         } catch (EntityNotFoundException $e) {
             return $this->respondInternalServerError($e);
