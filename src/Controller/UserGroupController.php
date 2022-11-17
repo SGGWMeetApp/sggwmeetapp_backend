@@ -140,7 +140,7 @@ class UserGroupController extends ApiController
     {
         $jwtUser = $this->getUser();
         try {
-            $userRepository->findOrFail($jwtUser->getUserIdentifier());
+            $user = $userRepository->findOrFail($jwtUser->getUserIdentifier());
             $userGroups = $userGroupRepository->findAll();
         } catch (EntityNotFoundException $e) {
             return $this->respondInternalServerError($e);
@@ -149,29 +149,42 @@ class UserGroupController extends ApiController
         $userGroupNormalizer = new UserGroupNormalizer();
         $normalizedUserGroups = [];
         foreach($userGroups as $userGroup) {
+            $isUserAdmin = $user->isEqualTo($userGroup->getOwner());
             $normalizedUserGroup = $userGroupNormalizer->normalize($userGroup);
+            $normalizedUserGroup["adminData"]["isUserAdmin"] = $isUserAdmin;
             unset($normalizedUserGroup["users"]);
             $normalizedUserGroups [] = $normalizedUserGroup;
         }
 
-        // TODO: add adminData key and isUserAdmin
         return $this->response(["groups" => $normalizedUserGroups]);
     }
 
     public function getGroupUsers(
         int $group_id,
         UserGroupRepositoryInterface $userGroupRepository,
-        UserRepositoryInterface $userRepository): JsonResponse
+        UserRepositoryInterface $userRepository
+    ): JsonResponse
     {
         $jwtUser = $this->getUser();
         try {
-            $userRepository->findOrFail($jwtUser->getUserIdentifier());
+            $user = $userRepository->findOrFail($jwtUser->getUserIdentifier());
             $userGroup = $userGroupRepository->findOrFail($group_id);
         } catch (EntityNotFoundException $e) {
             return $this->respondInternalServerError($e);
         }
 
-        return new UserGroupResponse($userGroup);
+        $userGroupNormalizer = new UserGroupNormalizer();
+        $isUserAdmin = $user->isEqualTo($userGroup->getOwner());
+        $userGroupData = $userGroupNormalizer->normalize($userGroup);
+        unset($userGroupData["adminData"]);
+        unset($userGroupData["memberCount"]);
+        unset($userGroupData["incomingEventsCount"]);
+        return $this->response([
+            ...$userGroupData,
+            "isUserAdmin" => $isUserAdmin,
+        ]);
+
+//        return new UserGroupResponse($userGroup, $user);
     }
 
     public function addGroupUser(
@@ -212,7 +225,7 @@ class UserGroupController extends ApiController
         }
 
         return $this->response([
-           "id" => $user->getId(),
+            "id" => $user->getId(),
             "firstName" => $user->getFirstName(),
             "lastName" => $user->getLastName(),
             "email" => $user->getEmail(),

@@ -20,23 +20,29 @@ class UserGroupNormalizer implements NormalizerInterface, DenormalizerInterface
             throw new InvalidArgumentException('This normalizer only accepts objects of type App\Model\UserGroup');
         }
 
-        // TODO: add "isUserAdmin" property
+        $owner = $object->getOwner();
+        $adminData = [
+            "firstName" => $owner->getFirstName(),
+            "lastName" => $owner->getLastName(),
+        ];
+
         $userGroupData = [
             "id" => $object->getGroupId(),
             "name" => $object->getName(),
             "memberCount" => $object->getMemberCount(),
+            "adminData" => $adminData,
             "incomingEventsCount" => $object->getIncomingEventsCount()
         ];
 
-
         $normalizedUsers = [];
         foreach($object->getUsers() as $user) {
-//            $isUserAdmin = $user->getId() == $object->getOwner()
+            $isAdmin = $user->isEqualTo($owner);
             $normalizedUsers [] = [
-                'firstName' => $user->getFirstName(),
-                'lastName' => $user->getLastName(),
-                'email' => $user->getUserIdentifier(),
-                'avatarUrl' => ''
+                "id" => $user->getId(),
+                "firstName" => $user->getFirstName(),
+                "lastName" => $user->getLastName(),
+                "email" => $user->getEmail(),
+                "isAdmin" => $isAdmin
             ];
         }
 
@@ -80,7 +86,6 @@ class UserGroupNormalizer implements NormalizerInterface, DenormalizerInterface
                 $userData->phone_number_prefix,
                 $userData->phone_number,
                 $userData->description,
-//                $userData->location_sharing_mode,
                 ['ROLE_USER']);
 
             $userGroup->addUser($user);
@@ -88,7 +93,6 @@ class UserGroupNormalizer implements NormalizerInterface, DenormalizerInterface
             if($user->getId() == $data["owner_id"]) {
                 $userGroup->setOwner($user);
             }
-
         }
 
         return $userGroup;

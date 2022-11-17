@@ -130,7 +130,7 @@ class UserGroupRepository extends BaseRepository implements UserGroupRepositoryI
      * @throws DriverException
      * @throws EntityNotFoundException
      * @throws DbalException
-     * @throws UniqueConstraintViolationException
+     * @throws UniqueConstraintViolationException|SerializerExceptionInterface
      */
     public function findAllGroupsForUser(int $userId): array
     {
