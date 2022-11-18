@@ -13,6 +13,7 @@ class UserRepository extends BaseRepository implements UserRepositoryInterface
 {
     private Connection $connection;
     private string $tableName = 'app_owner.users';
+    private UserNormalizer $userNormalizer;
 
     public function __construct(Connection $connection)
     {
