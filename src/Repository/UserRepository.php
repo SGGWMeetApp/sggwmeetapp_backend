@@ -3,9 +3,11 @@
 namespace App\Repository;
 
 use App\Security\User;
+use App\Serializer\UserNormalizer;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception as DbalException;
 use Doctrine\DBAL\Exception\DriverException;
+use Symfony\Component\Serializer\Exception\ExceptionInterface as SerializerExceptionInterface;
 
 class UserRepository extends BaseRepository implements UserRepositoryInterface
 {
@@ -15,6 +17,7 @@ class UserRepository extends BaseRepository implements UserRepositoryInterface
     public function __construct(Connection $connection)
     {
         $this->connection = $connection;
+        $this->userNormalizer = new UserNormalizer();
     }
 
     /**
@@ -22,6 +25,7 @@ class UserRepository extends BaseRepository implements UserRepositoryInterface
      * @throws EntityNotFoundException
      * @throws DbalException
      * @throws UniqueConstraintViolationException
+     * @throws SerializerExceptionInterface
      */
     public function findOrFail(string $identifier): User
     {
@@ -35,17 +39,7 @@ class UserRepository extends BaseRepository implements UserRepositoryInterface
         }
         $data = $result->fetchAssociative();
         if ($data !== false) {
-            return new User(
-                $data['user_id'],
-                $data['first_name'],
-                $data['last_name'],
-                $data['email'],
-                $data['password'],
-                $data['phone_number_prefix'],
-                $data['phone_number'],
-                $data['description'],
-                ['ROLE_USER']
-            );
+            return $this->userNormalizer->denormalize($data, User::class);
         } else {
             throw new EntityNotFoundException();
         }
@@ -56,6 +50,7 @@ class UserRepository extends BaseRepository implements UserRepositoryInterface
      * @throws EntityNotFoundException
      * @throws DbalException
      * @throws UniqueConstraintViolationException
+     * @throws SerializerExceptionInterface
      */
     public function findByIdOrFail(string $userId): User
     {
@@ -69,17 +64,7 @@ class UserRepository extends BaseRepository implements UserRepositoryInterface
         }
         $data = $result->fetchAssociative();
         if ($data !== false) {
-            return new User(
-                $data['user_id'],
-                $data['first_name'],
-                $data['last_name'],
-                $data['email'],
-                $data['password'],
-                $data['phone_number_prefix'],
-                $data['phone_number'],
-                $data['description'],
-                ['ROLE_USER']
-            );
+            return $this->userNormalizer->denormalize($data, User::class);
         } else {
             throw new EntityNotFoundException();
         }
