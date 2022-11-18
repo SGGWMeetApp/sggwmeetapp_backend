@@ -37,7 +37,7 @@ services:
         parent: App\Controller\ApiController
     App\Controller\EventController:
         parent: App\Controller\ApiController
-    App\Controller\GroupController:
+    App\Controller\UserGroupController:
         parent: App\Controller\ApiController
     App\Controller\PlaceController:
         parent: App\Controller\ApiController
