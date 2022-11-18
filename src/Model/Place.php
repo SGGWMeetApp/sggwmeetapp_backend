@@ -69,8 +69,6 @@ class Place
         $upperCode = strtoupper($code);
         if(!in_array($upperCode, $this->categoryCodes)) {
             $this->categoryCodes [] = $upperCode;
-        } else {
-            throw new \InvalidArgumentException("Code $upperCode already exists in this place's category codes.");
         }
     }
 
