@@ -214,8 +214,7 @@ BEGIN
         FROM
             rating_reviews
         WHERE
-            rating_id = NEW.rating_id
-            AND user_id = NEW.user_id)
+            rating_id = NEW.rating_id)
     UPDATE
         location_ratings
     SET
@@ -246,8 +245,7 @@ BEGIN
         FROM
             rating_reviews
         WHERE
-            rating_id = OLD.rating_id
-            AND user_id = OLD.user_id)
+            rating_id = OLD.rating_id)
     UPDATE
         location_ratings
     SET
