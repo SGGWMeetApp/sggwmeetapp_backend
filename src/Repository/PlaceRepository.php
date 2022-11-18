@@ -83,7 +83,9 @@ class PlaceRepository extends BaseRepository implements PlaceRepositoryInterface
                 ARRAY_TO_JSON(ARRAY(SELECT lc.name
                     FROM app_owner.location_categories lc
                     INNER JOIN app_owner.locations_location_categories llc
-                    ON llc.category_id = lc.category_id)) AS category_names,
+                    ON llc.category_id = lc.category_id
+                    WHERE llc.location_id = p.location_id
+                    )) AS category_names,
                 (SELECT COUNT(lr.location_id) FROM app_owner.location_ratings lr WHERE lr.location_id = p.location_id) AS reviews_count
             FROM ' . $this->tableName . ' p';
         try {
