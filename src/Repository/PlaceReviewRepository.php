@@ -85,7 +85,7 @@ class PlaceReviewRepository extends BaseRepository implements PlaceReviewReposit
     {
         $sql = 'INSERT INTO ' . $this->tableName .
             '(location_id, user_id, is_positive, comment, description)
-            VALUES(:locationId, :userId, :isPositive, :comment, :description)';
+            VALUES(:locationId, :userId, :isPositive, :comment, :description) RETURNING rating_id';
         try {
             $statement = $this->connection->prepare($sql);
             $statement->bindValue('locationId', $placeReview->getPlaceId());
@@ -93,7 +93,9 @@ class PlaceReviewRepository extends BaseRepository implements PlaceReviewReposit
             $statement->bindValue('isPositive', $placeReview->isPositive(), ParameterType::BOOLEAN);
             $statement->bindValue('comment', $placeReview->getComment());
             $statement->bindValue('description', "-");
-            $statement->executeQuery();
+            $result = $statement->executeQuery();
+            $data = $result->fetchAssociative();
+            $placeReview->setReviewId($data['rating_id']);
         } catch (DbalException\DriverException $e) {
             $this->handleDriverException($e);
         }
