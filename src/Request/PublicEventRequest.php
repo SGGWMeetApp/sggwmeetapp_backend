@@ -7,33 +7,23 @@ use Symfony\Component\Validator\Constraints as Assert;
 class PublicEventRequest
 {
     /**
-     * @Assert\NotBlank(allowNull=true)
+     * @Assert\NotBlank()
      * @Assert\Type("string")
-     * @Assert\Length(max="2000")
+     * @Assert\Length(min=1, max=255)
      * @var string
      */
     public $name;
 
      /**
-     * @Assert\NotBlank(allowNull=true)
-     * @Assert\Type("string")
-     * @Assert\Length(max="2000")
-     * @var string
+     * @Assert\NotNull()
+     * @Assert\Type("integer")
+     * @var int
      */
     public $locationId;
 
      /**
      * @Assert\NotBlank(allowNull=true)
-     * @Assert\Type("int")
-     * @Assert\Length(max="2000")
-     * @var string
-     */
-    public $locationName;
-
-     /**
-     * @Assert\NotBlank(allowNull=true)
      * @Assert\Type("string")
-     * @Assert\Length(max="2000")
      * @var string
      */
     public $description;
