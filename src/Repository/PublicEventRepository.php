@@ -28,7 +28,7 @@ class PublicEventRepository extends BaseRepository implements PublicEventReposit
     }
 
 
-/**
+    /**
      * @inheritDoc
      * @throws DriverException
      * @throws DbalException
@@ -108,41 +108,39 @@ class PublicEventRepository extends BaseRepository implements PublicEventReposit
             ';
         try {
             $statement = $this->connection->prepare($sql);
-        
             $result = $statement->executeQuery();
-            
             $publicEvents = [];
             while($data = $result->fetchAssociative()) {
-                
                 $publicEvents [] = $this->publicEventNormalizer->denormalize($data, 'PublicEvent');
             }
             return $publicEvents;
-            throw new EntityNotFoundException();
         } catch (DriverException $e) {
-        $this->handleDriverException($e);
+            $this->handleDriverException($e);
         }
     }
 
 
+    /**
+     * @throws DriverException
+     * @throws EntityNotFoundException
+     * @throws UniqueConstraintViolationException
+     * @throws DbalException
+     */
     public function add(PublicEvent $publicEvent): void
     {
-        $data = new DateTimeImmutable('Y-m-d H:i:s');
-        
-        $sql = 'INSERT INTO EVENTS
-        ( location_id, start_date, name, description,  creation_date, owner_id)
-        VALUES( :locationID, :startDate, :name, :description, :creation_date, :ownerID)';
+        $sql = 'INSERT INTO ' . $this->tableName .
+        ' (location_id, start_date, name, description, owner_id, is_public)
+        VALUES(:locationID, :startDate, :name, :description, :ownerID, true)';
         
         try {
             $statement = $this->connection->prepare($sql);
-            $statement->bindValue('startDate', $publicEvent->getStartDate()->format('Y-m-d H:i:s'));
+            $statement->bindValue('startDate', $publicEvent->getStartDate()->format(self::DEFAULT_DATETIME_FORMAT));
             $statement->bindValue('name', $publicEvent->getName());
             $statement->bindValue('description', $publicEvent->getDescription());
             $statement->bindValue('locationID', $publicEvent->getLocationID());
-            $statement->bindValue('creation_date', $data->format('Y-m-d H:i:s'));
             $statement->bindValue('ownerID', $publicEvent->getAuthor()->getId());
-            
+
             $statement->executeQuery();
-            
         } catch (DriverException $e) {
             $this->handleDriverException($e);
         }
@@ -150,20 +148,22 @@ class PublicEventRepository extends BaseRepository implements PublicEventReposit
 
     public function update(PublicEvent $publicEvent): void 
     {
-
-        
-        $sql = 'UPDATE '. $this->tableName .' SET   start_date=:startDate, name=:name, description=:descritpion, location_id=:locationId  WHERE event_id=:eventId';
-        
+        $sql = 'UPDATE '. $this->tableName .
+            'SET 
+                start_date=:startDate,
+                name=:name,
+                description=:description,
+                location_id=:locationId 
+            WHERE event_id=:eventId';
         try {
             $statement = $this->connection->prepare($sql);
-            $statement->bindValue('startDate', $publicEvent->getStartDate()->format('Y-m-d H:i:s'));
+            $statement->bindValue('startDate', $publicEvent->getStartDate()->format(self::DEFAULT_DATETIME_FORMAT));
             $statement->bindValue('name', $publicEvent->getName());
-            $statement->bindValue('descritpion', $publicEvent->getDescription());
+            $statement->bindValue('description', $publicEvent->getDescription());
             $statement->bindValue('locationId', $publicEvent->getLocationID());
             $statement->bindValue('eventId', $publicEvent->getId());
             
             $statement->executeQuery();
-            
         } catch (DriverException $e) {
             $this->handleDriverException($e);
         }
