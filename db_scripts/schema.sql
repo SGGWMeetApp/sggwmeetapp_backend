@@ -139,8 +139,8 @@ CREATE OR REPLACE FUNCTION insert_location_rating ()
 BEGIN
     WITH ratings AS (
         SELECT
-            COALESCE(SUM(is_positive::int), 0) AS positives,
-            COUNT(rating_id) AS ratings_num
+            COALESCE(SUM(is_positive::int), 0)::numeric(5, 2) AS positives,
+            COUNT(rating_id)::numeric(5, 2) AS ratings_num
         FROM
             location_ratings
         WHERE
@@ -174,8 +174,8 @@ CREATE OR REPLACE FUNCTION delete_location_rating ()
 BEGIN
     WITH ratings AS (
         SELECT
-            COALESCE(SUM(is_positive::int), 0) AS positives,
-            COUNT(rating_id) AS ratings_num
+            COALESCE(SUM(is_positive::int), 0)::numeric(5, 2) AS positives,
+            COUNT(rating_id)::numeric(5, 2) AS ratings_num
         FROM
             location_ratings
         WHERE
@@ -214,8 +214,7 @@ BEGIN
         FROM
             rating_reviews
         WHERE
-            rating_id = NEW.rating_id
-            AND user_id = NEW.user_id)
+            rating_id = NEW.rating_id)
     UPDATE
         location_ratings
     SET
@@ -246,8 +245,7 @@ BEGIN
         FROM
             rating_reviews
         WHERE
-            rating_id = OLD.rating_id
-            AND user_id = OLD.user_id)
+            rating_id = OLD.rating_id)
     UPDATE
         location_ratings
     SET
