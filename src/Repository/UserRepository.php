@@ -57,6 +57,40 @@ class UserRepository extends BaseRepository implements UserRepositoryInterface
      * @throws DbalException
      * @throws UniqueConstraintViolationException
      */
+    public function findByIdOrFail(string $userId): User
+    {
+        $sql = 'SELECT * FROM ' . $this->tableName . ' WHERE user_id = :userId';
+        try {
+            $statement = $this->connection->prepare($sql);
+            $statement->bindValue("userId", $userId);
+            $result = $statement->executeQuery();
+        } catch (DriverException $e) {
+            $this->handleDriverException($e);
+        }
+        $data = $result->fetchAssociative();
+        if ($data !== false) {
+            return new User(
+                $data['user_id'],
+                $data['first_name'],
+                $data['last_name'],
+                $data['email'],
+                $data['password'],
+                $data['phone_number_prefix'],
+                $data['phone_number'],
+                $data['description'],
+                ['ROLE_USER']
+            );
+        } else {
+            throw new EntityNotFoundException();
+        }
+    }
+
+    /**
+     * @throws DriverException
+     * @throws EntityNotFoundException
+     * @throws DbalException
+     * @throws UniqueConstraintViolationException
+     */
     public function add(User $user): void
     {
         $sql = "INSERT INTO " . $this->tableName .
