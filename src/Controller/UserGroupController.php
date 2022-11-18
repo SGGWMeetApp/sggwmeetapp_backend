@@ -168,11 +168,24 @@ class UserGroupController extends ApiController
         $jwtUser = $this->getUser();
         try {
             $user = $userRepository->findOrFail($jwtUser->getUserIdentifier());
-            $userGroup = $userGroupRepository->findOrFail($group_id);
         } catch (EntityNotFoundException $e) {
             return $this->respondInternalServerError($e);
         }
-
+        try {
+            $userGroup = $userGroupRepository->findOrFail($group_id);
+        } catch (EntityNotFoundException) {
+            return $this->respondNotFound();
+        }
+        $groupUsers = $userGroup->getUsers();
+        $hasListAccess = false;
+        foreach ($groupUsers as $groupUser) {
+            if ($groupUser->isEqualTo($user)) {
+                $hasListAccess = true;
+            }
+        }
+        if(!$hasListAccess) {
+            return $this->respondUnauthorized('Unauthorized. You are not a member of this group.');
+        }
         $userGroupNormalizer = new UserGroupNormalizer();
         $isUserAdmin = $user->isEqualTo($userGroup->getOwner());
         $userGroupData = $userGroupNormalizer->normalize($userGroup);
@@ -200,13 +213,20 @@ class UserGroupController extends ApiController
         $jwtUser = $this->getUser();
         try {
             $userRepository->findOrFail($jwtUser->getUserIdentifier());
-            $user = $userRepository->findByIdOrFail($userId);
-            $userGroup = $userGroupRepository->findOrFail($group_id);
         } catch (EntityNotFoundException $e) {
             return $this->respondInternalServerError($e);
         }
+        try {
+            $user = $userRepository->findByIdOrFail($userId);
+        } catch (EntityNotFoundException) {
+            return $this->respondNotFound('User with given id does not exist.');
+        }
+        try {
+            $userGroup = $userGroupRepository->findOrFail($group_id);
+        } catch (EntityNotFoundException) {
+            return $this->respondNotFound('Group with given id does not exist.');
+        }
 
-        $userGroup = new UserGroup($userGroup->getGroupId(), $userGroup->getName(), $userGroup->getOwner());
         $userGroup->addUser($user);
         $user->addGroup($userGroup);
 
@@ -241,13 +261,17 @@ class UserGroupController extends ApiController
         $jwtUser = $this->getUser();
         try {
             $user = $userRepository->findOrFail($jwtUser->getUserIdentifier());
-            $userGroup = $userGroupRepository->findOrFail($group_id);
-            $userGroupRepository->deleteUserFromGroup($userGroup->getGroupId(), $user->getId());
-            $userGroups = $userGroupRepository->findAllGroupsForUser($user->getId());
         } catch (EntityNotFoundException $e) {
             return $this->respondInternalServerError($e);
         }
-
+        try {
+            $userGroup = $userGroupRepository->findOrFail($group_id);
+        } catch (EntityNotFoundException $e) {
+            return $this->respondNotFound();
+        }
+        $userGroupRepository->deleteUserFromGroup($userGroup->getGroupId(), $user->getId());
+        $userGroups = $userGroupRepository->findAllGroupsForUser($user->getId());
+        //TODO: either delete user group when admin leaves the group or name a new admin (next from the list)
         //TODO: delete user object from users userGroups object array and group object from group User
 
         $userGroupNormalizer = new UserGroupNormalizer();
