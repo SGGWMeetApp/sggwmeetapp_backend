@@ -22,8 +22,15 @@ class UserGroupController extends ApiController
 {
 
     // TODO: getGroupPrivateEventsAction
-    public function getGroupPrivateEventsAction(int $group_id): JsonResponse
+    public function getGroupPrivateEventsAction(
+        int $group_id,
+        UserGroupRepositoryInterface $userGroupRepository,
+        UserRepositoryInterface $userRepository
+    ): JsonResponse
     {
+
+
+
         return $this->response(["events" => [
             [
                 "id" => 1,
@@ -164,15 +171,9 @@ class UserGroupController extends ApiController
         } catch (EntityNotFoundException) {
             return $this->respondNotFound();
         }
-        $groupUsers = $userGroup->getUsers();
-        $hasListAccess = false;
-        foreach ($groupUsers as $groupUser) {
-            if ($groupUser->isEqualTo($user)) {
-                $hasListAccess = true;
-                break;
-            }
-        }
-        if(!$hasListAccess) {
+
+        $isUserInGroup = $userGroup->containsUser($user);
+        if(!$isUserInGroup) {
             return $this->respondUnauthorized('Unauthorized. You are not a member of this group.');
         }
 
@@ -206,15 +207,8 @@ class UserGroupController extends ApiController
             return $this->respondNotFound('Group with given id does not exist.');
         }
 
-        $groupUsers = $userGroup->getUsers();
-        $hasListAccess = false;
-        foreach ($groupUsers as $groupUser) {
-            if ($groupUser->isEqualTo($currentUser)) {
-                $hasListAccess = true;
-                break;
-            }
-        }
-        if(!$hasListAccess) {
+        $isUserInGroup = $userGroup->containsUser($currentUser);
+        if(!$isUserInGroup) {
             return $this->respondUnauthorized('Unauthorized. You are not a member of this group.');
         }
 

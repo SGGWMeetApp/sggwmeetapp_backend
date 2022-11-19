@@ -147,5 +147,15 @@ class UserGroup {
         $this->users[] = $user;
     }
 
+    public function containsUser(User $user): bool
+    {
+        foreach($this->users as $groupUser) {
+            if($user->isEqualTo($groupUser)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 
 }
