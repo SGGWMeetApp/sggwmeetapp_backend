@@ -169,6 +169,7 @@ class UserGroupController extends ApiController
         foreach ($groupUsers as $groupUser) {
             if ($groupUser->isEqualTo($user)) {
                 $hasListAccess = true;
+                break;
             }
         }
         if(!$hasListAccess) {
@@ -190,7 +191,7 @@ class UserGroupController extends ApiController
 
         $jwtUser = $this->getUser();
         try {
-            $userRepository->findOrFail($jwtUser->getUserIdentifier());
+            $currentUser = $userRepository->findOrFail($jwtUser->getUserIdentifier());
         } catch (EntityNotFoundException $e) {
             return $this->respondInternalServerError($e);
         }
@@ -203,6 +204,18 @@ class UserGroupController extends ApiController
             $userGroup = $userGroupRepository->findOrFail($group_id);
         } catch (EntityNotFoundException) {
             return $this->respondNotFound('Group with given id does not exist.');
+        }
+
+        $groupUsers = $userGroup->getUsers();
+        $hasListAccess = false;
+        foreach ($groupUsers as $groupUser) {
+            if ($groupUser->isEqualTo($currentUser)) {
+                $hasListAccess = true;
+                break;
+            }
+        }
+        if(!$hasListAccess) {
+            return $this->respondUnauthorized('Unauthorized. You are not a member of this group.');
         }
 
         $userGroup->addUser($user);
