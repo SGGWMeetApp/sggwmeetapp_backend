@@ -7,11 +7,12 @@ use App\Security\User;
 use App\Serializer\UserGroupNormalizer;
 use Symfony\Component\HttpFoundation\JsonResponse;
 
-class UserGroupResponse extends JsonResponse
+class GroupUsersResponse extends JsonResponse
 {
     /**
-     * UserGroupResponse constructor
+     * GroupUsersResponse constructor
      * @param UserGroup $userGroup
+     * @param User $user
      */
     public function __construct(UserGroup $userGroup, User $user)
     {
@@ -23,9 +24,12 @@ class UserGroupResponse extends JsonResponse
         $userGroupNormalizer = new UserGroupNormalizer();
         $isUserAdmin = $user->isEqualTo($userGroup->getOwner());
         $userGroupData = $userGroupNormalizer->normalize($userGroup);
+        unset($userGroupData["adminData"]);
+        unset($userGroupData["memberCount"]);
+        unset($userGroupData["incomingEventsCount"]);
         return [
             ...$userGroupData,
-            "isUserAdmin" => $isUserAdmin
+            "isUserAdmin" => $isUserAdmin,
         ];
     }
 

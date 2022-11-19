@@ -135,7 +135,7 @@ class UserGroupRepository extends BaseRepository implements UserGroupRepositoryI
     public function findAllGroupsForUser(int $userId): array
     {
         $sql = 'SELECT ug.group_id, ug.name, ug.owner_id,
-       (
+        (
             SELECT to_json(array_agg(row_to_json(d)))
             FROM (
                 SELECT 
@@ -174,7 +174,6 @@ class UserGroupRepository extends BaseRepository implements UserGroupRepositoryI
             $this->handleDriverException($e);
         }
     }
-
 
     /**
      * @throws DriverException
@@ -264,9 +263,24 @@ class UserGroupRepository extends BaseRepository implements UserGroupRepositoryI
         }
     }
 
+    /**
+     * @throws DriverException
+     * @throws EntityNotFoundException
+     * @throws DbalException
+     * @throws UniqueConstraintViolationException
+     */
     public function delete(UserGroup $userGroup): void
     {
-        // TODO: Implement delete() method.
+        $sql = 'DELETE FROM ' . $this->tableName . ' WHERE group_id = :group_id';
+
+        try {
+            $statement = $this->connection->prepare($sql);
+            $statement->bindValue('group_id', $userGroup->getGroupId());
+            $statement->executeQuery();
+
+        } catch (DriverException $e) {
+            $this->handleDriverException($e);
+        }
     }
 }
 

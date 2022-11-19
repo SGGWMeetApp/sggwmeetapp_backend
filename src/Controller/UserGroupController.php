@@ -10,7 +10,8 @@ use App\Repository\UserRepositoryInterface;
 use App\Repository\EntityNotFoundException;
 use App\Repository\UserGroupRepositoryInterface;
 use App\Request\CreateUserGroupRequest;
-use App\Response\UserGroupResponse;
+use App\Response\GroupUsersResponse;
+use App\Response\GroupsResponse;
 use App\Serializer\UserGroupNormalizer;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -130,9 +131,6 @@ class UserGroupController extends ApiController
         }
     }
 
-    /**
-     * @throws ExceptionInterface
-     */
     public function getGroups(
         UserGroupRepositoryInterface $userGroupRepository,
         UserRepositoryInterface $userRepository
@@ -146,17 +144,7 @@ class UserGroupController extends ApiController
             return $this->respondInternalServerError($e);
         }
 
-        $userGroupNormalizer = new UserGroupNormalizer();
-        $normalizedUserGroups = [];
-        foreach($userGroups as $userGroup) {
-            $isUserAdmin = $user->isEqualTo($userGroup->getOwner());
-            $normalizedUserGroup = $userGroupNormalizer->normalize($userGroup);
-            $normalizedUserGroup["adminData"]["isUserAdmin"] = $isUserAdmin;
-            unset($normalizedUserGroup["users"]);
-            $normalizedUserGroups [] = $normalizedUserGroup;
-        }
-
-        return $this->response(["groups" => $normalizedUserGroups]);
+        return new GroupsResponse($userGroups, $user);
     }
 
     public function getGroupUsers(
@@ -186,18 +174,8 @@ class UserGroupController extends ApiController
         if(!$hasListAccess) {
             return $this->respondUnauthorized('Unauthorized. You are not a member of this group.');
         }
-        $userGroupNormalizer = new UserGroupNormalizer();
-        $isUserAdmin = $user->isEqualTo($userGroup->getOwner());
-        $userGroupData = $userGroupNormalizer->normalize($userGroup);
-        unset($userGroupData["adminData"]);
-        unset($userGroupData["memberCount"]);
-        unset($userGroupData["incomingEventsCount"]);
-        return $this->response([
-            ...$userGroupData,
-            "isUserAdmin" => $isUserAdmin,
-        ]);
 
-//        return new UserGroupResponse($userGroup, $user);
+        return new GroupUsersResponse($userGroup, $user);
     }
 
     public function addGroupUser(
@@ -269,21 +247,17 @@ class UserGroupController extends ApiController
         } catch (EntityNotFoundException $e) {
             return $this->respondNotFound();
         }
-        $userGroupRepository->deleteUserFromGroup($userGroup->getGroupId(), $user->getId());
-        $userGroups = $userGroupRepository->findAllGroupsForUser($user->getId());
-        //TODO: either delete user group when admin leaves the group or name a new admin (next from the list)
-        //TODO: delete user object from users userGroups object array and group object from group User
 
-        $userGroupNormalizer = new UserGroupNormalizer();
-        $normalizedUserGroups = [];
-        foreach($userGroups as $userGroup) {
-            $normalizedUserGroup = $userGroupNormalizer->normalize($userGroup);
-            unset($normalizedUserGroup["users"]);
-            $normalizedUserGroups [] = $normalizedUserGroup;
+        // when owner leaves the group, a group is deleted (users are deleted on cascade)
+        if($user->isEqualTo($userGroup->getOwner())) {
+            $userGroupRepository->delete($userGroup);
+        } else {
+            $userGroupRepository->deleteUserFromGroup($userGroup->getGroupId(), $user->getId());
         }
 
-        return $this->response(["groups" => $normalizedUserGroups]);
+        $userGroups = $userGroupRepository->findAllGroupsForUser($user->getId());
 
+        return new GroupsResponse($userGroups, $user);
     }
 
     public function leaveGroupEvent(int $event_id): JsonResponse
