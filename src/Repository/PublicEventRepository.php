@@ -192,7 +192,7 @@ class PublicEventRepository extends BaseRepository implements PublicEventReposit
         
         try {
             $statement = $this->connection->prepare($sql);
-            $statement->bindValue('startDate', $publicEvent->getStartDate()->format('Y-m-d H:i:s'));
+            $statement->bindValue('startDate', $publicEvent->getStartDate()->format(self::DEFAULT_DATETIME_FORMAT));
             $statement->bindValue('name', $publicEvent->getName());
             $statement->bindValue('description', $publicEvent->getDescription());
             $statement->bindValue('locationID', $publicEvent->getLocation()->getId());
@@ -219,7 +219,7 @@ class PublicEventRepository extends BaseRepository implements PublicEventReposit
             WHERE event_id=:eventId';
         try {
             $statement = $this->connection->prepare($sql);
-            $statement->bindValue('startDate', $publicEvent->getStartDate()->format('Y-m-d H:i:s'));
+            $statement->bindValue('startDate', $publicEvent->getStartDate()->format(self::DEFAULT_DATETIME_FORMAT));
             $statement->bindValue('name', $publicEvent->getName());
             $statement->bindValue('description', $publicEvent->getDescription());
             $statement->bindValue('locationId', $publicEvent->getLocation()->getId());
