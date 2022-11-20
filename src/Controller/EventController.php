@@ -139,6 +139,12 @@ class EventController extends ApiController {
         }
         try {
              $publicEvent = $publicEventRepository ->findOrFail($event_id);
+             
+             if(!($publicEvent->getCanEdit())){
+                return $this->setStatusCode(409)
+                ->respondWithError('Can_edit=False', 'Event nie ma możliwości edycji.');
+             }
+             
         } catch (EntityNotFoundException) {
              return $this->respondNotFound();
         }

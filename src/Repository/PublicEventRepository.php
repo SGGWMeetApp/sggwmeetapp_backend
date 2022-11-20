@@ -208,7 +208,7 @@ class PublicEventRepository extends BaseRepository implements PublicEventReposit
 
     public function update(PublicEvent $publicEvent): void 
     {
-        //TODO if canEdit == false => Co ty gnoju robisz, nie mozesz edytować XD
+        
         $sql = 'UPDATE '. $this->tableName .
             ' SET
                 start_date=:startDate,
@@ -235,7 +235,17 @@ class PublicEventRepository extends BaseRepository implements PublicEventReposit
 
     public function delete(PublicEvent $publicEvent): void
     {
-        throw new NotImplementedException('PublicEven update() method is not yet implemented.');
+        $sql = 'DELETE'. $this->tableName .
+        ' WHERE event_id=:eventId';
+    try {
+        $statement = $this->connection->prepare($sql);
+        $statement->bindValue('eventId', $publicEvent->getId());
+        //dd($statement);
+        $statement->executeQuery();
+        
+    } catch (DriverException $e) {
+        $this->handleDriverException($e);
+    }
     }
       
    

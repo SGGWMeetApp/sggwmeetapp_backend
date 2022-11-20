@@ -71,7 +71,7 @@ class PublicEventNormalizer implements NormalizerInterface, DenormalizerInterfac
                 $data['userdes'],
                 ['ROLE_USER']
             ),
-            $cenEdit=$data['can_edit'] === 'true'? true: false
+            $data['can_edit']
         );
         
       
