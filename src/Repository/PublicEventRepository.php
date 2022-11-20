@@ -44,6 +44,10 @@ class PublicEventRepository extends BaseRepository implements PublicEventReposit
                 p.event_id,
                 p.location_id,
                 l.name AS locName,
+                l.description AS locDes,
+                l.lat,
+                l.long,
+                l.rating_pct,
                 p.name AS eventName,
                 p.description AS evntDes,
                 p.start_date,
@@ -64,7 +68,9 @@ class PublicEventRepository extends BaseRepository implements PublicEventReposit
         try {
             $statement = $this->connection->prepare($sql);
             $statement->bindValue('eventId', $eventId);
+            
             $result = $statement->executeQuery();
+            
             if ($data = $result->fetchAssociative()) {
                 //dd($data);
                 return $this->publicEventNormalizer->denormalize($data, 'PublicEvent');
@@ -89,6 +95,10 @@ class PublicEventRepository extends BaseRepository implements PublicEventReposit
                 p.event_id,
                 p.location_id,
                 l.name AS locName,
+                l.description AS locDes,
+                l.lat,
+                l.long,
+                l.rating_pct,
                 p.name AS eventName,
                 p.description AS evntDes,
                 p.start_date,
@@ -123,24 +133,87 @@ class PublicEventRepository extends BaseRepository implements PublicEventReposit
         }
     }
 
+     /**
+     * @throws DriverException
+     * @throws EntityNotFoundException
+     * @throws UniqueConstraintViolationException
+     * @throws DbalException
+     */
+
+    public function findUpcoming(): array
+    {
+        $test=new \DateTimeImmutable("+7 day");
+        //dd($test->format('Y/m/d H:i:s'));
+        $sql = '
+            SELECT
+                p.event_id,
+                p.location_id,
+                l.name AS locName,
+                l.description AS locDes,
+                l.lat,
+                l.long,
+                l.rating_pct,
+                p.name AS eventName,
+                p.description AS evntDes,
+                p.start_date,
+                p.can_edit,
+                b.user_id,
+                b.first_name,
+                b.last_name,
+                b.email,
+                b.phone_number_prefix,
+                b.phone_number,
+                b.description AS userDes
+
+            FROM ' . $this->tableName .' p
+            INNER JOIN users b ON p.owner_id = b.user_id
+            INNER JOIN locations l ON p.location_id =l.location_id
+            WHERE p.start_date < \''.$test->format(self::DEFAULT_DATETIME_FORMAT).'\' ' ;
+        try {
+            $statement = $this->connection->prepare($sql);
+            $result = $statement->executeQuery();
+            $publicEvents = [];
+            while($data = $result->fetchAssociative()) {
+                $publicEvents [] = $this->publicEventNormalizer->denormalize($data, 'PublicEvent');
+            }
+            return $publicEvents;
+        } catch (DriverException $e) {
+            $this->handleDriverException($e);
+        }
+    }
+
 
     public function add(PublicEvent $publicEvent): void
     {
+<<<<<<< Updated upstream
         $data = new DateTimeImmutable('Y-m-d H:i:s');
         
         $sql = 'INSERT INTO EVENTS
         ( location_id, start_date, name, description,  creation_date, owner_id)
         VALUES( :locationID, :startDate, :name, :description, :creation_date, :ownerID)';
+=======
+        
+        $sql = 'INSERT INTO ' . $this->tableName .
+        ' (location_id, start_date, name, description, owner_id, is_public, can_edit )
+        VALUES(:locationID, :startDate, :name, :description, :ownerID, true, :canEdit)';
+>>>>>>> Stashed changes
         
         try {
             $statement = $this->connection->prepare($sql);
             $statement->bindValue('startDate', $publicEvent->getStartDate()->format('Y-m-d H:i:s'));
             $statement->bindValue('name', $publicEvent->getName());
             $statement->bindValue('description', $publicEvent->getDescription());
+<<<<<<< Updated upstream
             $statement->bindValue('locationID', $publicEvent->getLocationID());
             $statement->bindValue('creation_date', $data->format('Y-m-d H:i:s'));
             $statement->bindValue('ownerID', $publicEvent->getAuthor()->getId());
             
+=======
+            $statement->bindValue('locationID', $publicEvent->getLocation()->getId());
+            $statement->bindValue('ownerID', $publicEvent->getAuthor()->getId());
+            $statement->bindValue('canEdit', $publicEvent->getCanEdit());
+           
+>>>>>>> Stashed changes
             $statement->executeQuery();
             
         } catch (DriverException $e) {
@@ -150,23 +223,41 @@ class PublicEventRepository extends BaseRepository implements PublicEventReposit
 
     public function update(PublicEvent $publicEvent): void 
     {
+<<<<<<< Updated upstream
 
         
         $sql = 'UPDATE '. $this->tableName .' SET   start_date=:startDate, name=:name, description=:descritpion, location_id=:locationId  WHERE event_id=:eventId';
         
+=======
+        //TODO if canEdit == false => Co ty gnoju robisz, nie mozesz edytować XD
+        $sql = 'UPDATE '. $this->tableName .
+            ' SET
+                start_date=:startDate,
+                name=:name,
+                description=:description,
+                location_id=:locationId
+                
+            WHERE event_id=:eventId';
+>>>>>>> Stashed changes
         try {
             $statement = $this->connection->prepare($sql);
             $statement->bindValue('startDate', $publicEvent->getStartDate()->format('Y-m-d H:i:s'));
             $statement->bindValue('name', $publicEvent->getName());
+<<<<<<< Updated upstream
             $statement->bindValue('descritpion', $publicEvent->getDescription());
             $statement->bindValue('locationId', $publicEvent->getLocationID());
+=======
+            $statement->bindValue('description', $publicEvent->getDescription());
+            $statement->bindValue('locationId', $publicEvent->getLocation()->getId());
+>>>>>>> Stashed changes
             $statement->bindValue('eventId', $publicEvent->getId());
-            
+            //dd($statement);
             $statement->executeQuery();
             
         } catch (DriverException $e) {
             $this->handleDriverException($e);
         }
+        
     }
 
     public function delete(PublicEvent $publicEvent): void
