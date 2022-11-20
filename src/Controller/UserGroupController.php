@@ -3,78 +3,133 @@
 namespace App\Controller;
 
 use App\Exception\FormException;
+use App\Form\PrivateEventType;
 use App\Form\UserGroupDataType;
+use App\Model\PrivateEvent;
 use App\Model\UserGroup;
+use App\Repository\PlaceRepositoryInterface;
+use App\Repository\PrivateEventRepositoryInterface;
 use App\Repository\UniqueConstraintViolationException;
 use App\Repository\UserRepositoryInterface;
 use App\Repository\EntityNotFoundException;
 use App\Repository\UserGroupRepositoryInterface;
 use App\Request\CreateUserGroupRequest;
+use App\Request\PrivateEventRequest;
+use App\Response\PrivateEventResponse;
 use App\Response\GroupUsersResponse;
 use App\Response\GroupsResponse;
-use App\Serializer\UserGroupNormalizer;
+use App\Serializer\AuthorUserNormalizer;
+use App\Serializer\PrivateEventNormalizer;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\Serializer\Exception\ExceptionInterface;
 
 
 class UserGroupController extends ApiController
 {
-
-    // TODO: getGroupPrivateEventsAction
-    public function getGroupPrivateEventsAction(
+    public function getGroupPrivateEvents(
         int $group_id,
         UserGroupRepositoryInterface $userGroupRepository,
-        UserRepositoryInterface $userRepository
+        UserRepositoryInterface $userRepository,
+        PrivateEventRepositoryInterface $privateEventRepository
     ): JsonResponse
     {
+        $jwtUser = $this->getUser();
+        try {
+            $user = $userRepository->findOrFail($jwtUser->getUserIdentifier());
+        } catch (EntityNotFoundException $e) {
+            return $this->respondInternalServerError($e);
+        }
+        try {
+            $userGroup = $userGroupRepository->findOrFail($group_id);
+        } catch (EntityNotFoundException) {
+            return $this->respondNotFound();
+        }
 
+        $isUserInGroup = $userGroup->containsUser($user);
+        if(!$isUserInGroup) {
+            return $this->respondUnauthorized('Unauthorized. You are not a member of this group.');
+        }
 
+        try {
+            $privateEvents = $privateEventRepository->findAll($group_id);
+        } catch(EntityNotFoundException) {
+            return $this->respondNotFound();
+        }
 
-        return $this->response(["events" => [
-            [
-                "id" => 1,
-                "name" => "Urodziny Marleny",
-                "description" => "W sobotę 5 listopada imprezka w klubie Niebo z okazji moich urodzin! Wpadajcie o 19 na bifor na miasteczko SGGW!",
-                "startDate" => "2022-11-05T20:00:00.000Z",
-                "locationData" => [
-                    "name" => "Klub Niebo"
-                ],
-                "author" => [
-                    "firstName" => "Marlena",
-                    "lastName" => "Kowalska",
-                    "email" => "mkowalska123@email.com"
-                ],
-                "canEdit" => false,
-                "notification24hEnabled" => true
-            ]
-        ]]);
+        // TODO: move it to Response
+        $privateEventsData = [];
+        foreach($privateEvents as $privateEvent) {
+            $privateEventNormalizer = new PrivateEventNormalizer();
+            $privateEventData = $privateEventNormalizer->normalize($privateEvent);
+            $authorNormalizer = new AuthorUserNormalizer();
+            $authorData = $authorNormalizer->normalize($privateEvent->getAuthor());
+            $privateEventsData [] = [
+                ...$privateEventData,
+                "author" => $authorData
+            ];
+        }
+
+        return $this->response(["events" => $privateEventsData]);
     }
 
-    //TODO: createGroupPrivateEventAction
-    public function createGroupPrivateEventAction(Request $request): JsonResponse
+    public function createGroupPrivateEvent(
+        int $group_id,
+        Request $request,
+        UserRepositoryInterface $userRepository,
+        UserGroupRepositoryInterface $userGroupRepository,
+        PrivateEventRepositoryInterface $privateEventRepository,
+        PlaceRepositoryInterface $placeRepository
+    ): JsonResponse
     {
-        // get data from request
+        $requestData = json_decode($request->getContent(),true);
+        $addPrivateEventRequest = new PrivateEventRequest();
 
-        // add event to database
+        $this->handlePrivateEventRequest($addPrivateEventRequest, $requestData);
 
-        // return event
-        return $this->response([
-            "id" => 1,
-            "name" => "Urodziny Marleny",
-            "description" => "W sobotę 5 listopada imprezka w klubie Niebo z okazji moich urodzin! Wpadajcie o 19 na bifor na miasteczko SGGW!",
-            "startDate" => "2022-11-05T20:00:00.000Z",
-            "locationData" => [
-                "name" => "Klub Niebo"
-            ],
-            "author" => [
-                "firstName" => "Marlena",
-                "lastName" => "Kowalska",
-                "email" => "mkowalska123@email.com"
-            ],
-            "canEdit" => true,
-            "notification24hEnabled" => false
-        ]);
+        //TODO: private event based on public event
+
+        $jwtUser = $this->getUser();
+        try {
+            $user = $userRepository->findOrFail($jwtUser->getUserIdentifier());
+        } catch (EntityNotFoundException $e) {
+            return $this->respondInternalServerError($e);
+        }
+        try {
+            $location = $placeRepository->findOrFail((int)$requestData['locationId']);
+            $userGroup = $userGroupRepository->findOrFail($group_id);
+        } catch (EntityNotFoundException) {
+            return $this->respondNotFound();
+        }
+
+        $isUserInGroup = $userGroup->containsUser($user);
+        if(!$isUserInGroup) {
+            return $this->respondUnauthorized('Unauthorized. You are not a member of this group.');
+        }
+
+        $privateEvent = new PrivateEvent(
+            null,
+            $addPrivateEventRequest->name,
+            $location,
+            $addPrivateEventRequest->description,
+            $addPrivateEventRequest->startDate,
+            $user,
+            $userGroup
+        );
+
+        $privateEventRepository->add($privateEvent);
+        $userGroup->addEvent($privateEvent);
+
+        return new PrivateEventResponse($privateEvent);
+    }
+
+    private function handlePrivateEventRequest(PrivateEventRequest $request, mixed $requestData): void
+    {
+        $form = $this->createForm(PrivateEventType::class, $request);
+        $form->submit($requestData);
+        if (!$form->isValid()) {
+            throw new FormException($form);
+        }
+
     }
 
     //TODO: enableGroupEventNotifications
