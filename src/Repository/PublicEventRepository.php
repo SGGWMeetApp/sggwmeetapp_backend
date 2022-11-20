@@ -185,35 +185,20 @@ class PublicEventRepository extends BaseRepository implements PublicEventReposit
 
     public function add(PublicEvent $publicEvent): void
     {
-<<<<<<< Updated upstream
-        $data = new DateTimeImmutable('Y-m-d H:i:s');
-        
-        $sql = 'INSERT INTO EVENTS
-        ( location_id, start_date, name, description,  creation_date, owner_id)
-        VALUES( :locationID, :startDate, :name, :description, :creation_date, :ownerID)';
-=======
-        
+
         $sql = 'INSERT INTO ' . $this->tableName .
         ' (location_id, start_date, name, description, owner_id, is_public, can_edit )
         VALUES(:locationID, :startDate, :name, :description, :ownerID, true, :canEdit)';
->>>>>>> Stashed changes
         
         try {
             $statement = $this->connection->prepare($sql);
             $statement->bindValue('startDate', $publicEvent->getStartDate()->format('Y-m-d H:i:s'));
             $statement->bindValue('name', $publicEvent->getName());
             $statement->bindValue('description', $publicEvent->getDescription());
-<<<<<<< Updated upstream
-            $statement->bindValue('locationID', $publicEvent->getLocationID());
-            $statement->bindValue('creation_date', $data->format('Y-m-d H:i:s'));
-            $statement->bindValue('ownerID', $publicEvent->getAuthor()->getId());
-            
-=======
             $statement->bindValue('locationID', $publicEvent->getLocation()->getId());
             $statement->bindValue('ownerID', $publicEvent->getAuthor()->getId());
             $statement->bindValue('canEdit', $publicEvent->getCanEdit());
            
->>>>>>> Stashed changes
             $statement->executeQuery();
             
         } catch (DriverException $e) {
@@ -223,12 +208,6 @@ class PublicEventRepository extends BaseRepository implements PublicEventReposit
 
     public function update(PublicEvent $publicEvent): void 
     {
-<<<<<<< Updated upstream
-
-        
-        $sql = 'UPDATE '. $this->tableName .' SET   start_date=:startDate, name=:name, description=:descritpion, location_id=:locationId  WHERE event_id=:eventId';
-        
-=======
         //TODO if canEdit == false => Co ty gnoju robisz, nie mozesz edytować XD
         $sql = 'UPDATE '. $this->tableName .
             ' SET
@@ -238,18 +217,12 @@ class PublicEventRepository extends BaseRepository implements PublicEventReposit
                 location_id=:locationId
                 
             WHERE event_id=:eventId';
->>>>>>> Stashed changes
         try {
             $statement = $this->connection->prepare($sql);
             $statement->bindValue('startDate', $publicEvent->getStartDate()->format('Y-m-d H:i:s'));
             $statement->bindValue('name', $publicEvent->getName());
-<<<<<<< Updated upstream
-            $statement->bindValue('descritpion', $publicEvent->getDescription());
-            $statement->bindValue('locationId', $publicEvent->getLocationID());
-=======
             $statement->bindValue('description', $publicEvent->getDescription());
             $statement->bindValue('locationId', $publicEvent->getLocation()->getId());
->>>>>>> Stashed changes
             $statement->bindValue('eventId', $publicEvent->getId());
             //dd($statement);
             $statement->executeQuery();
