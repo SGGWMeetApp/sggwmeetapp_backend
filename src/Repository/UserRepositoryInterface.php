@@ -13,5 +13,12 @@ interface UserRepositoryInterface
      */
     public function findOrFail(string $identifier): User;
 
+    /**
+     * @throws EntityNotFoundException
+     * @param string $userId
+     * @return User
+     */
+    public function findByIdOrFail(string $userId): User;
+
     public function add(User $user): void;
 }

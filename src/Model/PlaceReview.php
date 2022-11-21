@@ -39,6 +39,14 @@ class PlaceReview
         return $this->reviewId;
     }
 
+    /**
+     * @param int|null $reviewId
+     */
+    public function setReviewId(?int $reviewId): void
+    {
+        $this->reviewId = $reviewId;
+    }
+
     public function getPlaceId(): int
     {
         return $this->placeId;

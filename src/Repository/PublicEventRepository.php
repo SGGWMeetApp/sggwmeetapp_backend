@@ -28,7 +28,7 @@ class PublicEventRepository extends BaseRepository implements PublicEventReposit
     }
 
 
-/**
+    /**
      * @inheritDoc
      * @throws DriverException
      * @throws DbalException
@@ -118,18 +118,14 @@ class PublicEventRepository extends BaseRepository implements PublicEventReposit
             ';
         try {
             $statement = $this->connection->prepare($sql);
-        
             $result = $statement->executeQuery();
-            
             $publicEvents = [];
             while($data = $result->fetchAssociative()) {
-                
                 $publicEvents [] = $this->publicEventNormalizer->denormalize($data, 'PublicEvent');
             }
             return $publicEvents;
-            throw new EntityNotFoundException();
         } catch (DriverException $e) {
-        $this->handleDriverException($e);
+            $this->handleDriverException($e);
         }
     }
 
@@ -183,6 +179,12 @@ class PublicEventRepository extends BaseRepository implements PublicEventReposit
     }
 
 
+    /**
+     * @throws DriverException
+     * @throws EntityNotFoundException
+     * @throws UniqueConstraintViolationException
+     * @throws DbalException
+     */
     public function add(PublicEvent $publicEvent): void
     {
 
@@ -200,7 +202,6 @@ class PublicEventRepository extends BaseRepository implements PublicEventReposit
             $statement->bindValue('canEdit', $publicEvent->getCanEdit());
            
             $statement->executeQuery();
-            
         } catch (DriverException $e) {
             $this->handleDriverException($e);
         }
@@ -226,7 +227,6 @@ class PublicEventRepository extends BaseRepository implements PublicEventReposit
             $statement->bindValue('eventId', $publicEvent->getId());
             //dd($statement);
             $statement->executeQuery();
-            
         } catch (DriverException $e) {
             $this->handleDriverException($e);
         }

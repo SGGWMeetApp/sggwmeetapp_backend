@@ -3,18 +3,22 @@
 namespace App\Repository;
 
 use App\Security\User;
+use App\Serializer\UserNormalizer;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception as DbalException;
 use Doctrine\DBAL\Exception\DriverException;
+use Symfony\Component\Serializer\Exception\ExceptionInterface as SerializerExceptionInterface;
 
 class UserRepository extends BaseRepository implements UserRepositoryInterface
 {
     private Connection $connection;
     private string $tableName = 'app_owner.users';
+    private UserNormalizer $userNormalizer;
 
     public function __construct(Connection $connection)
     {
         $this->connection = $connection;
+        $this->userNormalizer = new UserNormalizer();
     }
 
     /**
@@ -22,6 +26,7 @@ class UserRepository extends BaseRepository implements UserRepositoryInterface
      * @throws EntityNotFoundException
      * @throws DbalException
      * @throws UniqueConstraintViolationException
+     * @throws SerializerExceptionInterface
      */
     public function findOrFail(string $identifier): User
     {
@@ -35,17 +40,32 @@ class UserRepository extends BaseRepository implements UserRepositoryInterface
         }
         $data = $result->fetchAssociative();
         if ($data !== false) {
-            return new User(
-                $data['user_id'],
-                $data['first_name'],
-                $data['last_name'],
-                $data['email'],
-                $data['password'],
-                $data['phone_number_prefix'],
-                $data['phone_number'],
-                $data['description'],
-                ['ROLE_USER']
-            );
+            return $this->userNormalizer->denormalize($data, User::class);
+        } else {
+            throw new EntityNotFoundException();
+        }
+    }
+
+    /**
+     * @throws DriverException
+     * @throws EntityNotFoundException
+     * @throws DbalException
+     * @throws UniqueConstraintViolationException
+     * @throws SerializerExceptionInterface
+     */
+    public function findByIdOrFail(string $userId): User
+    {
+        $sql = 'SELECT * FROM ' . $this->tableName . ' WHERE user_id = :userId';
+        try {
+            $statement = $this->connection->prepare($sql);
+            $statement->bindValue("userId", $userId);
+            $result = $statement->executeQuery();
+        } catch (DriverException $e) {
+            $this->handleDriverException($e);
+        }
+        $data = $result->fetchAssociative();
+        if ($data !== false) {
+            return $this->userNormalizer->denormalize($data, User::class);
         } else {
             throw new EntityNotFoundException();
         }

@@ -13,3 +13,8 @@
 ###> lexik/jwt-authentication-bundle ###
 /config/jwt/*.pem
 ###< lexik/jwt-authentication-bundle ###
+
+###> deploying ###
+/deploy.tar
+/deploy.zip
+###< deploying ###

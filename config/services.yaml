@@ -25,6 +25,9 @@ services:
     App\EventListener\ExceptionListener:
         tags:
             - { name: kernel.event_listener, event: kernel.exception }
+    App\EventListener\JWTAuthSuccessListener:
+        tags:
+            - { name: kernel.event_listener, event: lexik_jwt_authentication.on_authentication_success, method: onJWTAuthenticationSuccess}
     App\Serializer\FormExceptionNormalizer:
         tags: [ 'serializer.normalizer' ]
     App\Factory\NormalizerFactory:
@@ -37,7 +40,7 @@ services:
         parent: App\Controller\ApiController
     App\Controller\EventController:
         parent: App\Controller\ApiController
-    App\Controller\GroupController:
+    App\Controller\UserGroupController:
         parent: App\Controller\ApiController
     App\Controller\PlaceController:
         parent: App\Controller\ApiController
