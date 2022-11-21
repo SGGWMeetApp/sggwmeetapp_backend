@@ -40,13 +40,38 @@ class PublicEvent
         return $this->id;
     }
 
+    /**
+     * @param int|null $id
+     */
+    public function setId(?int $id): void
+    {
+        $this->id = $id;
+    }
+
     public function getName(): string
     {
         return $this->name;
     }
+
+    /**
+     * @param string $name
+     */
+    public function setName(string $name): void
+    {
+        $this->name = $name;
+    }
+
     public function getLocation(): Place
     {
         return $this->location;
+    }
+
+    /**
+     * @param \App\Model\Place|null $location
+     */
+    public function setLocation(?\App\Model\Place $location): void
+    {
+        $this->location = $location;
     }
 
     public function getDescription(): ?string

@@ -15,9 +15,8 @@ class PublicEventRequest
     public $name;
 
      /**
-     * @Assert\NotBlank(allowNull=true)
-     * @Assert\Type("int")
-     * @Assert\Length(max="2000")
+     * @Assert\NotNull()
+     * @Assert\Type("integer")
      * @var int
      */
     public $locationId;

@@ -24,8 +24,8 @@ class PublicEventNormalizer implements NormalizerInterface, DenormalizerInterfac
         }
         return [
             "id" => $object->getId(),
-            "eventName" => $object->getName(),
-            "evntDes" =>$object->getDescription(),
+            "name" => $object->getName(),
+            "description" => $object->getDescription(),
             "locationData" => $object->getLocation(),
             "startDate" => $object->getStartDate()->format('Y-m-d\TH:i:s.v\Z'),
             "author" => $object->getAuthor(),
