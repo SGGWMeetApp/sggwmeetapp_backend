@@ -13,6 +13,7 @@ interface PublicEventRepositoryInterface
     public function findOrFail(int $eventId): PublicEvent;
 
     public function findAll(): array;
+    public function findUpcoming(): array;
 
     public function add(PublicEvent $publicEvent): void;
 

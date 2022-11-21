@@ -4,6 +4,7 @@ namespace App\Serializer;
 
 use App\Model\GeoLocation;
 use App\Model\PublicEvent;
+use App\Model\Place;
 use Symfony\Component\Serializer\Exception\InvalidArgumentException;
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
@@ -25,10 +26,7 @@ class PublicEventNormalizer implements NormalizerInterface, DenormalizerInterfac
             "id" => $object->getId(),
             "eventName" => $object->getName(),
             "evntDes" =>$object->getDescription(),
-            "locationData" => [
-                "ID"=>$object->getLocationID(),
-                "locName"=>$object->getLocationName()
-            ],
+            "locationData" => $object->getLocation(),
             "startDate" => $object->getStartDate()->format('Y-m-d\TH:i:s.v\Z'),
             "author" => $object->getAuthor(),
             "canEdit" => $object->getCanEdit(),
@@ -45,11 +43,21 @@ class PublicEventNormalizer implements NormalizerInterface, DenormalizerInterfac
 
     public function denormalize(mixed $data, string $type, string $format = null, array $context = []): PublicEvent
     {
+        
         $publicEvent = new PublicEvent(
             (int)$data['event_id'],
             $data['eventname'],
-            (int)$data['location_id'],
-            $data['locname'],
+            new Place(
+                (int)$data['location_id'],
+                $data['locname'],
+                new GeoLocation(
+                    $data['lat'],
+                    $data['long'],
+                ),
+                $data['locdes'],
+                $data['rating_pct']
+            ),
+           
             $data['evntdes'],
             new DateTimeImmutable($data['start_date']),
             new User(
@@ -63,10 +71,10 @@ class PublicEventNormalizer implements NormalizerInterface, DenormalizerInterfac
                 $data['userdes'],
                 ['ROLE_USER']
             ),
-            $cenEdit=$data['can_edit'] === 'true'? true: false
+            $data['can_edit']
         );
         
-        
+      
         return $publicEvent ;
     }
 

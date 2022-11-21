@@ -5,6 +5,7 @@ namespace App\Response;
 use App\Model\PublicEvent;
 use App\Serializer\AuthorUserNormalizer;
 use App\Serializer\PublicEventNormalizer;
+use App\Serializer\PlaceNormalizer;
 use Symfony\Component\HttpFoundation\JsonResponse;
 
 class PublicEventResponse extends JsonResponse
@@ -25,8 +26,11 @@ class PublicEventResponse extends JsonResponse
         $publicEventData = $publicEventNormalizer->normalize($publicEvent);
         $authorNormalizer = new AuthorUserNormalizer();
         $authorData = $authorNormalizer->normalize($publicEvent->getAuthor());
+        $locationNormalizer = new PlaceNormalizer();
+        $locationData=$locationNormalizer->normalize($publicEvent->getLocation());
         return [
             ...$publicEventData,
+            "locationData" => $locationData,
             "author" => $authorData
         ];
     }

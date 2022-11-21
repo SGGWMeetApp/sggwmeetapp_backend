@@ -15,15 +15,16 @@ class PublicEventRequest
     public $name;
 
      /**
-     * @Assert\NotNull()
-     * @Assert\Type("integer")
+     * @Assert\NotBlank(allowNull=true)
+     * @Assert\Type("int")
+     * @Assert\Length(max="2000")
      * @var int
      */
     public $locationId;
-
      /**
      * @Assert\NotBlank(allowNull=true)
      * @Assert\Type("string")
+     * @Assert\Length(max="2000")
      * @var string
      */
     public $description;
