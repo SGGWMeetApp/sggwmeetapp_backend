@@ -191,7 +191,7 @@ class PublicEventRepository extends BaseRepository implements PublicEventReposit
      */
     public function delete(PublicEvent $publicEvent): void
     {
-        $sql = 'DELETE'. $this->tableName .
+        $sql = 'DELETE FROM '. $this->tableName .
         ' WHERE event_id=:eventId';
         try {
             $statement = $this->connection->prepare($sql);
