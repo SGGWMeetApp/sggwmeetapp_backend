@@ -29,7 +29,7 @@ CREATE TABLE users (
     phone_number_prefix char(4) NOT NULL,
     phone_number varchar(15) NOT NULL,
     location_sharing_mode integer NOT NULL DEFAULT 0,
-    description text NOT NULL,
+    description text NULL,
     UNIQUE (phone_number_prefix, phone_number)
 );
 
