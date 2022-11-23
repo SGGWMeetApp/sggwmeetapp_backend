@@ -8,7 +8,6 @@ use App\Model\Place;
 use Symfony\Component\Serializer\Exception\InvalidArgumentException;
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
-use Monolog\DateTimeImmutable;
 use App\Security\User;
 
 class PublicEventNormalizer implements NormalizerInterface, DenormalizerInterface
@@ -17,7 +16,7 @@ class PublicEventNormalizer implements NormalizerInterface, DenormalizerInterfac
     /**
      * @inheritDoc
      */
-    public function normalize(mixed $object, string $format = null, array $context = [])
+    public function normalize(mixed $object, string $format = null, array $context = []): float|int|bool|\ArrayObject|array|string|null
     {
         if (!$object instanceof PublicEvent) {
             throw new InvalidArgumentException('This normalizer only accepts objects of type App\Model\PublicEvent');
@@ -43,10 +42,13 @@ class PublicEventNormalizer implements NormalizerInterface, DenormalizerInterfac
         return $data instanceof PublicEvent;
     }
 
+    /**
+     * @throws \Exception
+     */
     public function denormalize(mixed $data, string $type, string $format = null, array $context = []): PublicEvent
     {
         
-        $publicEvent = new PublicEvent(
+        return new PublicEvent(
             (int)$data['event_id'],
             $data['eventname'],
             new Place(
@@ -61,7 +63,7 @@ class PublicEventNormalizer implements NormalizerInterface, DenormalizerInterfac
             ),
            
             $data['evntdes'],
-            new DateTimeImmutable($data['start_date']),
+            new \DateTimeImmutable($data['start_date']),
             new User(
                 (int)$data['user_id'],
                 $data['first_name'],
@@ -75,9 +77,6 @@ class PublicEventNormalizer implements NormalizerInterface, DenormalizerInterfac
             ),
             $data['can_edit']
         );
-        
-      
-        return $publicEvent ;
     }
 
     public function supportsDenormalization(mixed $data, string $type, string $format = null, array $context = []): bool
