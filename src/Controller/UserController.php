@@ -2,8 +2,12 @@
 
 namespace App\Controller;
 
+use App\Repository\EntityNotFoundException;
+use App\Repository\UserRepositoryInterface;
+use App\Serializer\UserNormalizer;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\Serializer\Exception\ExceptionInterface as SerializerExceptionInterface;
 
 class UserController extends ApiController
 {
@@ -27,17 +31,23 @@ class UserController extends ApiController
 
     }
 
-    public function getUserData(int $user_id): JsonResponse
+    /**
+     * @throws SerializerExceptionInterface
+     */
+    public function getUserData(
+        int $user_id,
+        UserRepositoryInterface $userRepository
+    ): JsonResponse
     {
+        try {
+            $user = $userRepository->findByIdOrFail($user_id);
+        } catch (EntityNotFoundException) {
+            return $this->respondNotFound();
+        }
+        $userNormalizer = new UserNormalizer();
         return $this->response([
-            "email" => "jan_kowalski@example.com",
-            "userData" => [
-                "firstName" => "Jan",
-                "lastName" => "Kowalski",
-                "phoneNumber" => "123456789",
-                "description" => null,
-                "avatarUrl" => ""
-            ]
+            "email" => $user->getEmail(),
+            "userData" => $userNormalizer->normalize($user)
         ]);
     }
 
