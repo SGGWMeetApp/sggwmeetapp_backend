@@ -5,9 +5,12 @@ namespace App\Controller;
 use App\Exception\FormException;
 use App\Filter\UserFilters;
 use App\Form\SearchUsersForGroupType;
+use App\Form\UpdateUserType;
 use App\Repository\EntityNotFoundException;
 use App\Repository\UserRepositoryInterface;
 use App\Request\GetUsersEligibleForGroupRequest;
+use App\Request\UpdateUserRequest;
+use App\Security\User;
 use App\Serializer\UserNormalizer;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -64,6 +67,7 @@ class UserController extends ApiController
             "userData" => $userNormalizer->normalize($user, null, ['modelProperties' => [
                 'firstName',
                 'lastName',
+                'phoneNumberPrefix',
                 'phoneNumber',
                 'description',
                 'avatarUrl'
@@ -71,18 +75,66 @@ class UserController extends ApiController
         ]);
     }
 
-    public function editUserData(Request $request, int $user_id): JsonResponse
+    /**
+     * @throws SerializerExceptionInterface
+     */
+    public function editUserData(
+        Request $request,
+        int $user_id,
+        UserRepositoryInterface $userRepository
+    ): JsonResponse
     {
+        $requestData = json_decode($request->getContent(),true);
+        $updateUserRequest = new UpdateUserRequest();
+        $form = $this->createForm(UpdateUserType::class, $updateUserRequest);
+        $form->submit($requestData);
+        if (!$form->isValid()) {
+            throw new FormException($form);
+        }
+        $jwtUser = $this->getUser();
+        try {
+            $currentUser = $userRepository->findOrFail($jwtUser->getUserIdentifier());
+            $userToUpdate = $userRepository->findByIdOrFail($user_id);
+        } catch (EntityNotFoundException) {
+            return $this->respondNotFound();
+        }
+        if(!$currentUser->isEqualTo($userToUpdate)) {
+            return $this->respondUnauthorized();
+        }
+        $this->updateUserWithRequestData($userToUpdate, $updateUserRequest);
+        $userRepository->update($userToUpdate);
+        $userNormalizer = new UserNormalizer();
         return $this->response([
-            "email" => "jan_kowalski@example.com",
-            "userData" => [
-                "firstName" => "Jan",
-                "lastName" => "Kowalski",
-                "phoneNumber" => "123456789",
-                "description" => null,
-                "avatarUrl" => ""
-            ]
+            "email" => $userToUpdate->getEmail(),
+            "userData" => $userNormalizer->normalize($userToUpdate, null, ['modelProperties' => [
+                'firstName',
+                'lastName',
+                'phoneNumberPrefix',
+                'phoneNumber',
+                'description',
+                'avatarUrl'
+            ]])
         ]);
+    }
+
+    private function updateUserWithRequestData(User $userToUpdate, UpdateUserRequest $updateUserRequest)
+    {
+        $userData = $updateUserRequest->userData;
+        if ($firstName = $userData['firstName'] ?? null) {
+            $userToUpdate->setFirstName($firstName);
+        }
+        if ($lastName = $userData['lastName'] ?? null) {
+            $userToUpdate->setLastName($lastName);
+        }
+        if ($phonePrefix = $userData['phoneNumberPrefix'] ?? null) {
+            $userToUpdate->setPhonePrefix($phonePrefix);
+        }
+        if ($phone = $userData['phoneNumber'] ?? null) {
+            $userToUpdate->setPhone($phone);
+        }
+        if (array_key_exists('description', $userData)) {
+            $userToUpdate->setDescription($userData['description']);
+        }
     }
 
 }

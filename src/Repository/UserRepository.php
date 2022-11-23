@@ -180,4 +180,35 @@ class UserRepository extends BaseRepository implements UserRepositoryInterface
             $this->handleDriverException($e);
         }
     }
+
+    /**
+     * @throws DriverException
+     * @throws EntityNotFoundException
+     * @throws UniqueConstraintViolationException
+     * @throws DbalException
+     */
+    public function update(User $user): void
+    {
+        $sql = 'UPDATE ' . $this->tableName . ' SET
+            first_name = :firstName,
+            last_name = :lastName,
+            phone_number_prefix = :phonePrefix,
+            phone_number = :phoneNumber,
+            description = :description
+        WHERE user_id = :userId';
+        try {
+            $statement = $this->connection->prepare($sql);
+            $statement->bindValue('firstName', $user->getFirstName());
+            $statement->bindValue('lastName', $user->getLastName());
+            $statement->bindValue('phonePrefix', $user->getPhonePrefix());
+            $statement->bindValue('phoneNumber', $user->getPhone());
+            $statement->bindValue('description', $user->getDescription());
+            $statement->bindValue('userId', $user->getId());
+            $statement->executeQuery();
+        } catch (DriverException $e) {
+            $this->handleDriverException($e);
+        }
+    }
+
+
 }
