@@ -22,13 +22,15 @@ class PublicEventNormalizer implements NormalizerInterface, DenormalizerInterfac
         if (!$object instanceof PublicEvent) {
             throw new InvalidArgumentException('This normalizer only accepts objects of type App\Model\PublicEvent');
         }
+        $authorNormalizer = new AuthorUserNormalizer();
+        $placeNormalizer = new PlaceNormalizer();
         return [
             "id" => $object->getId(),
             "name" => $object->getName(),
             "description" => $object->getDescription(),
-            "locationData" => $object->getLocation(),
+            "locationData" => $placeNormalizer->normalize($object->getLocation()),
             "startDate" => $object->getStartDate()->format('Y-m-d\TH:i:s.v\Z'),
-            "author" => $object->getAuthor(),
+            "author" => $authorNormalizer->normalize($object->getAuthor()),
             "canEdit" => $object->getCanEdit(),
         ];
     }
