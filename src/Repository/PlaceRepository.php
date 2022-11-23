@@ -8,6 +8,7 @@ use App\Serializer\PlaceNormalizer;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception as DbalException;
 use Doctrine\DBAL\Exception\DriverException;
+use Doctrine\DBAL\ParameterType;
 use Doctrine\DBAL\Query\QueryBuilder;
 use Symfony\Component\Serializer\Exception\ExceptionInterface as SerializerExceptionInterface;
 use Symfony\Polyfill\Intl\Icu\Exception\NotImplementedException;
@@ -66,11 +67,8 @@ class PlaceRepository extends BaseRepository implements PlaceRepositoryInterface
                     INNER JOIN app_owner.locations_location_categories llc
                     ON llc.category_id = lc.category_id
                     WHERE llc.location_id = p.location_id
-                    )) AS category_names,
-                (
-                    SELECT COUNT(lr.location_id)
-                    FROM app_owner.location_ratings lr
-                    WHERE lr.location_id = p.location_id) AS reviews_count'
+                )) AS category_names,
+                p.ratings_number AS reviews_count'
             )
             ->from($this->tableName, 'p');
         return $queryBuilder;
@@ -86,8 +84,7 @@ class PlaceRepository extends BaseRepository implements PlaceRepositoryInterface
     public function findAll(PlaceFilters $filters): array
     {
         $queryBuilder = $this->createFindAllQueryBuilder($this->connection);
-        //TODO: uncomment when WHERE in addPlaceFilters gets fixed
-        //$this->addPlaceFilters($queryBuilder, $filters);
+        $this->addPlaceFilters($queryBuilder, $filters);
         try {
             $result = $queryBuilder->executeQuery();
             $places = [];
@@ -108,15 +105,17 @@ class PlaceRepository extends BaseRepository implements PlaceRepositoryInterface
         }
         if($filters->getCategoryCodes() !== null) {
             $queryBuilder->andWhere('
-            ARRAY(SELECT lc.name
+            ARRAY(SELECT lc.name::text
             FROM app_owner.location_categories lc
             INNER JOIN app_owner.locations_location_categories llc
             ON llc.category_id = lc.category_id
-            WHERE llc.location_id = p.location_id)::text[] && ARRAY[:categoryCodes]::text[]'
+            WHERE llc.location_id = p.location_id) && ARRAY[:categoryCodes]'
             );
             $queryBuilder->setParameter(
                 'categoryCodes',
-                implode(',', array_map(fn($value): string => "'" . $value . "'", $filters->getCategoryCodes())));
+                $filters->getCategoryCodes(),
+                Connection::PARAM_STR_ARRAY
+            );
         }
     }
 
