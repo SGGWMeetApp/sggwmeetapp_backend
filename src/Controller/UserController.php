@@ -2,8 +2,12 @@
 
 namespace App\Controller;
 
+use App\Exception\FormException;
+use App\Filter\UserFilters;
+use App\Form\SearchUsersForGroupType;
 use App\Repository\EntityNotFoundException;
 use App\Repository\UserRepositoryInterface;
+use App\Request\GetUsersEligibleForGroupRequest;
 use App\Serializer\UserNormalizer;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -11,24 +15,34 @@ use Symfony\Component\Serializer\Exception\ExceptionInterface as SerializerExcep
 
 class UserController extends ApiController
 {
-    public function researchUsers(Request $request): JsonResponse
+    /**
+     * @throws SerializerExceptionInterface
+     */
+    public function getUsersEligibleForGroupAction(int $group_id, Request $request, UserRepositoryInterface $userRepository): JsonResponse
     {
-        return $this->response(["users" => [
-            [
-                "id"=> "1", //String
-                "firstName"=> "Ala", //String
-                "lastName"=> "Nowak", //String
-                "email"=> "anowak@mail.pl" //String
-            ],
-            [
-                "id"=> "2", //String
-                "firstName"=> "Ola", //String
-                "lastName"=> "Kowalska", //String
-                "email"=> "okowalska@mail.pl" //String
-            ],
-        ]
-        ]);
-
+        $requestData = $request->query->all();
+        $eligibleUsersRequest = new GetUsersEligibleForGroupRequest();
+        $form = $this->createForm(SearchUsersForGroupType::class, $eligibleUsersRequest);
+        $form->submit($requestData);
+        if (!$form->isValid()) {
+            throw new FormException($form);
+        }
+        $filters = new UserFilters();
+        $filters->setFullName($eligibleUsersRequest->namePhrase);
+        $filters->setDisallowedGroups([$group_id]);
+        $users = $userRepository->findAll($filters);
+        $userNormalizer = new UserNormalizer();
+        $normalizedUsers = [];
+        foreach ($users as $user) {
+            $normalizedUsers [] = $userNormalizer->normalize($user, null, ['modelProperties' => [
+                'id',
+                'firstName',
+                'lastName',
+                'email',
+                'avatarUrl'
+            ]]);
+        }
+        return $this->response(["users" => $normalizedUsers]);
     }
 
     /**

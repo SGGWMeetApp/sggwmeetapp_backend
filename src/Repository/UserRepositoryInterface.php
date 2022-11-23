@@ -2,6 +2,7 @@
 
 namespace App\Repository;
 
+use App\Filter\UserFilters;
 use App\Security\User;
 
 interface UserRepositoryInterface
@@ -19,6 +20,8 @@ interface UserRepositoryInterface
      * @return User
      */
     public function findByIdOrFail(string $userId): User;
+
+    public function findAll(UserFilters $filters): array;
 
     public function add(User $user): void;
 }
