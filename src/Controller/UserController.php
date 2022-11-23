@@ -61,7 +61,13 @@ class UserController extends ApiController
         $userNormalizer = new UserNormalizer();
         return $this->response([
             "email" => $user->getEmail(),
-            "userData" => $userNormalizer->normalize($user)
+            "userData" => $userNormalizer->normalize($user, null, ['modelProperties' => [
+                'firstName',
+                'lastName',
+                'phoneNumber',
+                'description',
+                'avatarUrl'
+            ]])
         ]);
     }
 
