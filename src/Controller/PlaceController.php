@@ -3,6 +3,8 @@
 namespace App\Controller;
 
 use App\Exception\FormException;
+use App\Filter\PlaceFilters;
+use App\Form\PlaceFiltersType;
 use App\Form\PlaceReviewType;
 use App\Form\ReviewAssessmentType;
 use App\Model\PlaceReview;
@@ -14,6 +16,7 @@ use App\Repository\PublicEventRepositoryInterface;
 use App\Repository\ReviewAssessmentRepositoryInterface;
 use App\Repository\UniqueConstraintViolationException;
 use App\Repository\UserRepositoryInterface;
+use App\Request\PlaceFiltersRequest;
 use App\Request\ReviewAssessmentRequest;
 use App\Request\ReviewPlaceRequest;
 use App\Response\PlaceReviewResponse;
@@ -63,9 +66,8 @@ class PlaceController extends ApiController
      */
     public function getPlacesAction(Request $request, PlaceRepositoryInterface $placeRepository): JsonResponse
     {
-        // TODO: Get filters from request (converted to filters object)
-        // TODO: Get filtered places from database
-        $places = $placeRepository->findAll();
+        $placeFilters = $this->createPlaceFiltersFromRequest($request);
+        $places = $placeRepository->findAll($placeFilters);
         $placeNormalizer = new PlaceNormalizer();
         $normalizedPlaces = [];
         foreach($places as $place) {
@@ -79,6 +81,21 @@ class PlaceController extends ApiController
             ];
         }
         return $this->response(['places' => $normalizedPlaces]);
+    }
+
+    private function createPlaceFiltersFromRequest(Request $request): PlaceFilters
+    {
+        $requestParameters = $request->query->all();
+        $placeFiltersRequest = new PlaceFiltersRequest();
+        $form = $this->createForm(PlaceFiltersType::class, $placeFiltersRequest);
+        $form->submit($requestParameters);
+        if(!$form->isValid()) {
+            throw new FormException($form);
+        }
+        $placeFilters = new PlaceFilters();
+        $placeFilters->setName($placeFiltersRequest->name);
+        $placeFilters->setCategoryCodes($placeFiltersRequest->categoryCodes);
+        return $placeFilters;
     }
 
     /**
