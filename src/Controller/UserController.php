@@ -20,10 +20,10 @@ class UserController extends ApiController
      */
     public function getUsersEligibleForGroupAction(int $group_id, Request $request, UserRepositoryInterface $userRepository): JsonResponse
     {
-        $requestData = $request->query->all();
+        $requestParameters = $request->query->all();
         $eligibleUsersRequest = new GetUsersEligibleForGroupRequest();
         $form = $this->createForm(SearchUsersForGroupType::class, $eligibleUsersRequest);
-        $form->submit($requestData);
+        $form->submit($requestParameters);
         if (!$form->isValid()) {
             throw new FormException($form);
         }
