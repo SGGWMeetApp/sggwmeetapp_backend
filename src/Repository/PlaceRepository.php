@@ -8,7 +8,6 @@ use App\Serializer\PlaceNormalizer;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception as DbalException;
 use Doctrine\DBAL\Exception\DriverException;
-use Doctrine\DBAL\ParameterType;
 use Doctrine\DBAL\Query\QueryBuilder;
 use Symfony\Component\Serializer\Exception\ExceptionInterface as SerializerExceptionInterface;
 use Symfony\Polyfill\Intl\Icu\Exception\NotImplementedException;
