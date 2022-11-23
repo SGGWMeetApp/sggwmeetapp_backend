@@ -2,12 +2,12 @@
 
 namespace App\Repository;
 
+use App\Model\Place;
 use App\Model\PublicEvent;
 use App\Serializer\PublicEventNormalizer;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception as DbalException;
 use Doctrine\DBAL\Exception\DriverException;
-use Symfony\Component\Serializer\Exception\ExceptionInterface as SerializerExceptionInterface;
 
 class PublicEventRepository extends BaseRepository implements PublicEventRepositoryInterface
 {
@@ -57,8 +57,8 @@ class PublicEventRepository extends BaseRepository implements PublicEventReposit
      * @inheritDoc
      * @throws DriverException
      * @throws DbalException
-     * @throws SerializerExceptionInterface
      * @throws UniqueConstraintViolationException
+     * @throws \Exception
      */
     public function findOrFail(int $eventId): PublicEvent
     {
@@ -77,11 +77,11 @@ class PublicEventRepository extends BaseRepository implements PublicEventReposit
     }
 
     /**
-     * @throws SerializerExceptionInterface
      * @throws DriverException
      * @throws EntityNotFoundException
      * @throws DbalException
      * @throws UniqueConstraintViolationException
+     * @throws \Exception
      */
     public function findAll(): array
     {
@@ -99,12 +99,37 @@ class PublicEventRepository extends BaseRepository implements PublicEventReposit
         }
     }
 
-     /**
+    /**
+     * @throws UniqueConstraintViolationException
+     * @throws DriverException
+     * @throws EntityNotFoundException
+     * @throws DbalException
+     * @throws \Exception
+     */
+    public function findAllForPlace(Place $place): array
+    {
+        $sql = $this->getAllEventsQueryString() . ' WHERE p.location_id = :locationId';
+        try {
+            $statement = $this->connection->prepare($sql);
+            $statement->bindValue('locationId', $place->getId());
+            $result = $statement->executeQuery();
+            $placeEvents = [];
+            while($data = $result->fetchAssociative()) {
+                $placeEvents [] = $this->publicEventNormalizer->denormalize($data, 'PublicEvent');
+            }
+            return $placeEvents;
+        } catch (DriverException $e) {
+            $this->handleDriverException($e);
+        }
+    }
+
+
+    /**
      * @throws DriverException
      * @throws EntityNotFoundException
      * @throws UniqueConstraintViolationException
      * @throws DbalException
-     * @throws SerializerExceptionInterface
+     * @throws \Exception
      */
     public function findUpcoming(): array
     {
