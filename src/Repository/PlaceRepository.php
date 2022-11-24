@@ -102,7 +102,7 @@ class PlaceRepository extends BaseRepository implements PlaceRepositoryInterface
             $queryBuilder->andWhere($queryBuilder->expr()->like('LOWER(p.name)', ':name'));
             $queryBuilder->setParameter('name', '%' . strtolower($filters->getName()) . '%');
         }
-        if($filters->getCategoryCodes() !== null) {
+        if($filters->getCategoryCodes() !== null && count($filters->getCategoryCodes()) > 0) {
             $queryBuilder->andWhere('
             ARRAY(SELECT lc.name::text
             FROM app_owner.location_categories lc
