@@ -133,24 +133,57 @@ class UserGroupController extends ApiController
     }
 
     //TODO: enableGroupEventNotifications
-    public function enableGroupEventNotifications(Request $request, int $group_id, int $event_id): JsonResponse
+    public function enableGroupEventNotifications(
+        Request $request,
+        int $group_id,
+        int $event_id,
+        UserGroupRepositoryInterface $userGroupRepository,
+        UserRepositoryInterface $userRepository,
+        PrivateEventRepositoryInterface $privateEventRepository
+    ): JsonResponse
     {
-        return $this->response([
-            "id" => 1,
-            "name" => "Urodziny Marleny",
-            "description" => "W sobotę 5 listopada imprezka w klubie Niebo z okazji moich urodzin! Wpadajcie o 19 na bifor na miasteczko SGGW!",
-            "startDate" => "2022-11-05T20:00:00.000Z",
-            "locationData" => [
-                "name" => "Klub Niebo"
-            ],
-            "author" => [
-                "firstName" => "Marlena",
-                "lastName" => "Kowalska",
-                "email" => "mkowalska123@email.com"
-            ],
-            "canEdit" => true,
-            "notification24hEnabled" => true
-        ]);
+        $requestData = json_decode($request->getContent(),true);
+        $enableNotification = $requestData["enable24hNotification"];
+
+        $jwtUser = $this->getUser();
+        try {
+            $user = $userRepository->findOrFail($jwtUser->getUserIdentifier());
+        } catch (EntityNotFoundException $e) {
+            return $this->respondInternalServerError($e);
+        }
+        try {
+            $userGroup = $userGroupRepository->findOrFail($group_id);
+        } catch (EntityNotFoundException) {
+            return $this->respondNotFound();
+        }
+
+        $isUserInGroup = $userGroup->containsUser($user);
+        if(!$isUserInGroup) {
+            return $this->respondUnauthorized('Unauthorized. You are not a member of this group.');
+        }
+
+        try {
+            $privateEvent = $privateEventRepository->findOrFail($event_id);
+            $groupEvents = $privateEventRepository->findAll($group_id);
+        } catch(EntityNotFoundException) {
+            return $this->respondNotFound();
+        }
+
+        // check if event is in group
+        $eventInGroup = false;
+        foreach($groupEvents as $groupEvent) {
+            if($privateEvent->isEqualTo($groupEvent)) {
+                $eventInGroup = true;
+                break;
+            }
+        }
+
+        if(!$eventInGroup) {
+            return $this->respondNotFound();
+        }
+
+
+        return new PrivateEventResponse($privateEvent);
     }
 
     public function createGroup(

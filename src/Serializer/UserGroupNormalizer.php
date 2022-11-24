@@ -68,6 +68,7 @@ class UserGroupNormalizer implements NormalizerInterface, DenormalizerInterface
     {
         $users = json_decode($data["users"]);
 
+        // TODO: get private group events from db
         // TODO: incoming events count
         $userGroup = new UserGroup(
             $data["group_id"],

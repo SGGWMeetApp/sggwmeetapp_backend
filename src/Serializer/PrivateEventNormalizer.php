@@ -33,6 +33,7 @@ class PrivateEventNormalizer implements NormalizerInterface, DenormalizerInterfa
             "startDate" => $object->getStartDate()->format('Y-m-d\TH:i:s.v\Z'),
             "author" => $object->getAuthor(),
             "canEdit" => $object->getCanEdit(),
+            "notifications_enabled" => $object->isNotificationsEnabled()
         ];
     }
 
@@ -46,6 +47,7 @@ class PrivateEventNormalizer implements NormalizerInterface, DenormalizerInterfa
 
     public function denormalize(mixed $data, string $type, string $format = null, array $context = []): PrivateEvent
     {
+        // TODO: get group from db
         return new PrivateEvent(
             (int)$data['event_id'],
             $data['eventname'],
