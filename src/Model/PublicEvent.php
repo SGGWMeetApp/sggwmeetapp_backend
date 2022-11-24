@@ -3,14 +3,14 @@
 namespace App\Model;
 
 use App\Security\User;
+use App\Model\Place;
 
 class PublicEvent
 {
     private ?int $id;
     private string $name;
     private ?string $description;
-    private int $locationID;
-    private string $locationName;
+    private ?Place $location;
     private \DateTimeInterface $startDate;
     private User $author;
     private bool $canEdit;
@@ -18,19 +18,17 @@ class PublicEvent
     /**
      * @param int|null $id
      * @param string $name
-     * @param int $locationID
-     * @param string $locationName
+     * @param Place $location
      * @param string|null $description
      * @param \DateTimeInterface $startDate
      * @param User $author
      * @param bool $canEdit
      */
-    public function __construct(?int $id, string $name, int $locationID, string $locationName, ?string $description, \DateTimeInterface $startDate, User $author, bool $canEdit=true)
+    public function __construct(?int $id, string $name, Place $location , ?string $description, \DateTimeInterface $startDate, User $author, bool $canEdit=true)
     {
         $this->id = $id;
         $this->name = $name;
-        $this->locationID = $locationID;
-        $this->locationName=$locationName;
+        $this->location = $location;
         $this->description = $description;
         $this->startDate = $startDate;
         $this->author = $author;
@@ -42,17 +40,38 @@ class PublicEvent
         return $this->id;
     }
 
+    /**
+     * @param int|null $id
+     */
+    public function setId(?int $id): void
+    {
+        $this->id = $id;
+    }
+
     public function getName(): string
     {
         return $this->name;
     }
-    public function getLocationID(): int
+
+    /**
+     * @param string $name
+     */
+    public function setName(string $name): void
     {
-        return $this->locationID;
+        $this->name = $name;
     }
-    public function getLocationName(): string
+
+    public function getLocation(): Place
     {
-        return $this->locationName;
+        return $this->location;
+    }
+
+    /**
+     * @param \App\Model\Place|null $location
+     */
+    public function setLocation(?\App\Model\Place $location): void
+    {
+        $this->location = $location;
     }
 
     public function getDescription(): ?string

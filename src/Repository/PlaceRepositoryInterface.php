@@ -2,6 +2,7 @@
 
 namespace App\Repository;
 
+use App\Filter\PlaceFilters;
 use App\Model\Place;
 
 interface PlaceRepositoryInterface
@@ -11,7 +12,7 @@ interface PlaceRepositoryInterface
      */
     public function findOrFail(int $placeId): Place;
 
-    public function findAll(): array;
+    public function findAll(PlaceFilters $filters): array;
 
     public function add(Place $place): void;
 

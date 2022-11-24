@@ -171,14 +171,30 @@ class User implements UserInterface, EquatableInterface, PasswordAuthenticatedUs
         return $this->phonePrefix;
     }
 
+    public function setPhonePrefix(string $phonePrefix): void
+    {
+        $this->phonePrefix = $phonePrefix;
+    }
+
+
     public function getPhone(): string
     {
         return $this->phone;
     }
 
+    public function setPhone(string $phone): void
+    {
+        $this->phone = $phone;
+    }
+
     public function getDescription(): ?string
     {
         return $this->description;
+    }
+
+    public function setDescription(?string $description): void
+    {
+        $this->description = $description;
     }
 
 }

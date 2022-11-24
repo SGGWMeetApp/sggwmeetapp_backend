@@ -4,10 +4,10 @@ namespace App\Serializer;
 
 use App\Model\GeoLocation;
 use App\Model\PublicEvent;
+use App\Model\Place;
 use Symfony\Component\Serializer\Exception\InvalidArgumentException;
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
-use Monolog\DateTimeImmutable;
 use App\Security\User;
 
 class PublicEventNormalizer implements NormalizerInterface, DenormalizerInterface
@@ -16,21 +16,20 @@ class PublicEventNormalizer implements NormalizerInterface, DenormalizerInterfac
     /**
      * @inheritDoc
      */
-    public function normalize(mixed $object, string $format = null, array $context = [])
+    public function normalize(mixed $object, string $format = null, array $context = []): float|int|bool|\ArrayObject|array|string|null
     {
         if (!$object instanceof PublicEvent) {
             throw new InvalidArgumentException('This normalizer only accepts objects of type App\Model\PublicEvent');
         }
+        $authorNormalizer = new AuthorUserNormalizer();
+        $placeNormalizer = new PlaceNormalizer();
         return [
             "id" => $object->getId(),
-            "eventName" => $object->getName(),
-            "evntDes" =>$object->getDescription(),
-            "locationData" => [
-                "ID"=>$object->getLocationID(),
-                "locName"=>$object->getLocationName()
-            ],
+            "name" => $object->getName(),
+            "description" => $object->getDescription(),
+            "locationData" => $placeNormalizer->normalize($object->getLocation()),
             "startDate" => $object->getStartDate()->format('Y-m-d\TH:i:s.v\Z'),
-            "author" => $object->getAuthor(),
+            "author" => $authorNormalizer->normalize($object->getAuthor()),
             "canEdit" => $object->getCanEdit(),
         ];
     }
@@ -43,15 +42,28 @@ class PublicEventNormalizer implements NormalizerInterface, DenormalizerInterfac
         return $data instanceof PublicEvent;
     }
 
+    /**
+     * @throws \Exception
+     */
     public function denormalize(mixed $data, string $type, string $format = null, array $context = []): PublicEvent
     {
-        $publicEvent = new PublicEvent(
+        
+        return new PublicEvent(
             (int)$data['event_id'],
             $data['eventname'],
-            (int)$data['location_id'],
-            $data['locname'],
+            new Place(
+                (int)$data['location_id'],
+                $data['locname'],
+                new GeoLocation(
+                    $data['lat'],
+                    $data['long'],
+                ),
+                $data['locdes'],
+                $data['rating_pct']
+            ),
+           
             $data['evntdes'],
-            new DateTimeImmutable($data['start_date']),
+            new \DateTimeImmutable($data['start_date']),
             new User(
                 (int)$data['user_id'],
                 $data['first_name'],
@@ -63,11 +75,8 @@ class PublicEventNormalizer implements NormalizerInterface, DenormalizerInterfac
                 $data['userdes'],
                 ['ROLE_USER']
             ),
-            $cenEdit=$data['can_edit'] === 'true'? true: false
+            $data['can_edit']
         );
-        
-        
-        return $publicEvent ;
     }
 
     public function supportsDenormalization(mixed $data, string $type, string $format = null, array $context = []): bool

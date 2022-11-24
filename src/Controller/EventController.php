@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Repository\EntityNotFoundException;
+use App\Response\EventsResponse;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use App\Model\PublicEvent;
@@ -12,94 +13,24 @@ use App\Repository\UserRepositoryInterface;
 use App\Repository\PlaceRepositoryInterface;
 use App\Request\PublicEventRequest;
 use App\Response\PublicEventResponse;
-use App\Serializer\PublicEventNormalizer;
 use App\Form\PublicEventType;
 use App\Exception\FormException;
+use Symfony\Component\Serializer\Exception\ExceptionInterface as SerializerExceptionInterface;
 
 class EventController extends ApiController {
 
-    public function getPublicEventsAction(Request $request): JsonResponse {
-
-        // 1. Get filters from request (converted to filters object)
-
-        // 2. Get filtered events from database
-        return $this->response(["events" => [
-            [
-                "id" => 1,
-                "name" => "Planszówki",
-                "description" => "Zapraszamy na świąteczną edycję planszówek! Wybierz jedną z setek gier i baw się razem z nami!",
-                "startDate" => "2022-12-23T18:30:00.000Z",
-                "locationData" => [
-                    "name" => "Dziekanat 161"
-                ],
-                "author" => [
-                    "firstName" => "Joanna",
-                    "lastName" => "Nowak",
-                    "email" => "joanna.nowak@email.com"
-                ],
-                "canEdit" => true,
-                "notification24hEnabled" => true
-            ],
-            [
-                "id" => 2,
-                "name" => "Środowe Disco",
-                "description" => "Już w tą środę widzimy się na parkiecie w Dziekanacie! Dobra zabawa gwarantowana! Do 22:00 bilet 10 zł, Po 22:00 15 zł.",
-                "startDate" => "2022-11-06T21:00:00.000Z",
-                "locationData" => [
-                    "name" => "Dziekanat 161"
-                ],
-                "author" => [
-                    "firstName" => "Jerzy",
-                    "lastName" => "Dudek",
-                    "email" => "jerzy.dudek@example.com"
-                ],
-                "canEdit" => false,
-                "notification24hEnabled" => true
-            ],
-        ]]);
-    }
-    //nie zwraca dobrze autora w odp dlatego ta górna na szytwno 
-    public function getPublicEvents(  Request $request,
-    UserRepositoryInterface $userRepository,
-    PublicEventRepositoryInterface $publicEventRepository,  
-    ): JsonResponse 
+    /**
+     * @throws SerializerExceptionInterface
+     */
+    public function getPublicEventsAction(PublicEventRepositoryInterface $publicEventRepository): JsonResponse
     {
-        $publicEvent = new PublicEventNormalizer();
-            
-
-        $jwtUser = $this->getUser();
-        try {
-            $user = $userRepository->findOrFail($jwtUser->getUserIdentifier());
-        } catch (EntityNotFoundException $e) {
-            return $this->respondInternalServerError($e);
-        }
         try {
             $events=$publicEventRepository->findAll();
-            
-            $normalizedEvents = [];
-            foreach($events as $event ) {
-                
-                $eventNormalizer = $publicEvent->normalize($event );
-                
-                $normalizedEvents [] = [
-                    ...$eventNormalizer,
-                    
-                    
-                ];
-            }
-        } catch (UniqueConstraintViolationException $e) {
-            
-            return match ($e->getViolatedConstraint()) {
-                'rating_unq_inx' => $this->setStatusCode(409)
-                    ->respondWithError('BAD_REQUEST', 'Nie wiem co wpisac na razie.'),
-                default => $this->setStatusCode(409)
-                    ->respondWithError('BAD_REQUEST', $e->getMessage()),
-            };
+        } catch (\Throwable $e) {
+            return $this->respondInternalServerError($e);
         }
-        //dd($normalizedEvents);
-        return $this->response(['publicEvents' => $normalizedEvents]);
+        return new EventsResponse('publicEvents', ...$events);
     }
-
 
     public function createPublicEvent(
         Request $request,
@@ -109,8 +40,8 @@ class EventController extends ApiController {
     ): JsonResponse
     {
         $requestData = json_decode($request->getContent(),true);
-        $addPublicEvent = new PublicEventRequest();
-        $this->handlePublicEventRequest($addPublicEvent,$requestData);
+        $addPublicEventRequest = new PublicEventRequest();
+        $this->handlePublicEventRequest($addPublicEventRequest,$requestData);
         
         $jwtUser = $this->getUser();
         try {
@@ -119,18 +50,21 @@ class EventController extends ApiController {
             return $this->respondInternalServerError($e);
         }
         try {
-            $location = $placeRepository ->findOrFail($addPublicEvent->locationId);
+            $location = $placeRepository->findOrFail($addPublicEventRequest->locationId);
        } catch (EntityNotFoundException) {
             return $this->respondNotFound();
        }
-       
-
-        $publicEvent = new PublicEvent(null, $addPublicEvent->name,$addPublicEvent->locationId,$location->getName(),$addPublicEvent->description, $addPublicEvent->startDate,$user);
-
+        $publicEvent = new PublicEvent(
+            null,
+            $addPublicEventRequest->name,
+            $location,
+            $addPublicEventRequest->description,
+            $addPublicEventRequest->startDate,
+            $user
+        );
         try {
             $publicEventRepository->add($publicEvent);
         } catch (UniqueConstraintViolationException $e) {
-            
             return match ($e->getViolatedConstraint()) {
                 'rating_unq_inx' => $this->setStatusCode(409)
                     ->respondWithError('BAD_REQUEST', 'Nie wiem co wpisac na razie.'),
@@ -151,14 +85,17 @@ class EventController extends ApiController {
     }
 
 
-    public function updateEvent( Request $request, int $event_id,
-        UserRepositoryInterface $userRepository,
-        PublicEventRepositoryInterface $publicEventRepository   
+    public function updateEvent(
+        Request                         $request,
+        int                             $event_id,
+        PublicEventRepositoryInterface  $publicEventRepository,
+        UserRepositoryInterface         $userRepository,
+        PlaceRepositoryInterface        $placeRepository
     ): JsonResponse 
     {
         $requestData = json_decode($request->getContent(),true);
-        $updataPublicEvent = new PublicEventRequest();
-        $this->handlePublicEventRequest($updataPublicEvent,$requestData);
+        $updatePublicEventRequest = new PublicEventRequest();
+        $this->handlePublicEventRequest($updatePublicEventRequest,$requestData);
 
         $jwtUser = $this->getUser();
         try {
@@ -167,17 +104,30 @@ class EventController extends ApiController {
             return $this->respondInternalServerError($e);
         }
         try {
-             $publicEvent = $publicEventRepository ->findOrFail($event_id);
+             $publicEvent = $publicEventRepository->findOrFail($event_id);
+             if(!($publicEvent->getCanEdit())){
+                return $this->setStatusCode(409)
+                ->respondWithError('Can_edit=False', 'Event nie ma możliwości edycji.');
+             }
+             if(!$publicEvent->getAuthor()->isEqualTo($user)) {
+                 return $this->respondUnauthorized();
+             }
         } catch (EntityNotFoundException) {
-             return $this->respondNotFound();
+             return $this->respondNotFound('Event not found.');
         }
-        //dd($publicEvent->getLocationName());
-        $newpublicEvent = new PublicEvent($event_id, $updataPublicEvent->name,$updataPublicEvent->locationId,$publicEvent->getLocationName(),$updataPublicEvent->description, $updataPublicEvent->startDate,$publicEvent->getAuthor());
-        
         try {
-            $publicEventRepository->update($newpublicEvent);
+            $location = $placeRepository->findOrFail($updatePublicEventRequest->locationId);
+        } catch (EntityNotFoundException) {
+            return $this->respondNotFound('Location not found.');
+        }
+
+        $publicEvent->setName($updatePublicEventRequest->name);
+        $publicEvent->setLocation($location);
+        $publicEvent->setDescription($updatePublicEventRequest->description);
+        $publicEvent->setStartDate($updatePublicEventRequest->startDate);
+        try {
+            $publicEventRepository->update($publicEvent);
         } catch (UniqueConstraintViolationException $e) {
-            
             return match ($e->getViolatedConstraint()) {
                 'rating_unq_inx' => $this->setStatusCode(409)
                     ->respondWithError('BAD_REQUEST', 'Nie wiem co wpisac na razie.'),
@@ -185,30 +135,22 @@ class EventController extends ApiController {
                     ->respondWithError('BAD_REQUEST', $e->getMessage()),
             };
         }
-        
-        return new PublicEventResponse($newpublicEvent);
+        return new PublicEventResponse($publicEvent);
     }
 
-    public function getUpcomingEventsAction(): JsonResponse {
-        
-        return $this->response(["events" => [
-            [
-                "id" => 2,
-                "name" => "Środowe Disco",
-                "description" => "Już w tą środę widzimy się na parkiecie w Dziekanacie! Dobra zabawa gwarantowana! Do 22:00 bilet 10 zł, Po 22:00 15 zł.",
-                "startDate" => "2022-11-06T21:00:00.000Z",
-                "locationData" => [
-                    "name" => "Dziekanat 161"
-                ],
-                "author" => [
-                    "firstName" => "Jerzy",
-                    "lastName" => "Dudek",
-                    "email" => "jerzy.dudek@example.com"
-                ],
-                "canEdit" => false,
-                "notification24hEnabled" => true
-            ],
-        ]]);
+    /**
+     * @throws SerializerExceptionInterface
+     */
+    public function getUpcomingEventsAction(
+        PublicEventRepositoryInterface $publicEventRepository,  
+    ): JsonResponse 
+    {
+        try {
+            $events = $publicEventRepository->findUpcoming();
+        } catch (\Throwable $e) {
+            return $this->respondInternalServerError($e);
+        }
+        return new EventsResponse('publicEvents', ...$events);
     }
 
 }

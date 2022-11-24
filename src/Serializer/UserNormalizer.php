@@ -12,6 +12,7 @@ class UserNormalizer implements NormalizerInterface, DenormalizerInterface
 
     /**
      * @inheritDoc
+     * @throws \Exception
      */
     public function normalize(mixed $object, string $format = null, array $context = []): float|array|bool|\ArrayObject|int|string|null
     {
@@ -19,7 +20,9 @@ class UserNormalizer implements NormalizerInterface, DenormalizerInterface
             throw new InvalidArgumentException('This normalizer only accepts objects of type App\Security\User');
         }
         //TODO: Add proper avatar url when it gets implemented
-        return [
+        $normalizedUser = [
+            'id' => $object->getId(),
+            'email' => $object->getEmail(),
             'firstName' => $object->getFirstName(),
             'lastName' => $object->getLastName(),
             'phoneNumberPrefix' => $object->getPhonePrefix(),
@@ -27,6 +30,18 @@ class UserNormalizer implements NormalizerInterface, DenormalizerInterface
             'description' => $object->getDescription(),
             'avatarUrl' => ''
         ];
+        if (array_key_exists('modelProperties', $context) && is_array($context['modelProperties'])) {
+            $userProperties = [];
+            try {
+                foreach ($context['modelProperties'] as $modelProperty) {
+                    $userProperties [$modelProperty] = $normalizedUser[$modelProperty];
+                }
+                return $userProperties;
+            } catch (\OutOfBoundsException) {
+                throw new \Exception("One or more properties do not exist for user model in UserNormalizer normalize() method.");
+            }
+        }
+        return $normalizedUser;
     }
 
     /**

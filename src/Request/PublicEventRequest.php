@@ -20,10 +20,10 @@ class PublicEventRequest
      * @var int
      */
     public $locationId;
-
      /**
      * @Assert\NotBlank(allowNull=true)
      * @Assert\Type("string")
+     * @Assert\Length(max="2000")
      * @var string
      */
     public $description;

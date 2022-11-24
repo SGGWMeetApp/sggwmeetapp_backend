@@ -9,7 +9,7 @@ class AppInfoController extends ApiController
     public function appInfo(): Response
     {
         return $this->response([
-            'version' => '0.1',
+            'version' => '0.3',
             'name' => 'SGGW MeetApp REST API',
             'status' => 'WIP'
         ]);

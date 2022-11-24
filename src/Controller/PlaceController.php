@@ -3,6 +3,8 @@
 namespace App\Controller;
 
 use App\Exception\FormException;
+use App\Filter\PlaceFilters;
+use App\Form\PlaceFiltersType;
 use App\Form\PlaceReviewType;
 use App\Form\ReviewAssessmentType;
 use App\Model\PlaceReview;
@@ -10,14 +12,17 @@ use App\Model\ReviewAssessment;
 use App\Repository\EntityNotFoundException;
 use App\Repository\PlaceRepositoryInterface;
 use App\Repository\PlaceReviewRepositoryInterface;
+use App\Repository\PublicEventRepositoryInterface;
 use App\Repository\ReviewAssessmentRepositoryInterface;
 use App\Repository\UniqueConstraintViolationException;
 use App\Repository\UserRepositoryInterface;
+use App\Request\PlaceFiltersRequest;
 use App\Request\ReviewAssessmentRequest;
 use App\Request\ReviewPlaceRequest;
 use App\Response\PlaceReviewResponse;
 use App\Serializer\PlaceNormalizer;
 use App\Serializer\PlaceReviewNormalizer;
+use App\Serializer\PublicEventNormalizer;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Serializer\Exception\ExceptionInterface as SerializerExceptionInterface;
@@ -61,9 +66,8 @@ class PlaceController extends ApiController
      */
     public function getPlacesAction(Request $request, PlaceRepositoryInterface $placeRepository): JsonResponse
     {
-        // TODO: Get filters from request (converted to filters object)
-        // TODO: Get filtered places from database
-        $places = $placeRepository->findAll();
+        $placeFilters = $this->createPlaceFiltersFromRequest($request);
+        $places = $placeRepository->findAll($placeFilters);
         $placeNormalizer = new PlaceNormalizer();
         $normalizedPlaces = [];
         foreach($places as $place) {
@@ -79,39 +83,42 @@ class PlaceController extends ApiController
         return $this->response(['places' => $normalizedPlaces]);
     }
 
-    public function getPlaceEventsAction(int $place_id): JsonResponse {
-        return $this->response(["events" => [
-            [
-                "id" => 1,
-                "name" => "Planszówki",
-                "description" => "Zapraszamy na świąteczną edycję planszówek! Wybierz jedną z setek gier i baw się razem z nami!",
-                "startDate" => "2022-12-23T18:30:00.000Z",
-                "locationData" => [
-                    "name" => "Dziekanat 161"
-                ],
-                "author" => [
-                    "firstName" => "Joanna",
-                    "lastName" => "Nowak",
-                    "email" => "joanna.nowak@email.com"
-                ],
-                "canEdit" => true
-            ],
-            [
-                "id" => 2,
-                "name" => "Środowe Disco",
-                "description" => "Już w tą środę widzimy się na parkiecie w Dziekanacie! Dobra zabawa gwarantowana! Do 22:00 bilet 10 zł, Po 22:00 15 zł.",
-                "startDate" => "2022-11-06T21:00:00.000Z",
-                "locationData" => [
-                    "name" => "Dziekanat 161"
-                ],
-                "author" => [
-                    "firstName" => "Jerzy",
-                    "lastName" => "Dudek",
-                    "email" => "jerzy.dudek@example.com"
-                ],
-                "canEdit" => false
-            ]
-        ]]);
+    private function createPlaceFiltersFromRequest(Request $request): PlaceFilters
+    {
+        $requestParameters = $request->query->all();
+        $placeFiltersRequest = new PlaceFiltersRequest();
+        $form = $this->createForm(PlaceFiltersType::class, $placeFiltersRequest);
+        $form->submit($requestParameters);
+        if(!$form->isValid()) {
+            throw new FormException($form);
+        }
+        $placeFilters = new PlaceFilters();
+        $placeFilters->setName($placeFiltersRequest->name);
+        $placeFilters->setCategoryCodes($placeFiltersRequest->categoryCodes);
+        return $placeFilters;
+    }
+
+    /**
+     * @throws SerializerExceptionInterface
+     */
+    public function getPlaceEventsAction(
+        int $place_id,
+        PlaceRepositoryInterface $placeRepository,
+        PublicEventRepositoryInterface $publicEventRepository
+    ): JsonResponse
+    {
+        try {
+            $place = $placeRepository->findOrFail($place_id);
+        } catch (EntityNotFoundException) {
+            return $this->respondNotFound();
+        }
+        $placeEvents = $publicEventRepository->findAllForPlace($place);
+        $publicEventNormalizer = new PublicEventNormalizer();
+        $normalizedEvents = [];
+        foreach ($placeEvents as $event) {
+            $normalizedEvents [] = $publicEventNormalizer->normalize($event);
+        }
+        return $this->response(["events" => $normalizedEvents]);
     }
 
     public function addReview(

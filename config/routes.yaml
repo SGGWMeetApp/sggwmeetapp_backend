@@ -96,8 +96,10 @@ leave_group:
         group_id: '\d+'
     methods: DELETE
 search_users:
-    path: /api/users
-    controller: App\Controller\UserController::researchUsers
+    path: /api/groups/{group_id}/users/eligible
+    controller: App\Controller\UserController::getUsersEligibleForGroupAction
+    requirements:
+        group_id: '\d+'
     methods: GET
 get_user_data:
     path: /api/users/{user_id}
