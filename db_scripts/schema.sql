@@ -92,6 +92,7 @@ CREATE TABLE events (
     owner_id integer NOT NULL,
     can_edit boolean NOT NULL DEFAULT FALSE,
     creation_date timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    notification_enabled boolean NOT NULL DEFAULT FALSE,
     FOREIGN KEY (location_id) REFERENCES locations (location_id) ON DELETE SET NULL ON UPDATE CASCADE,
     FOREIGN KEY (group_id) REFERENCES user_groups (group_id) ON DELETE CASCADE ON UPDATE CASCADE,
     FOREIGN KEY (owner_id) REFERENCES users (user_id) ON DELETE CASCADE ON UPDATE CASCADE
