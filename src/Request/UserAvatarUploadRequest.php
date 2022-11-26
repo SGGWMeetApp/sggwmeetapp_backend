@@ -9,14 +9,14 @@ class UserAvatarUploadRequest
     /**
      * @Assert\NotBlank()
      */
-    private $avatar;
+    public $base64file;
 
     private $decodedData;
 
-    public function setAvatar(?string $avatar): void
+    public function setBase64file(?string $base64file): void
     {
-        $this->avatar = $avatar;
-        $this->decodedData = base64_decode($avatar);
+        $this->base64file = $base64file;
+        $this->decodedData = base64_decode($base64file);
     }
 
     /**

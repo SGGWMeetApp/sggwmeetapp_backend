@@ -12,8 +12,6 @@ use Symfony\Component\Filesystem\Exception\FileNotFoundException;
 use Symfony\Component\Finder\Finder;
 use Symfony\Component\HttpFoundation\File\File as FileObject;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
-use Symfony\Component\Validator\Constraints\File;
-use Symfony\Component\Validator\Constraints\NotBlank;
 
 class FileUploadHelper
 {
@@ -68,19 +66,11 @@ class FileUploadHelper
         return $filesInfo;
     }
 
-    public static function getConstraintsForAvatar(): array
+    public function saveFileContentsToTemp(string $contents): FileObject
     {
-        return [
-            new NotBlank([
-                'message' => 'Please select a valid avatar image to upload and upload it under "avatar" key.'
-            ]),
-            new File([
-                'maxSize' => '5M',
-                'mimeTypes' => [
-                    'image/*'
-                ],
-            ])
-        ];
+        $tmpPath = sys_get_temp_dir().'/sf_upload'.uniqid();
+        file_put_contents($tmpPath, $contents);
+        return new FileObject($tmpPath);
     }
 
     public function getPublicPath(string $path): string

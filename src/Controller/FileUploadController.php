@@ -2,18 +2,17 @@
 
 namespace App\Controller;
 
+use App\Exception\FormException;
+use App\Form\AvatarUploadType;
+use App\Form\Base64FileUploadType;
 use App\Repository\EntityNotFoundException;
 use App\Repository\UserRepositoryInterface;
 use App\Request\UserAvatarUploadRequest;
-use App\Service\FileHelper\FileDeleteException;
 use App\Service\FileHelper\FileUploadException;
 use App\Service\FileHelper\FileUploadHelper;
-use Symfony\Component\HttpFoundation\File\File as FileObject;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\Serializer\SerializerInterface;
-use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 class FileUploadController extends ApiController
 {
@@ -21,8 +20,6 @@ class FileUploadController extends ApiController
         int $user_id,
         Request $request,
         FileUploadHelper $uploadHelper,
-        SerializerInterface $serializer,
-        ValidatorInterface $validator,
         UserRepositoryInterface $userRepository
     ): JsonResponse
     {
@@ -36,34 +33,39 @@ class FileUploadController extends ApiController
             return $this->respondUnauthorized();
         }
         if($request->headers->get('Content-Type') === 'application/json') {
-            $uploadRequest = $serializer->deserialize(
-                $request->getContent(),
-                UserAvatarUploadRequest::class,
-                'json'
-            );
-            $violations = $validator->validate($uploadRequest);
-            if($violations->count() > 0) {
-                return $this->json($violations, 400);
-            }
-            $tmpPath = sys_get_temp_dir().'/sf_upload'.uniqid();
-            file_put_contents($tmpPath, $uploadRequest->getDecodedData());
-            $uploadedFile = new FileObject($tmpPath);
+            $decodedImage = $this->retrieveAvatarImageDataFromJsonRequest($request);
+            $uploadedFile = $uploadHelper->saveFileContentsToTemp($decodedImage);
         } else {
             /** @var UploadedFile $uploadedFile */
-            $uploadedFile = $request->files->get('avatar');
+            $uploadedFile = $request->files->get('base64file');
         }
-        $violations = $validator->validate($uploadedFile, FileUploadHelper::getConstraintsForAvatar());
-        if($violations->count() > 0) {
-            return $this->json($violations, 400);
+        $fileValidationForm = $this->createForm(AvatarUploadType::class);
+        $fileValidationForm->submit(['avatar' => $uploadedFile]);
+        if(!$fileValidationForm->isValid()) {
+            throw new FormException($fileValidationForm);
         }
         try {
             $filename = $uploadHelper->uploadUserAvatarImage($uploadedFile, $user_id);
-        } catch (FileDeleteException|FileUploadException $e) {
+        } catch (FileUploadException $e) {
             return $this->respondInternalServerError($e);
         }
         if (is_file($uploadedFile->getPathname())) {
             unlink($uploadedFile->getPathname());
         }
-        dd('Success', $uploadHelper->getPublicPath($filename));
+        return $this->response([
+            'avatarUrl' => $uploadHelper->getPublicPath(FileUploadHelper::USER_AVATAR_DIR.'/'.$filename)
+        ]);
+    }
+
+    private function retrieveAvatarImageDataFromJsonRequest(Request $request): string
+    {
+        $uploadRequest = new UserAvatarUploadRequest();
+        $requestData = json_decode($request->getContent(), true);
+        $form = $this->createForm(Base64FileUploadType::class, $uploadRequest);
+        $form->submit($requestData);
+        if(!$form->isValid()) {
+            throw new FormException($form);
+        }
+        return $uploadRequest->getDecodedData();
     }
 }
