@@ -12,7 +12,7 @@ class FileUploadException extends \Exception
     public function __construct(string $uploadedFileName)
     {
         $this->uploadedFileName = $uploadedFileName;
-        parent::__construct('Could not write uploaded file "%s"', $uploadedFileName);
+        parent::__construct(sprintf('Could not write uploaded file "%s"', $uploadedFileName));
     }
 
     /**

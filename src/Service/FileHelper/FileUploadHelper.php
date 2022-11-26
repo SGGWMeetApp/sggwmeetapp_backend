@@ -9,8 +9,11 @@ use League\Flysystem\Visibility;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Asset\Context\RequestStackContext;
 use Symfony\Component\Filesystem\Exception\FileNotFoundException;
-use Symfony\Component\HttpFoundation\File\File;
+use Symfony\Component\Finder\Finder;
+use Symfony\Component\HttpFoundation\File\File as FileObject;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
+use Symfony\Component\Validator\Constraints\File;
+use Symfony\Component\Validator\Constraints\NotBlank;
 
 class FileUploadHelper
 {
@@ -24,43 +27,60 @@ class FileUploadHelper
 
     private string $publicAssetBaseUrl;
 
-    /**
-     * @param Filesystem $uploadsFilesystem
-     * @param RequestStackContext $requestStackContext
-     * @param LoggerInterface $logger
-     * @param string $uploadedAssetsBaseUrl
-     */
+    private string $uploadsFilestream;
+
     public function __construct(
         Filesystem          $uploadsFilesystem,
         RequestStackContext $requestStackContext,
         LoggerInterface     $logger,
-        string              $uploadedAssetsBaseUrl)
+        string              $uploadedAssetsBaseUrl,
+        string              $uploadsFilestream
+    )
     {
         $this->filesystem = $uploadsFilesystem;
         $this->requestStackContext = $requestStackContext;
         $this->logger = $logger;
         $this->publicAssetBaseUrl = $uploadedAssetsBaseUrl;
+        $this->uploadsFilestream = $uploadsFilestream;
     }
 
     /**
      * @throws FileUploadException
-     * @throws FileDeleteException
      */
-    public function uploadUserAvatarImage(File $file, ?string $existingFileName = null): string
+    public function uploadUserAvatarImage(FileObject $file, int $userId): string
     {
-        $newFilename = $this->uploadFile($file, self::USER_AVATAR_DIR, true);
+        return $this->uploadFile($file, self::USER_AVATAR_DIR, true, sprintf('user_avatar%d', $userId));
+    }
 
-        if($existingFileName !== null) {
-            try {
-                $this->filesystem->delete(self::USER_AVATAR_DIR.DIRECTORY_SEPARATOR.$existingFileName);
-            } catch (FilesystemException) {
-                throw new FileDeleteException($existingFileName);
-            } catch (FileNotFoundException) {
-                $this->logger->alert(sprintf('Old uploaded file "%s" was missing when trying to delete.', $existingFileName));
+    public function findUploadedFilesByPattern(string $pattern, string $directory): array
+    {
+        $finder = new Finder();
+        $finder
+            ->name($pattern)
+            ->in($this->uploadsFilestream.'/'.$directory);
+        $filesInfo = [];
+        if($finder->hasResults()) {
+            $filenameIterator = $finder->getIterator();
+            foreach ($filenameIterator as $fileInfo) {
+                $filesInfo [] = $fileInfo;
             }
         }
+        return $filesInfo;
+    }
 
-        return $newFilename;
+    public static function getConstraintsForAvatar(): array
+    {
+        return [
+            new NotBlank([
+                'message' => 'Please select a valid avatar image to upload and upload it under "avatar" key.'
+            ]),
+            new File([
+                'maxSize' => '5M',
+                'mimeTypes' => [
+                    'image/*'
+                ],
+            ])
+        ];
     }
 
     public function getPublicPath(string $path): string
@@ -71,8 +91,7 @@ class FileUploadHelper
             return $fullPath;
         }
         // needed if you deploy under a subdirectory
-        return $this->requestStackContext
-                ->getBasePath().$fullPath;
+        return $this->requestStackContext->getBasePath().$fullPath;
     }
 
     /**
@@ -98,22 +117,23 @@ class FileUploadHelper
             $this->filesystem->delete($path);
         } catch (FilesystemException) {
             throw new FileDeleteException($path);
+        } catch (FileNotFoundException) {
+            $this->logger->alert(sprintf('File "%s" was missing when trying to delete.', $path));
         }
     }
 
     /**
      * @throws FileUploadException
      */
-    public function uploadFile(File $file, string $directory, bool $isPublic, ?string $fileName = null): string
+    public function uploadFile(FileObject $file, string $directory, bool $isPublic, ?string $fileName = null): string
     {
         if($file instanceof UploadedFile) {
             $originalFilename = $file->getClientOriginalName();
         } else {
             $originalFilename = $file->getFilename();
         }
-        $newFilename = $fileName !== null ? $fileName.$file->guessExtension() :
+        $newFilename = $fileName !== null ? $fileName.'.'.$file->guessExtension() :
             Urlizer::urlize(pathinfo($originalFilename, PATHINFO_FILENAME)) .'-'.uniqid().'.'.$file->guessExtension();
-
         $stream = fopen($file->getPathname(), 'r');
         try {
             $this->filesystem->writeStream(

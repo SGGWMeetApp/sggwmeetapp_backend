@@ -127,3 +127,10 @@ leave_group_event:
         group_id: '\d+'
         event_id: '\d+'
     methods: DELETE
+# UPLOADS
+upload_user_avatar:
+    path: /api/user/{user_id}/avatar
+    controller: App\Controller\FileUploadController::uploadUserAvatar
+    requirements:
+        user_id: '\d+'
+    methods: POST
