@@ -30,6 +30,7 @@ CREATE TABLE users (
     phone_number varchar(15) NOT NULL,
     location_sharing_mode integer NOT NULL DEFAULT 0,
     description text NULL,
+    avatar_path varchar(255) NULL,
     UNIQUE (phone_number_prefix, phone_number)
 );
 
