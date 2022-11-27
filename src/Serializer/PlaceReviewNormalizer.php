@@ -53,6 +53,7 @@ class PlaceReviewNormalizer implements NormalizerInterface, DenormalizerInterfac
                     $data['phone_number'],
                     $data['description'],
                     ['ROLE_USER']);
+                $user->setAvatarUrl($data['avatar_path']);
                 $placeReview = new PlaceReview(
                     $data['rating_id'],
                     $data['location_id'],

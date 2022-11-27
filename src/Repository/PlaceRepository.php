@@ -20,11 +20,12 @@ class PlaceRepository extends BaseRepository implements PlaceRepositoryInterface
 
     /**
      * @param Connection $connection
+     * @param PlaceNormalizer $placeNormalizer
      */
-    public function __construct(Connection $connection)
+    public function __construct(Connection $connection, PlaceNormalizer $placeNormalizer)
     {
         $this->connection = $connection;
-        $this->placeNormalizer = new PlaceNormalizer();
+        $this->placeNormalizer = $placeNormalizer;
     }
 
     /**

@@ -22,6 +22,7 @@ class User implements UserInterface, EquatableInterface, PasswordAuthenticatedUs
     private string  $phone;
     private ?string $description;
     private array $userGroups;
+    private ?string $avatarUrl = null;
 
     public function __construct($id, $firstName, $lastName, $email, $password, $phonePrefix, $phone, $description, $roles, $userGroups=[])
     {
@@ -197,4 +198,13 @@ class User implements UserInterface, EquatableInterface, PasswordAuthenticatedUs
         $this->description = $description;
     }
 
+    public function getAvatarUrl(): ?string
+    {
+        return $this->avatarUrl;
+    }
+
+    public function setAvatarUrl(?string $avatarUrl): void
+    {
+        $this->avatarUrl = $avatarUrl;
+    }
 }

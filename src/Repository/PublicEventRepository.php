@@ -18,10 +18,10 @@ class PublicEventRepository extends BaseRepository implements PublicEventReposit
     /**
      * @param Connection $connection
      */
-    public function __construct(Connection $connection)
+    public function __construct(Connection $connection, PublicEventNormalizer $publicEventNormalizer)
     {
         $this->connection = $connection;
-        $this->publicEventNormalizer = new PublicEventNormalizer();
+        $this->publicEventNormalizer = $publicEventNormalizer;
     }
 
     private function getAllEventsQueryString(): string
@@ -45,6 +45,7 @@ class PublicEventRepository extends BaseRepository implements PublicEventReposit
                 b.email,
                 b.phone_number_prefix,
                 b.phone_number,
+                b.avatar_path,
                 b.description AS userDes
 
                 FROM ' . $this->tableName .' p

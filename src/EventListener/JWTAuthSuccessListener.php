@@ -3,10 +3,18 @@
 namespace App\EventListener;
 
 use App\Security\User;
+use League\Flysystem\Filesystem;
 use Lexik\Bundle\JWTAuthenticationBundle\Event\AuthenticationSuccessEvent;
 
 class JWTAuthSuccessListener
 {
+    private Filesystem $filesystem;
+
+    public function __construct(Filesystem $uploadsFilesystem)
+    {
+        $this->filesystem = $uploadsFilesystem;
+    }
+
     public function onJWTAuthenticationSuccess(AuthenticationSuccessEvent $event)
     {
         $data = $event->getData();
@@ -20,7 +28,7 @@ class JWTAuthSuccessListener
             'phoneNumberPrefix' => $user->getPhonePrefix(),
             'phoneNumber' => $user->getPhone(),
             'description' => $user->getDescription(),
-            'avatarUrl' => ''
+            'avatarUrl' => $user->getAvatarUrl() ? $this->filesystem->publicUrl($user->getAvatarUrl()) : null
         ];
         $event->setData($data);
     }

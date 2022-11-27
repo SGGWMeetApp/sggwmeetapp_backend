@@ -52,6 +52,13 @@ class FileUploadController extends ApiController
         if (is_file($uploadedFile->getPathname())) {
             unlink($uploadedFile->getPathname());
         }
+        $relativeAvatarPath = FileUploadHelper::USER_AVATAR_DIR.'/'.$filename;
+        $user->setAvatarUrl($relativeAvatarPath);
+        try {
+            $userRepository->update($user);
+        } catch (\Throwable $e) {
+            return $this->respondInternalServerError($e);
+        }
         return $this->response([
             'avatarUrl' => $uploadHelper->getPublicPath(FileUploadHelper::USER_AVATAR_DIR.'/'.$filename)
         ]);

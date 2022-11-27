@@ -3,12 +3,21 @@
 namespace App\Serializer;
 
 use App\Security\User;
+use League\Flysystem\Filesystem;
 use Symfony\Component\Serializer\Exception\InvalidArgumentException;
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 
 class UserNormalizer implements NormalizerInterface, DenormalizerInterface
 {
+    private Filesystem $filesystem;
+
+    public const AUTHOR_PROPERTIES = ['firstName', 'lastName', 'email', 'avatarUrl'];
+
+    public function __construct(Filesystem $uploadsFilesystem)
+    {
+        $this->filesystem = $uploadsFilesystem;
+    }
 
     /**
      * @inheritDoc
@@ -19,7 +28,6 @@ class UserNormalizer implements NormalizerInterface, DenormalizerInterface
         if (!$object instanceof User) {
             throw new InvalidArgumentException('This normalizer only accepts objects of type App\Security\User');
         }
-        //TODO: Add proper avatar url when it gets implemented
         $normalizedUser = [
             'id' => $object->getId(),
             'email' => $object->getEmail(),
@@ -28,7 +36,7 @@ class UserNormalizer implements NormalizerInterface, DenormalizerInterface
             'phoneNumberPrefix' => $object->getPhonePrefix(),
             'phoneNumber' => $object->getPhone(),
             'description' => $object->getDescription(),
-            'avatarUrl' => ''
+            'avatarUrl' => $object->getAvatarUrl() ? $this->filesystem->publicUrl($object->getAvatarUrl()) : null
         ];
         if (array_key_exists('modelProperties', $context) && is_array($context['modelProperties'])) {
             $userProperties = [];
@@ -54,7 +62,7 @@ class UserNormalizer implements NormalizerInterface, DenormalizerInterface
 
     public function denormalize(mixed $data, string $type, string $format = null, array $context = []): User
     {
-        return new User(
+        $user = new User(
             $data['user_id'],
             trim($data['first_name']),
             trim($data['last_name']),
@@ -65,6 +73,8 @@ class UserNormalizer implements NormalizerInterface, DenormalizerInterface
             trim($data['description']),
             ['ROLE_USER']
         );
+        $user->setAvatarUrl($data['avatar_path']);
+        return $user;
     }
 
     public function supportsDenormalization(mixed $data, string $type, string $format = null, array $context = []): bool

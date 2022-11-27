@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Exception\FormException;
+use App\Factory\NormalizerFactory;
 use App\Form\UserGroupDataType;
 use App\Model\UserGroup;
 use App\Repository\UniqueConstraintViolationException;
@@ -12,7 +13,6 @@ use App\Repository\UserGroupRepositoryInterface;
 use App\Request\CreateUserGroupRequest;
 use App\Response\GroupUsersResponse;
 use App\Response\GroupsResponse;
-use App\Serializer\UserGroupNormalizer;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Serializer\Exception\ExceptionInterface;
@@ -133,7 +133,8 @@ class UserGroupController extends ApiController
 
     public function getGroups(
         UserGroupRepositoryInterface $userGroupRepository,
-        UserRepositoryInterface $userRepository
+        UserRepositoryInterface $userRepository,
+        NormalizerFactory $normalizerFactory
     ): JsonResponse
     {
         $jwtUser = $this->getUser();
@@ -143,14 +144,18 @@ class UserGroupController extends ApiController
         } catch (EntityNotFoundException $e) {
             return $this->respondInternalServerError($e);
         }
-
-        return new GroupsResponse($userGroups, $user);
+        try {
+            return new GroupsResponse($userGroups, $user, $normalizerFactory);
+        } catch (ExceptionInterface $e) {
+            return $this->respondInternalServerError($e);
+        }
     }
 
     public function getGroupUsers(
         int $group_id,
         UserGroupRepositoryInterface $userGroupRepository,
-        UserRepositoryInterface $userRepository
+        UserRepositoryInterface $userRepository,
+        NormalizerFactory $normalizerFactory
     ): JsonResponse
     {
         $jwtUser = $this->getUser();
@@ -174,8 +179,11 @@ class UserGroupController extends ApiController
         if(!$hasListAccess) {
             return $this->respondUnauthorized('Unauthorized. You are not a member of this group.');
         }
-
-        return new GroupUsersResponse($userGroup, $user);
+        try {
+            return new GroupUsersResponse($userGroup, $user, $normalizerFactory);
+        } catch (ExceptionInterface $e) {
+            return $this->respondInternalServerError($e);
+        }
     }
 
     public function addGroupUser(
@@ -233,7 +241,8 @@ class UserGroupController extends ApiController
         Request $request,
         int $group_id,
         UserGroupRepositoryInterface $userGroupRepository,
-        UserRepositoryInterface $userRepository
+        UserRepositoryInterface $userRepository,
+        NormalizerFactory $normalizerFactory
     ):JsonResponse
     {
         $jwtUser = $this->getUser();
@@ -257,7 +266,11 @@ class UserGroupController extends ApiController
 
         $userGroups = $userGroupRepository->findAllGroupsForUser($user->getId());
 
-        return new GroupsResponse($userGroups, $user);
+        try {
+            return new GroupsResponse($userGroups, $user, $normalizerFactory);
+        } catch (ExceptionInterface $e) {
+            return $this->respondInternalServerError($e);
+        }
     }
 
     public function leaveGroupEvent(int $event_id): JsonResponse

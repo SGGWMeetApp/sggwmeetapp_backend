@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Factory\NormalizerFactory;
 use App\Repository\EntityNotFoundException;
 use App\Response\EventsResponse;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -22,21 +23,25 @@ class EventController extends ApiController {
     /**
      * @throws SerializerExceptionInterface
      */
-    public function getPublicEventsAction(PublicEventRepositoryInterface $publicEventRepository): JsonResponse
+    public function getPublicEventsAction(
+        PublicEventRepositoryInterface $publicEventRepository,
+        NormalizerFactory $normalizerFactory
+    ): JsonResponse
     {
         try {
             $events=$publicEventRepository->findAll();
         } catch (\Throwable $e) {
             return $this->respondInternalServerError($e);
         }
-        return new EventsResponse('publicEvents', ...$events);
+        return new EventsResponse('publicEvents', $normalizerFactory, ...$events);
     }
 
     public function createPublicEvent(
         Request $request,
         UserRepositoryInterface $userRepository,
         PublicEventRepositoryInterface $publicEventRepository,  
-        PlaceRepositoryInterface $placeRepository
+        PlaceRepositoryInterface $placeRepository,
+        NormalizerFactory $normalizerFactory
     ): JsonResponse
     {
         $requestData = json_decode($request->getContent(),true);
@@ -72,7 +77,11 @@ class EventController extends ApiController {
                     ->respondWithError('BAD_REQUEST', $e->getMessage()),
             };
         }
-        return new PublicEventResponse($publicEvent);
+        try {
+            return new PublicEventResponse($publicEvent, $normalizerFactory);
+        } catch (SerializerExceptionInterface $e) {
+            return $this->respondInternalServerError($e);
+        }
     }
 
     private function handlePublicEventRequest(PublicEventRequest $request, mixed $requestData): void
@@ -90,7 +99,8 @@ class EventController extends ApiController {
         int                             $event_id,
         PublicEventRepositoryInterface  $publicEventRepository,
         UserRepositoryInterface         $userRepository,
-        PlaceRepositoryInterface        $placeRepository
+        PlaceRepositoryInterface        $placeRepository,
+        NormalizerFactory               $normalizerFactory
     ): JsonResponse 
     {
         $requestData = json_decode($request->getContent(),true);
@@ -135,14 +145,19 @@ class EventController extends ApiController {
                     ->respondWithError('BAD_REQUEST', $e->getMessage()),
             };
         }
-        return new PublicEventResponse($publicEvent);
+        try {
+            return new PublicEventResponse($publicEvent, $normalizerFactory);
+        } catch (SerializerExceptionInterface $e) {
+            return $this->respondInternalServerError($e);
+        }
     }
 
     /**
      * @throws SerializerExceptionInterface
      */
     public function getUpcomingEventsAction(
-        PublicEventRepositoryInterface $publicEventRepository,  
+        PublicEventRepositoryInterface  $publicEventRepository,
+        NormalizerFactory $normalizerFactory
     ): JsonResponse 
     {
         try {
@@ -150,7 +165,7 @@ class EventController extends ApiController {
         } catch (\Throwable $e) {
             return $this->respondInternalServerError($e);
         }
-        return new EventsResponse('publicEvents', ...$events);
+        return new EventsResponse('publicEvents', $normalizerFactory,  ...$events);
     }
 
 }
