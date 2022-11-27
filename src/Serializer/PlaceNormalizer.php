@@ -4,12 +4,19 @@ namespace App\Serializer;
 
 use App\Model\GeoLocation;
 use App\Model\Place;
+use App\Service\FileHelper\FileUploadHelper;
 use Symfony\Component\Serializer\Exception\InvalidArgumentException;
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 
 class PlaceNormalizer implements NormalizerInterface, DenormalizerInterface
 {
+    private FileUploadHelper $uploadHelper;
+
+    public function __construct(FileUploadHelper $uploadHelper)
+    {
+        $this->uploadHelper = $uploadHelper;
+    }
 
     /**
      * @inheritDoc
@@ -19,6 +26,7 @@ class PlaceNormalizer implements NormalizerInterface, DenormalizerInterface
         if (!$object instanceof Place) {
             throw new InvalidArgumentException('This normalizer only accepts objects of type App\Model\Place');
         }
+        $photos = $this->uploadHelper->getPlacePhotoFilePaths($object);
         return [
             "id" => $object->getId(),
             "name" => $object->getName(),
@@ -27,7 +35,7 @@ class PlaceNormalizer implements NormalizerInterface, DenormalizerInterface
                 "longitude" => $object->getGeoLocation()->getLongitude()
             ],
             "locationCategoryCodes" => $object->getCategoryCodes(),
-            "photoPath" => "",
+            "photoPath" => count($photos) > 0 ? $photos[0] : null,
         ];
     }
 

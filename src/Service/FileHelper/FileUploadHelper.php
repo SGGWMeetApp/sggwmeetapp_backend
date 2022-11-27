@@ -2,6 +2,7 @@
 
 namespace App\Service\FileHelper;
 
+use App\Model\Place;
 use Gedmo\Sluggable\Util\Urlizer;
 use League\Flysystem\Filesystem;
 use League\Flysystem\FilesystemException;
@@ -16,6 +17,7 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 class FileUploadHelper
 {
     const USER_AVATAR_DIR = 'user_avatar';
+    const PLACE_PHOTO_DIR = 'place_photo';
 
     private Filesystem $filesystem;
 
@@ -48,6 +50,21 @@ class FileUploadHelper
     public function uploadUserAvatarImage(FileObject $file, int $userId): string
     {
         return $this->uploadFile($file, self::USER_AVATAR_DIR, true, sprintf('user_avatar%d', $userId));
+    }
+
+    public function getPlacePhotoFilePaths(Place $place): array
+    {
+        $placePhotosFolder = self::PLACE_PHOTO_DIR.'/'.'place_'.$place->getId();
+        try {
+            $files = $this->findUploadedFilesByPattern('*', $placePhotosFolder);
+        } catch (\Throwable) {
+            $files = [];
+        }
+        $filePaths = [];
+        foreach($files as $file) {
+            $filePaths [] = $this->getPublicPath($placePhotosFolder.'/'.$file->getFilename());
+        }
+        return $filePaths;
     }
 
     public function findUploadedFilesByPattern(string $pattern, string $directory): array
