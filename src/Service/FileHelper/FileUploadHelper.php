@@ -56,13 +56,13 @@ class FileUploadHelper
     {
         $placePhotosFolder = self::PLACE_PHOTO_DIR.'/'.'place_'.$place->getId();
         try {
-            $files = $this->findUploadedFilesByPattern('*', $placePhotosFolder);
+            $directoryListing = $this->filesystem->listContents($placePhotosFolder)->toArray();
         } catch (\Throwable) {
-            $files = [];
+            $directoryListing = [];
         }
         $filePaths = [];
-        foreach($files as $file) {
-            $filePaths [] = $this->getPublicPath($placePhotosFolder.'/'.$file->getFilename());
+        foreach($directoryListing as $file) {
+            $filePaths [] = $this->getPublicPath($file->path());
         }
         return $filePaths;
     }
