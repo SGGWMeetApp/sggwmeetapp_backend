@@ -21,10 +21,10 @@ class UserGroupRepository extends BaseRepository implements UserGroupRepositoryI
     /**
      * @param Connection $connection
      */
-    public function __construct(Connection $connection)
+    public function __construct(Connection $connection, UserGroupNormalizer $userGroupNormalizer)
     {
         $this->connection = $connection;
-        $this->userGroupNormalizer = new UserGroupNormalizer();
+        $this->userGroupNormalizer = $userGroupNormalizer;
     }
 
     /**

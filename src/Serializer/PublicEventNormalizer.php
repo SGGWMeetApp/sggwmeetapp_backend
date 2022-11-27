@@ -12,6 +12,14 @@ use App\Security\User;
 
 class PublicEventNormalizer implements NormalizerInterface, DenormalizerInterface
 {
+    private UserNormalizer $authorNormalizer;
+    private PlaceNormalizer $placeNormalizer;
+
+    public function __construct(UserNormalizer $authorNormalizer, PlaceNormalizer $placeNormalizer)
+    {
+        $this->authorNormalizer = $authorNormalizer;
+        $this->placeNormalizer = $placeNormalizer;
+    }
 
     /**
      * @inheritDoc
@@ -21,15 +29,15 @@ class PublicEventNormalizer implements NormalizerInterface, DenormalizerInterfac
         if (!$object instanceof PublicEvent) {
             throw new InvalidArgumentException('This normalizer only accepts objects of type App\Model\PublicEvent');
         }
-        $authorNormalizer = new AuthorUserNormalizer();
-        $placeNormalizer = new PlaceNormalizer();
         return [
             "id" => $object->getId(),
             "name" => $object->getName(),
             "description" => $object->getDescription(),
-            "locationData" => $placeNormalizer->normalize($object->getLocation()),
+            "locationData" => $this->placeNormalizer->normalize($object->getLocation()),
             "startDate" => $object->getStartDate()->format('Y-m-d\TH:i:s.v\Z'),
-            "author" => $authorNormalizer->normalize($object->getAuthor()),
+            "author" => $this->authorNormalizer->normalize($object->getAuthor(), 'json', [
+                'modelProperties' => UserNormalizer::AUTHOR_PROPERTIES
+            ]),
             "canEdit" => $object->getCanEdit(),
         ];
     }
@@ -47,34 +55,43 @@ class PublicEventNormalizer implements NormalizerInterface, DenormalizerInterfac
      */
     public function denormalize(mixed $data, string $type, string $format = null, array $context = []): PublicEvent
     {
-        
+        $user = new User(
+            (int)$data['user_id'],
+            $data['first_name'],
+            $data['last_name'],
+            $data['email'],
+            "TRZYMAJ JEZYK ZA ZĘBAMI",
+            $data['phone_number_prefix'],
+            $data['phone_number'],
+            $data['userdes'],
+            ['ROLE_USER']
+        );
+        $user->setAvatarUrl($data['avatar_path']);
+        $place = new Place(
+            (int)$data['location_id'],
+            $data['locname'],
+            new GeoLocation(
+                $data['lat'],
+                $data['long'],
+            ),
+            $data['locdes'],
+            $data['rating_pct']
+        );
+        $categories = json_decode($data['category_names'], true);
+        foreach ($categories as $category) {
+            $place->addCategoryCode($category);
+        }
+        $photoPaths = json_decode($data['photo_paths'], true);
+        foreach($photoPaths as $photoPath) {
+            $place->addPhotoPath($photoPath);
+        }
         return new PublicEvent(
             (int)$data['event_id'],
             $data['eventname'],
-            new Place(
-                (int)$data['location_id'],
-                $data['locname'],
-                new GeoLocation(
-                    $data['lat'],
-                    $data['long'],
-                ),
-                $data['locdes'],
-                $data['rating_pct']
-            ),
-           
+            $place,
             $data['evntdes'],
             new \DateTimeImmutable($data['start_date']),
-            new User(
-                (int)$data['user_id'],
-                $data['first_name'],
-                $data['last_name'],
-                $data['email'],
-                "TRZYMAJ JEZYK ZA ZĘBAMI",
-                $data['phone_number_prefix'],
-                $data['phone_number'],
-                $data['userdes'],
-                ['ROLE_USER']
-            ),
+            $user,
             $data['can_edit']
         );
     }

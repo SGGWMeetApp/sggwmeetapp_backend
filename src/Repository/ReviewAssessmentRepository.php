@@ -18,11 +18,12 @@ class ReviewAssessmentRepository extends BaseRepository implements ReviewAssessm
 
     /**
      * @param Connection $connection
+     * @param ReviewAssessmentNormalizer $reviewAssessmentNormalizer
      */
-    public function __construct(Connection $connection)
+    public function __construct(Connection $connection, ReviewAssessmentNormalizer $reviewAssessmentNormalizer)
     {
         $this->connection = $connection;
-        $this->reviewAssessmentNormalizer = new ReviewAssessmentNormalizer();
+        $this->reviewAssessmentNormalizer = $reviewAssessmentNormalizer;
     }
 
 

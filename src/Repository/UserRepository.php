@@ -17,10 +17,10 @@ class UserRepository extends BaseRepository implements UserRepositoryInterface
     private string $tableName = 'app_owner.users';
     private UserNormalizer $userNormalizer;
 
-    public function __construct(Connection $connection)
+    public function __construct(Connection $connection, UserNormalizer $userNormalizer)
     {
         $this->connection = $connection;
-        $this->userNormalizer = new UserNormalizer();
+        $this->userNormalizer = $userNormalizer;
     }
 
     /**
@@ -194,7 +194,8 @@ class UserRepository extends BaseRepository implements UserRepositoryInterface
             last_name = :lastName,
             phone_number_prefix = :phonePrefix,
             phone_number = :phoneNumber,
-            description = :description
+            description = :description,
+            avatar_path = :avatarPath
         WHERE user_id = :userId';
         try {
             $statement = $this->connection->prepare($sql);
@@ -204,6 +205,7 @@ class UserRepository extends BaseRepository implements UserRepositoryInterface
             $statement->bindValue('phoneNumber', $user->getPhone());
             $statement->bindValue('description', $user->getDescription());
             $statement->bindValue('userId', $user->getId());
+            $statement->bindValue('avatarPath', $user->getAvatarUrl());
             $statement->executeQuery();
         } catch (DriverException $e) {
             $this->handleDriverException($e);

@@ -21,7 +21,12 @@ class UserController extends ApiController
     /**
      * @throws SerializerExceptionInterface
      */
-    public function getUsersEligibleForGroupAction(int $group_id, Request $request, UserRepositoryInterface $userRepository): JsonResponse
+    public function getUsersEligibleForGroupAction(
+        int $group_id,
+        Request $request,
+        UserRepositoryInterface $userRepository,
+        UserNormalizer $userNormalizer
+    ): JsonResponse
     {
         $requestParameters = $request->query->all();
         $eligibleUsersRequest = new GetUsersEligibleForGroupRequest();
@@ -34,7 +39,6 @@ class UserController extends ApiController
         $filters->setFullName($eligibleUsersRequest->namePhrase);
         $filters->setDisallowedGroups([$group_id]);
         $users = $userRepository->findAll($filters);
-        $userNormalizer = new UserNormalizer();
         $normalizedUsers = [];
         foreach ($users as $user) {
             $normalizedUsers [] = $userNormalizer->normalize($user, null, ['modelProperties' => [
@@ -53,7 +57,8 @@ class UserController extends ApiController
      */
     public function getUserData(
         int $user_id,
-        UserRepositoryInterface $userRepository
+        UserRepositoryInterface $userRepository,
+        UserNormalizer $userNormalizer
     ): JsonResponse
     {
         try {
@@ -61,7 +66,6 @@ class UserController extends ApiController
         } catch (EntityNotFoundException) {
             return $this->respondNotFound();
         }
-        $userNormalizer = new UserNormalizer();
         return $this->response([
             "email" => $user->getEmail(),
             "userData" => $userNormalizer->normalize($user, null, ['modelProperties' => [
@@ -81,7 +85,8 @@ class UserController extends ApiController
     public function editUserData(
         Request $request,
         int $user_id,
-        UserRepositoryInterface $userRepository
+        UserRepositoryInterface $userRepository,
+        UserNormalizer $userNormalizer
     ): JsonResponse
     {
         $requestData = json_decode($request->getContent(),true);
@@ -103,7 +108,6 @@ class UserController extends ApiController
         }
         $this->updateUserWithRequestData($userToUpdate, $updateUserRequest);
         $userRepository->update($userToUpdate);
-        $userNormalizer = new UserNormalizer();
         return $this->response([
             "email" => $userToUpdate->getEmail(),
             "userData" => $userNormalizer->normalize($userToUpdate, null, ['modelProperties' => [

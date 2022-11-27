@@ -20,11 +20,12 @@ class PlaceRepository extends BaseRepository implements PlaceRepositoryInterface
 
     /**
      * @param Connection $connection
+     * @param PlaceNormalizer $placeNormalizer
      */
-    public function __construct(Connection $connection)
+    public function __construct(Connection $connection, PlaceNormalizer $placeNormalizer)
     {
         $this->connection = $connection;
-        $this->placeNormalizer = new PlaceNormalizer();
+        $this->placeNormalizer = $placeNormalizer;
     }
 
     /**
@@ -67,6 +68,10 @@ class PlaceRepository extends BaseRepository implements PlaceRepositoryInterface
                     ON llc.category_id = lc.category_id
                     WHERE llc.location_id = p.location_id
                 )) AS category_names,
+                ARRAY_TO_JSON(ARRAY(SELECT lcp.photo_path
+                    FROM app_owner.location_photos lcp
+                    WHERE lcp.location_id = p.location_id
+                )) AS photo_paths,
                 p.ratings_number AS reviews_count'
             )
             ->from($this->tableName, 'p');

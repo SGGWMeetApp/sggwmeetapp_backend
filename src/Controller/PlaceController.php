@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Exception\FormException;
+use App\Factory\NormalizerFactory;
 use App\Filter\PlaceFilters;
 use App\Form\PlaceFiltersType;
 use App\Form\PlaceReviewType;
@@ -35,7 +36,9 @@ class PlaceController extends ApiController
     public function getPlaceDetailsAction(
         int $place_id,
         PlaceRepositoryInterface $placeRepository,
-        PlaceReviewRepositoryInterface $placeReviewRepository
+        PlaceReviewRepositoryInterface $placeReviewRepository,
+        PlaceNormalizer $placeNormalizer,
+        PlaceReviewNormalizer $placeReviewsNormalizer
     ): JsonResponse
     {
         try {
@@ -43,10 +46,8 @@ class PlaceController extends ApiController
         } catch (EntityNotFoundException) {
             return $this->respondNotFound();
         }
-        $placeNormalizer = new PlaceNormalizer();
         $normalizedPlace = $placeNormalizer->normalize($place);
         $placeReviews = $placeReviewRepository->findAllForPlace($place_id);
-        $placeReviewsNormalizer = new PlaceReviewNormalizer();
         $normalizedReviews = [];
         foreach($placeReviews as $placeReview) {
             $normalizedReviews [] = $placeReviewsNormalizer->normalize($placeReview);
@@ -64,11 +65,14 @@ class PlaceController extends ApiController
     /**
      * @throws SerializerExceptionInterface
      */
-    public function getPlacesAction(Request $request, PlaceRepositoryInterface $placeRepository): JsonResponse
+    public function getPlacesAction(
+        Request $request,
+        PlaceRepositoryInterface $placeRepository,
+        PlaceNormalizer $placeNormalizer
+    ): JsonResponse
     {
         $placeFilters = $this->createPlaceFiltersFromRequest($request);
         $places = $placeRepository->findAll($placeFilters);
-        $placeNormalizer = new PlaceNormalizer();
         $normalizedPlaces = [];
         foreach($places as $place) {
             $normalizedPlace = $placeNormalizer->normalize($place);
@@ -103,8 +107,9 @@ class PlaceController extends ApiController
      */
     public function getPlaceEventsAction(
         int $place_id,
-        PlaceRepositoryInterface $placeRepository,
-        PublicEventRepositoryInterface $publicEventRepository
+        PlaceRepositoryInterface        $placeRepository,
+        PublicEventRepositoryInterface  $publicEventRepository,
+        PublicEventNormalizer           $publicEventNormalizer
     ): JsonResponse
     {
         try {
@@ -113,7 +118,6 @@ class PlaceController extends ApiController
             return $this->respondNotFound();
         }
         $placeEvents = $publicEventRepository->findAllForPlace($place);
-        $publicEventNormalizer = new PublicEventNormalizer();
         $normalizedEvents = [];
         foreach ($placeEvents as $event) {
             $normalizedEvents [] = $publicEventNormalizer->normalize($event);
@@ -126,7 +130,8 @@ class PlaceController extends ApiController
         int $place_id,
         PlaceRepositoryInterface $placeRepository,
         PlaceReviewRepositoryInterface $placeReviewRepository,
-        UserRepositoryInterface $userRepository
+        UserRepositoryInterface $userRepository,
+        NormalizerFactory $normalizerFactory
     ): JsonResponse
     {
         $requestData = json_decode($request->getContent(),true);
@@ -154,7 +159,11 @@ class PlaceController extends ApiController
                     ->respondWithError('BAD_REQUEST', $e->getMessage()),
             };
         }
-        return new PlaceReviewResponse($placeReview);
+        try {
+            return new PlaceReviewResponse($placeReview, $normalizerFactory);
+        } catch (SerializerExceptionInterface $e) {
+            return $this->respondInternalServerError($e);
+        }
     }
 
     private function handleAddPlaceReviewRequest(ReviewPlaceRequest $request, mixed $requestData): void
@@ -171,7 +180,8 @@ class PlaceController extends ApiController
         int $place_id,
         int $review_id,
         PlaceReviewRepositoryInterface $placeReviewRepository,
-        UserRepositoryInterface $userRepository
+        UserRepositoryInterface $userRepository,
+        NormalizerFactory $normalizerFactory
     ): JsonResponse
     {
         $requestData = json_decode($request->getContent(),true);
@@ -195,7 +205,11 @@ class PlaceController extends ApiController
             ->setIsPositive($updateReviewRequest->isPositive)
             ->setComment($updateReviewRequest->comment);
         $placeReviewRepository->update($placeReview);
-        return new PlaceReviewResponse($placeReview);
+        try {
+            return new PlaceReviewResponse($placeReview, $normalizerFactory);
+        } catch (SerializerExceptionInterface $e) {
+            return $this->respondInternalServerError($e);
+        }
     }
 
     public function reviewAssessment(

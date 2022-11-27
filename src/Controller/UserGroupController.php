@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Exception\FormException;
 use App\Form\PrivateEventType;
+use App\Factory\NormalizerFactory;
 use App\Form\UserGroupDataType;
 use App\Model\PrivateEvent;
 use App\Model\UserGroup;
@@ -228,7 +229,8 @@ class UserGroupController extends ApiController
 
     public function getGroups(
         UserGroupRepositoryInterface $userGroupRepository,
-        UserRepositoryInterface $userRepository
+        UserRepositoryInterface $userRepository,
+        NormalizerFactory $normalizerFactory
     ): JsonResponse
     {
         $jwtUser = $this->getUser();
@@ -238,14 +240,18 @@ class UserGroupController extends ApiController
         } catch (EntityNotFoundException $e) {
             return $this->respondInternalServerError($e);
         }
-
-        return new GroupsResponse($userGroups, $user);
+        try {
+            return new GroupsResponse($userGroups, $user, $normalizerFactory);
+        } catch (ExceptionInterface $e) {
+            return $this->respondInternalServerError($e);
+        }
     }
 
     public function getGroupUsers(
         int $group_id,
         UserGroupRepositoryInterface $userGroupRepository,
-        UserRepositoryInterface $userRepository
+        UserRepositoryInterface $userRepository,
+        NormalizerFactory $normalizerFactory
     ): JsonResponse
     {
         $jwtUser = $this->getUser();
@@ -264,8 +270,11 @@ class UserGroupController extends ApiController
         if(!$isUserInGroup) {
             return $this->respondUnauthorized('Unauthorized. You are not a member of this group.');
         }
-
-        return new GroupUsersResponse($userGroup, $user);
+        try {
+            return new GroupUsersResponse($userGroup, $user, $normalizerFactory);
+        } catch (ExceptionInterface $e) {
+            return $this->respondInternalServerError($e);
+        }
     }
 
     public function addGroupUser(
@@ -328,7 +337,8 @@ class UserGroupController extends ApiController
         Request $request,
         int $group_id,
         UserGroupRepositoryInterface $userGroupRepository,
-        UserRepositoryInterface $userRepository
+        UserRepositoryInterface $userRepository,
+        NormalizerFactory $normalizerFactory
     ):JsonResponse
     {
         $jwtUser = $this->getUser();
@@ -352,7 +362,11 @@ class UserGroupController extends ApiController
 
         $userGroups = $userGroupRepository->findAllGroupsForUser($user->getId());
 
-        return new GroupsResponse($userGroups, $user);
+        try {
+            return new GroupsResponse($userGroups, $user, $normalizerFactory);
+        } catch (ExceptionInterface $e) {
+            return $this->respondInternalServerError($e);
+        }
     }
 
     public function leaveGroupEvent(int $event_id): JsonResponse

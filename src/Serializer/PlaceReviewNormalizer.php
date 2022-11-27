@@ -4,26 +4,43 @@ namespace App\Serializer;
 
 use App\Model\PlaceReview;
 use App\Security\User;
+use Symfony\Component\Serializer\Exception\InvalidArgumentException;
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 
 class PlaceReviewNormalizer implements NormalizerInterface, DenormalizerInterface
 {
+    private UserNormalizer $userNormalizer;
+
     private const SUPPORTED_DENORMALIZER_TYPES = [
         'PlaceReview'
     ];
+
+    public function __construct(UserNormalizer $userNormalizer)
+    {
+        $this->userNormalizer = $userNormalizer;
+    }
+
+
     /**
      * @inheritDoc
      */
     public function normalize(mixed $object, string $format = null, array $context = []): array
     {
+        if (!$object instanceof PlaceReview) {
+            throw new InvalidArgumentException('This normalizer only accepts objects of type App\Model\PlaceReview');
+        }
+        $normalizedAuthor = $this->userNormalizer->normalize($object->getAuthor(), 'json', [
+            'modelProperties' => UserNormalizer::AUTHOR_PROPERTIES
+        ]);
         return [
             'id' => $object->getReviewId(),
             'comment' => $object->getComment(),
             'upvoteCount' => $object->getUpvoteCount(),
             'downvoteCount' => $object->getDownvoteCount(),
             'publicationDate' => $object->getPublicationDate()->format('Y-m-d\TH:i:s\Z'),
-            'isPositive' => $object->isPositive()
+            'isPositive' => $object->isPositive(),
+            'author' => $normalizedAuthor
         ];
     }
 
@@ -53,6 +70,7 @@ class PlaceReviewNormalizer implements NormalizerInterface, DenormalizerInterfac
                     $data['phone_number'],
                     $data['description'],
                     ['ROLE_USER']);
+                $user->setAvatarUrl($data['avatar_path']);
                 $placeReview = new PlaceReview(
                     $data['rating_id'],
                     $data['location_id'],
