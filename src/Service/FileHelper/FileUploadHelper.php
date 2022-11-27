@@ -2,7 +2,6 @@
 
 namespace App\Service\FileHelper;
 
-use App\Model\Place;
 use Gedmo\Sluggable\Util\Urlizer;
 use League\Flysystem\Filesystem;
 use League\Flysystem\FilesystemException;
@@ -10,14 +9,12 @@ use League\Flysystem\Visibility;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Asset\Context\RequestStackContext;
 use Symfony\Component\Filesystem\Exception\FileNotFoundException;
-use Symfony\Component\Finder\Finder;
 use Symfony\Component\HttpFoundation\File\File as FileObject;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 class FileUploadHelper
 {
     const USER_AVATAR_DIR = 'user_avatar';
-    const PLACE_PHOTO_DIR = 'place_photo';
 
     private Filesystem $filesystem;
 
@@ -27,21 +24,17 @@ class FileUploadHelper
 
     private string $publicAssetBaseUrl;
 
-    private string $uploadsFilestream;
-
     public function __construct(
         Filesystem          $uploadsFilesystem,
         RequestStackContext $requestStackContext,
         LoggerInterface     $logger,
-        string              $uploadedAssetsBaseUrl,
-        string              $uploadsFilestream
+        string              $uploadedAssetsBaseUrl
     )
     {
         $this->filesystem = $uploadsFilesystem;
         $this->requestStackContext = $requestStackContext;
         $this->logger = $logger;
         $this->publicAssetBaseUrl = $uploadedAssetsBaseUrl;
-        $this->uploadsFilestream = $uploadsFilestream;
     }
 
     /**
@@ -50,37 +43,6 @@ class FileUploadHelper
     public function uploadUserAvatarImage(FileObject $file, int $userId): string
     {
         return $this->uploadFile($file, self::USER_AVATAR_DIR, true, sprintf('user_avatar%d', $userId));
-    }
-
-    public function getPlacePhotoFilePaths(Place $place): array
-    {
-        $placePhotosFolder = self::PLACE_PHOTO_DIR.'/'.'place_'.$place->getId();
-        try {
-            $directoryListing = $this->filesystem->listContents($placePhotosFolder)->toArray();
-        } catch (\Throwable) {
-            $directoryListing = [];
-        }
-        $filePaths = [];
-        foreach($directoryListing as $file) {
-            $filePaths [] = $this->getPublicPath($file->path());
-        }
-        return $filePaths;
-    }
-
-    public function findUploadedFilesByPattern(string $pattern, string $directory): array
-    {
-        $finder = new Finder();
-        $finder
-            ->name($pattern)
-            ->in($this->uploadsFilestream.'/'.$directory);
-        $filesInfo = [];
-        if($finder->hasResults()) {
-            $filenameIterator = $finder->getIterator();
-            foreach ($filenameIterator as $fileInfo) {
-                $filesInfo [] = $fileInfo;
-            }
-        }
-        return $filesInfo;
     }
 
     public function saveFileContentsToTemp(string $contents): FileObject

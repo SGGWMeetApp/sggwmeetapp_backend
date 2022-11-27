@@ -4,18 +4,18 @@ namespace App\Serializer;
 
 use App\Model\GeoLocation;
 use App\Model\Place;
-use App\Service\FileHelper\FileUploadHelper;
+use League\Flysystem\Filesystem;
 use Symfony\Component\Serializer\Exception\InvalidArgumentException;
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 
 class PlaceNormalizer implements NormalizerInterface, DenormalizerInterface
 {
-    private FileUploadHelper $uploadHelper;
+    private Filesystem $filesystem;
 
-    public function __construct(FileUploadHelper $uploadHelper)
+    public function __construct(Filesystem $uploadsFilesystem)
     {
-        $this->uploadHelper = $uploadHelper;
+        $this->filesystem = $uploadsFilesystem;
     }
 
     /**
@@ -26,7 +26,10 @@ class PlaceNormalizer implements NormalizerInterface, DenormalizerInterface
         if (!$object instanceof Place) {
             throw new InvalidArgumentException('This normalizer only accepts objects of type App\Model\Place');
         }
-        $photos = $this->uploadHelper->getPlacePhotoFilePaths($object);
+        $publicPhotoPaths = [];
+        foreach($object->getPhotoPaths() as $path) {
+            $publicPhotoPaths [] = $this->filesystem->publicUrl($path);
+        }
         return [
             "id" => $object->getId(),
             "name" => $object->getName(),
@@ -35,7 +38,7 @@ class PlaceNormalizer implements NormalizerInterface, DenormalizerInterface
                 "longitude" => $object->getGeoLocation()->getLongitude()
             ],
             "locationCategoryCodes" => $object->getCategoryCodes(),
-            "photoPath" => count($photos) > 0 ? $photos[0] : null,
+            "photoPath" => count($publicPhotoPaths) > 0 ? $publicPhotoPaths[0] : null,
         ];
     }
 
@@ -59,6 +62,10 @@ class PlaceNormalizer implements NormalizerInterface, DenormalizerInterface
         $categories = json_decode($data['category_names'], true);
         foreach ($categories as $category) {
             $place->addCategoryCode($category);
+        }
+        $photoPaths = json_decode($data['photo_paths'], true);
+        foreach ($photoPaths as $path) {
+            $place->addPhotoPath($path);
         }
         $place->setReviewsCount($data['reviews_count']);
         return $place;

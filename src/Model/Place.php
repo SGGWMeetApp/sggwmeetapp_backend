@@ -10,6 +10,7 @@ class Place
     private GeoLocation $geoLocation;
     private ?float $ratingPercent;
     private array $categoryCodes;
+    private array $photoPaths;
     private int $reviewsCount = 0;
 
     /**
@@ -27,6 +28,7 @@ class Place
         $this->description = $description;
         $this->ratingPercent = $ratingPercent;
         $this->categoryCodes = [];
+        $this->photoPaths = [];
     }
 
     public function getId(): ?int
@@ -71,6 +73,23 @@ class Place
             $this->categoryCodes [] = $upperCode;
         } else {
             throw new \InvalidArgumentException("Code $upperCode already exists in this place's category codes.");
+        }
+    }
+
+    /**
+     * @return array
+     */
+    public function getPhotoPaths(): array
+    {
+        return $this->photoPaths;
+    }
+
+    public function addPhotoPath(string $photoPath): void
+    {
+        if(!in_array($photoPath, $this->photoPaths)) {
+            $this->photoPaths [] = $photoPath;
+        } else {
+            throw new \InvalidArgumentException("$photoPath photo path already exists in this place's photo paths.");
         }
     }
 
