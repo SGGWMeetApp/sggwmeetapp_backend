@@ -135,6 +135,14 @@ CREATE TABLE rating_reviews (
     FOREIGN KEY (user_id) REFERENCES users (user_id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
+CREATE TABLE location_photos (
+    location_id integer NOT NULL,
+    photo_path varchar(255) NOT NULL,
+    FOREIGN KEY (location_id) REFERENCES locations (location_id) ON DELETE SET NULL ON UPDATE CASCADE
+);
+
+CREATE UNIQUE INDEX loc_photo_unq_inx ON location_photos (photo_path);
+
 CREATE OR REPLACE FUNCTION insert_location_rating ()
     RETURNS TRIGGER
     AS $$
