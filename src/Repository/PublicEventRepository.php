@@ -46,8 +46,17 @@ class PublicEventRepository extends BaseRepository implements PublicEventReposit
                 b.phone_number_prefix,
                 b.phone_number,
                 b.avatar_path,
-                b.description AS userDes
-
+                b.description AS userDes,
+                ARRAY_TO_JSON(ARRAY(SELECT lc.name
+                    FROM app_owner.location_categories lc
+                    INNER JOIN app_owner.locations_location_categories llc
+                    ON llc.category_id = lc.category_id
+                    WHERE llc.location_id = p.location_id
+                )) AS category_names,
+                ARRAY_TO_JSON(ARRAY(SELECT lcp.photo_path
+                    FROM app_owner.location_photos lcp
+                    WHERE lcp.location_id = p.location_id
+                )) AS photo_paths
                 FROM ' . $this->tableName .' p
                 INNER JOIN users b ON p.owner_id = b.user_id
                 INNER JOIN locations l ON p.location_id =l.location_id

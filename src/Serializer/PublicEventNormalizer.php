@@ -67,20 +67,28 @@ class PublicEventNormalizer implements NormalizerInterface, DenormalizerInterfac
             ['ROLE_USER']
         );
         $user->setAvatarUrl($data['avatar_path']);
+        $place = new Place(
+            (int)$data['location_id'],
+            $data['locname'],
+            new GeoLocation(
+                $data['lat'],
+                $data['long'],
+            ),
+            $data['locdes'],
+            $data['rating_pct']
+        );
+        $categories = json_decode($data['category_names'], true);
+        foreach ($categories as $category) {
+            $place->addCategoryCode($category);
+        }
+        $photoPaths = json_decode($data['photo_paths'], true);
+        foreach($photoPaths as $photoPath) {
+            $place->addPhotoPath($photoPath);
+        }
         return new PublicEvent(
             (int)$data['event_id'],
             $data['eventname'],
-            new Place(
-                (int)$data['location_id'],
-                $data['locname'],
-                new GeoLocation(
-                    $data['lat'],
-                    $data['long'],
-                ),
-                $data['locdes'],
-                $data['rating_pct']
-            ),
-           
+            $place,
             $data['evntdes'],
             new \DateTimeImmutable($data['start_date']),
             $user,
