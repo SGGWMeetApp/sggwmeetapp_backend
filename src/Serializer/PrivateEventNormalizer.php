@@ -5,7 +5,6 @@ namespace App\Serializer;
 use App\Model\GeoLocation;
 use App\Model\Place;
 use App\Model\PrivateEvent;
-use App\Model\UserGroup;
 use Symfony\Component\Serializer\Exception\InvalidArgumentException;
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
@@ -33,7 +32,7 @@ class PrivateEventNormalizer implements NormalizerInterface, DenormalizerInterfa
             "startDate" => $object->getStartDate()->format('Y-m-d\TH:i:s.v\Z'),
             "author" => $object->getAuthor(),
             "canEdit" => $object->getCanEdit(),
-            "notifications_enabled" => $object->isNotificationsEnabled()
+            "notification24hEnabled" => $object->isNotificationsEnabled()
         ];
     }
 
@@ -75,7 +74,8 @@ class PrivateEventNormalizer implements NormalizerInterface, DenormalizerInterfa
                 ['ROLE_USER']
             ),
             null,
-            $data['can_edit']
+            $data['can_edit'],
+            $data["notification_enabled"]
         );
     }
 

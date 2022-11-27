@@ -19,7 +19,6 @@ use App\Request\PrivateEventRequest;
 use App\Response\PrivateEventResponse;
 use App\Response\GroupUsersResponse;
 use App\Response\GroupsResponse;
-use App\Serializer\AuthorUserNormalizer;
 use App\Serializer\PrivateEventNormalizer;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -62,8 +61,12 @@ class UserGroupController extends ApiController
         foreach($privateEvents as $privateEvent) {
             $privateEventNormalizer = new PrivateEventNormalizer();
             $privateEventData = $privateEventNormalizer->normalize($privateEvent);
-            $authorNormalizer = new AuthorUserNormalizer();
-            $authorData = $authorNormalizer->normalize($privateEvent->getAuthor());
+            $eventAuthor = $privateEvent->getAuthor();
+            $authorData = [
+                'firstName' => $eventAuthor->getFirstName(),
+                'lastName' => $eventAuthor->getLastName(),
+                'email' => $eventAuthor->getUserIdentifier()
+            ];
             $privateEventsData [] = [
                 ...$privateEventData,
                 "author" => $authorData
@@ -182,6 +185,10 @@ class UserGroupController extends ApiController
         if(!$eventInGroup) {
             return $this->respondNotFound();
         }
+
+        $privateEvent->setNotificationsEnabled($enableNotification);
+        $privateEventRepository->update($privateEvent);
+
 
 
         return new PrivateEventResponse($privateEvent);

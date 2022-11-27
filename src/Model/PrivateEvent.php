@@ -9,10 +9,10 @@ class PrivateEvent extends Event
     private ?UserGroup $userGroup;
     private bool $notificationsEnabled;
 
-    public function __construct(?int $id, string $name, Place $location, ?string $description, \DateTimeInterface $startDate, User $author, ?UserGroup $userGroup, bool $canEdit=true) {
+    public function __construct(?int $id, string $name, Place $location, ?string $description, \DateTimeInterface $startDate, User $author, ?UserGroup $userGroup, bool $canEdit=true, $notificationsEnabled=true) {
         parent::__construct($id, $name, $location, $description, $startDate, $author, $canEdit);
         $this->userGroup = $userGroup;
-        $this->notificationsEnabled = true;
+        $this->notificationsEnabled = $notificationsEnabled;
     }
 
     /**

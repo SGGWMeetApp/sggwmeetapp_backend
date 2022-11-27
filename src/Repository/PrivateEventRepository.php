@@ -51,6 +51,7 @@ class PrivateEventRepository extends BaseRepository implements PrivateEventRepos
                 p.description AS evntDes,
                 p.start_date,
                 p.can_edit,
+                p.notification_enabled,
                 b.user_id,
                 b.first_name,
                 b.last_name,
@@ -58,10 +59,11 @@ class PrivateEventRepository extends BaseRepository implements PrivateEventRepos
                 b.phone_number_prefix,
                 b.phone_number,
                 b.description AS userDes
-                FROM ' . $this->tableName .' p
-                INNER JOIN users b ON p.owner_id = b.user_id
-                INNER JOIN locations l ON p.location_id = l.location_id
-                WHERE p.event_id = :eventId
+            
+            FROM ' . $this->tableName .' p
+            INNER JOIN users b ON p.owner_id = b.user_id
+            INNER JOIN locations l ON p.location_id = l.location_id
+            WHERE p.event_id = :eventId
         ';
 
         try {
@@ -99,6 +101,7 @@ class PrivateEventRepository extends BaseRepository implements PrivateEventRepos
                 p.description AS evntDes,
                 p.start_date,
                 p.can_edit,
+                p.notification_enabled,
                 b.user_id,
                 b.first_name,
                 b.last_name,
@@ -138,8 +141,8 @@ class PrivateEventRepository extends BaseRepository implements PrivateEventRepos
     public function add(PrivateEvent $privateEvent): void
     {
         $sql = 'INSERT INTO ' . $this->tableName .
-            ' (group_id, location_id, start_date, name, description, owner_id, is_public)
-        VALUES(:groupId, :locationID, :startDate, :name, :description, :ownerID, false)
+            ' (group_id, location_id, start_date, name, description, owner_id, notification_enabled, is_public)
+        VALUES(:groupId, :locationID, :startDate, :name, :description, :ownerID, :notificationsEnabled, false)
         RETURNING event_id';
 
         try {
@@ -150,6 +153,7 @@ class PrivateEventRepository extends BaseRepository implements PrivateEventRepos
             $statement->bindValue('description', $privateEvent->getDescription());
             $statement->bindValue('locationID', $privateEvent->getLocation()->getId(), ParameterType::INTEGER);
             $statement->bindValue('ownerID', $privateEvent->getAuthor()->getId(), ParameterType::INTEGER);
+            $statement->bindValue('notificationsEnabled', $privateEvent->isNotificationsEnabled(), ParameterType::BOOLEAN);
 
             $result = $statement->executeQuery();
 
@@ -161,9 +165,25 @@ class PrivateEventRepository extends BaseRepository implements PrivateEventRepos
         }
     }
 
+    // TODO: implement update method - for now only updating notification_enabled
+    /**
+     * @throws DbalException\DriverException
+     * @throws EntityNotFoundException
+     * @throws DbalException
+     * @throws UniqueConstraintViolationException
+     */
     public function update(PrivateEvent $privateEvent): void
     {
-        throw new NotImplementedException('PrivateEvent update() method is not yet implemented.');
+        $sql = 'UPDATE ' . $this->tableName .
+            ' SET notification_enabled = :notificationsEnabled WHERE event_id = :eventId';
+        try {
+            $statement = $this->connection->prepare($sql);
+            $statement->bindValue('notificationsEnabled', $privateEvent->isNotificationsEnabled(), ParameterType::BOOLEAN);
+            $statement->bindValue('eventId', $privateEvent->getId());
+            $statement->executeQuery();
+        } catch (DbalException\DriverException $e) {
+            $this->handleDriverException($e);
+        }
 //        $sql = 'UPDATE '. $this->tableName .
 //            'SET
 //                start_date=:startDate,

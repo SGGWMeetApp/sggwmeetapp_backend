@@ -3,7 +3,6 @@
 namespace App\Response;
 
 use App\Model\PrivateEvent;
-use App\Serializer\AuthorUserNormalizer;
 use App\Serializer\PrivateEventNormalizer;
 use Symfony\Component\HttpFoundation\JsonResponse;
 
@@ -23,8 +22,12 @@ class PrivateEventResponse extends JsonResponse
     {
         $privateEventNormalizer = new PrivateEventNormalizer();
         $privateEventData = $privateEventNormalizer->normalize($privateEvent);
-        $authorNormalizer = new AuthorUserNormalizer();
-        $authorData = $authorNormalizer->normalize($privateEvent->getAuthor());
+        $eventAuthor = $privateEvent->getAuthor();
+        $authorData = [
+            'firstName' => $eventAuthor->getFirstName(),
+            'lastName' => $eventAuthor->getLastName(),
+            'email' => $eventAuthor->getUserIdentifier()
+        ];
         return [
             ...$privateEventData,
             "author" => $authorData
