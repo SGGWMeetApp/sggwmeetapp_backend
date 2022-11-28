@@ -13,6 +13,12 @@ use App\Security\User;
 
 class PrivateEventNormalizer implements NormalizerInterface, DenormalizerInterface
 {
+    private UserNormalizer $userNormalizer;
+
+    public function __construct(UserNormalizer $userNormalizer)
+    {
+        $this->userNormalizer = $userNormalizer;
+    }
 
     /**
      * @inheritDoc
@@ -30,7 +36,9 @@ class PrivateEventNormalizer implements NormalizerInterface, DenormalizerInterfa
                 "name"=>$object->getLocation()->getName()
             ],
             "startDate" => $object->getStartDate()->format('Y-m-d\TH:i:s.v\Z'),
-            "author" => $object->getAuthor(),
+            "author" => $this->userNormalizer->normalize($object->getAuthor(), 'json', [
+                'modelProperties' => UserNormalizer::AUTHOR_PROPERTIES
+            ]),
             "canEdit" => $object->getCanEdit(),
             "notification24hEnabled" => $object->isNotificationsEnabled()
         ];

@@ -11,9 +11,6 @@ interface PrivateEventRepositoryInterface
      */
     public function findOrFail(int $eventId): PrivateEvent;
 
-    /**
-     * @throws EntityNotFoundException
-     */
     public function findAll(int $groupId): array;
 
     public function add(PrivateEvent $privateEvent): void;

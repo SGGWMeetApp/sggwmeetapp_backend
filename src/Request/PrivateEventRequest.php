@@ -8,8 +8,8 @@ class PrivateEventRequest
 {
 
     /**
-     * @Assert\Type("string")
-     * @var string
+     * @Assert\Type("integer")
+     * @var integer
      */
     public $publicEventId;
 
@@ -23,14 +23,15 @@ class PrivateEventRequest
 
     /**
      * @Assert\NotNull()
-     * @Assert\Type("string")
-     * @var string
+     * @Assert\Type("integer")
+     * @var integer
      */
     public $locationId;
 
     /**
      * @Assert\NotBlank(allowNull=true)
      * @Assert\Type("string")
+     * @Assert\Length(max=2000)
      * @var string
      */
     public $description;

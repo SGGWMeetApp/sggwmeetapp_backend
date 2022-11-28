@@ -4,7 +4,7 @@ namespace App\Controller;
 
 use App\Factory\NormalizerFactory;
 use App\Repository\EntityNotFoundException;
-use App\Response\EventsResponse;
+use App\Response\PublicEventsResponse;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use App\Model\PublicEvent;
@@ -33,7 +33,7 @@ class EventController extends ApiController {
         } catch (\Throwable $e) {
             return $this->respondInternalServerError($e);
         }
-        return new EventsResponse('publicEvents', $normalizerFactory, ...$events);
+        return new PublicEventsResponse('publicEvents', $normalizerFactory, ...$events);
     }
 
     public function createPublicEvent(
@@ -165,7 +165,7 @@ class EventController extends ApiController {
         } catch (\Throwable $e) {
             return $this->respondInternalServerError($e);
         }
-        return new EventsResponse('publicEvents', $normalizerFactory,  ...$events);
+        return new PublicEventsResponse('publicEvents', $normalizerFactory,  ...$events);
     }
 
 }

@@ -10,6 +10,7 @@ use App\Model\PrivateEvent;
 use App\Model\UserGroup;
 use App\Repository\PlaceRepositoryInterface;
 use App\Repository\PrivateEventRepositoryInterface;
+use App\Repository\PublicEventRepositoryInterface;
 use App\Repository\UniqueConstraintViolationException;
 use App\Repository\UserRepositoryInterface;
 use App\Repository\EntityNotFoundException;
@@ -19,111 +20,139 @@ use App\Request\PrivateEventRequest;
 use App\Response\PrivateEventResponse;
 use App\Response\GroupUsersResponse;
 use App\Response\GroupsResponse;
-use App\Serializer\PrivateEventNormalizer;
+use App\Response\PrivateEventsResponse;
+use App\Security\User;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\Serializer\Exception\ExceptionInterface as SerializerExceptionInterface;
 
 
 class UserGroupController extends ApiController
 {
-    public function getGroupPrivateEvents(
-        int $group_id,
-        UserGroupRepositoryInterface $userGroupRepository,
-        UserRepositoryInterface $userRepository,
-        PrivateEventRepositoryInterface $privateEventRepository
-    ): JsonResponse
+    private UserRepositoryInterface $userRepository;
+    private UserGroupRepositoryInterface $userGroupRepository;
+    private PublicEventRepositoryInterface $publicEventRepository;
+    private PrivateEventRepositoryInterface $privateEventRepository;
+    private PlaceRepositoryInterface $placeRepository;
+    private NormalizerFactory $normalizerFactory;
+
+    public function __construct(
+        UserRepositoryInterface         $userRepository,
+        UserGroupRepositoryInterface    $userGroupRepository,
+        PublicEventRepositoryInterface  $publicEventRepository,
+        PrivateEventRepositoryInterface $privateEventRepository,
+        PlaceRepositoryInterface        $placeRepository,
+        NormalizerFactory               $normalizerFactory
+    )
+    {
+        $this->userRepository = $userRepository;
+        $this->userGroupRepository = $userGroupRepository;
+        $this->publicEventRepository = $publicEventRepository;
+        $this->privateEventRepository = $privateEventRepository;
+        $this->placeRepository = $placeRepository;
+        $this->normalizerFactory = $normalizerFactory;
+    }
+
+
+    /**
+     * @throws SerializerExceptionInterface
+     */
+    public function getGroupPrivateEvents(int $group_id): JsonResponse
     {
         $jwtUser = $this->getUser();
         try {
-            $user = $userRepository->findOrFail($jwtUser->getUserIdentifier());
+            $user = $this->userRepository->findOrFail($jwtUser->getUserIdentifier());
         } catch (EntityNotFoundException $e) {
             return $this->respondInternalServerError($e);
         }
         try {
-            $userGroup = $userGroupRepository->findOrFail($group_id);
+            $userGroup = $this->userGroupRepository->findOrFail($group_id);
         } catch (EntityNotFoundException) {
             return $this->respondNotFound();
         }
-
-        $isUserInGroup = $userGroup->containsUser($user);
-        if(!$isUserInGroup) {
+        if(!$userGroup->containsUser($user)) {
             return $this->respondUnauthorized('Unauthorized. You are not a member of this group.');
         }
-
-        try {
-            $privateEvents = $privateEventRepository->findAll($group_id);
-        } catch(EntityNotFoundException) {
-            return $this->respondNotFound();
-        }
-
-        // TODO: move it to Response
-        $privateEventsData = [];
-        foreach($privateEvents as $privateEvent) {
-            $privateEventNormalizer = new PrivateEventNormalizer();
-            $privateEventData = $privateEventNormalizer->normalize($privateEvent);
-            $eventAuthor = $privateEvent->getAuthor();
-            $authorData = [
-                'firstName' => $eventAuthor->getFirstName(),
-                'lastName' => $eventAuthor->getLastName(),
-                'email' => $eventAuthor->getUserIdentifier()
-            ];
-            $privateEventsData [] = [
-                ...$privateEventData,
-                "author" => $authorData
-            ];
-        }
-
-        return $this->response(["events" => $privateEventsData]);
+        $privateEvents = $this->privateEventRepository->findAll($group_id);
+        return new PrivateEventsResponse('events', $this->normalizerFactory, ...$privateEvents);
     }
 
-    public function createGroupPrivateEvent(
-        int $group_id,
-        Request $request,
-        UserRepositoryInterface $userRepository,
-        UserGroupRepositoryInterface $userGroupRepository,
-        PrivateEventRepositoryInterface $privateEventRepository,
-        PlaceRepositoryInterface $placeRepository
-    ): JsonResponse
+    /**
+     * @throws SerializerExceptionInterface
+     */
+    public function createGroupPrivateEvent(int $group_id, Request $request): JsonResponse
     {
         $requestData = json_decode($request->getContent(),true);
         $addPrivateEventRequest = new PrivateEventRequest();
-
         $this->handlePrivateEventRequest($addPrivateEventRequest, $requestData);
-
-        //TODO: private event based on public event
 
         $jwtUser = $this->getUser();
         try {
-            $user = $userRepository->findOrFail($jwtUser->getUserIdentifier());
+            $user = $this->userRepository->findOrFail($jwtUser->getUserIdentifier());
         } catch (EntityNotFoundException $e) {
             return $this->respondInternalServerError($e);
         }
         try {
-            $location = $placeRepository->findOrFail((int)$requestData['locationId']);
-            $userGroup = $userGroupRepository->findOrFail($group_id);
+            $userGroup = $this->userGroupRepository->findOrFail($group_id);
         } catch (EntityNotFoundException) {
             return $this->respondNotFound();
         }
-
-        $isUserInGroup = $userGroup->containsUser($user);
-        if(!$isUserInGroup) {
-            return $this->respondUnauthorized('Unauthorized. You are not a member of this group.');
+        $isUserGroupAdmin = $userGroup->containsUser($user) && $userGroup->getOwner()->isEqualTo($user);
+        if(!$isUserGroupAdmin) {
+            return $this->respondUnauthorized('Unauthorized. You are not authorized to create events in this group.');
         }
 
+        if($addPrivateEventRequest->publicEventId !== null) {
+            return $this->createGroupEventFromPublicEvent($addPrivateEventRequest->publicEventId, $userGroup);
+        } else {
+            return $this->createGroupEventFromScratch($addPrivateEventRequest, $user, $userGroup);
+        }
+    }
+
+    /**
+     * @throws SerializerExceptionInterface
+     */
+    private function createGroupEventFromPublicEvent(int $publicEventId, UserGroup $userGroup): JsonResponse
+    {
+        try {
+            $publicEvent = $this->publicEventRepository->findOrFail($publicEventId);
+        } catch (EntityNotFoundException) {
+            return $this->respondNotFound('Public event not found.');
+        }
+        $privateEvent = $publicEvent->convertToPrivateEvent($userGroup);
+        $this->privateEventRepository->add($privateEvent);
+        $userGroup->addEvent($privateEvent);
+
+        return new PrivateEventResponse($privateEvent, $this->normalizerFactory);
+    }
+
+    /**
+     * @throws SerializerExceptionInterface
+     */
+    private function createGroupEventFromScratch(
+        PrivateEventRequest $addPrivateEventRequest,
+        User $eventAuthor,
+        UserGroup $userGroup
+    ): JsonResponse
+    {
+        try {
+            $location = $this->placeRepository->findOrFail($addPrivateEventRequest->locationId);
+        } catch (EntityNotFoundException) {
+            return $this->respondNotFound('Location not found.');
+        }
         $privateEvent = new PrivateEvent(
             null,
             $addPrivateEventRequest->name,
             $location,
             $addPrivateEventRequest->description,
             $addPrivateEventRequest->startDate,
-            $user,
+            $eventAuthor,
             $userGroup
         );
-
-        $privateEventRepository->add($privateEvent);
+        $this->privateEventRepository->add($privateEvent);
         $userGroup->addEvent($privateEvent);
 
-        return new PrivateEventResponse($privateEvent);
+        return new PrivateEventResponse($privateEvent, $this->normalizerFactory);
     }
 
     private function handlePrivateEventRequest(PrivateEventRequest $request, mixed $requestData): void
@@ -137,26 +166,23 @@ class UserGroupController extends ApiController
     }
 
     //TODO: enableGroupEventNotifications
-    public function enableGroupEventNotifications(
-        Request $request,
-        int $group_id,
-        int $event_id,
-        UserGroupRepositoryInterface $userGroupRepository,
-        UserRepositoryInterface $userRepository,
-        PrivateEventRepositoryInterface $privateEventRepository
-    ): JsonResponse
+
+    /**
+     * @throws SerializerExceptionInterface
+     */
+    public function enableGroupEventNotifications(Request $request, int $group_id, int $event_id): JsonResponse
     {
         $requestData = json_decode($request->getContent(),true);
         $enableNotification = $requestData["enable24hNotification"];
 
         $jwtUser = $this->getUser();
         try {
-            $user = $userRepository->findOrFail($jwtUser->getUserIdentifier());
+            $user = $this->userRepository->findOrFail($jwtUser->getUserIdentifier());
         } catch (EntityNotFoundException $e) {
             return $this->respondInternalServerError($e);
         }
         try {
-            $userGroup = $userGroupRepository->findOrFail($group_id);
+            $userGroup = $this->userGroupRepository->findOrFail($group_id);
         } catch (EntityNotFoundException) {
             return $this->respondNotFound();
         }
@@ -167,8 +193,8 @@ class UserGroupController extends ApiController
         }
 
         try {
-            $privateEvent = $privateEventRepository->findOrFail($event_id);
-            $groupEvents = $privateEventRepository->findAll($group_id);
+            $privateEvent = $this->privateEventRepository->findOrFail($event_id);
+            $groupEvents = $this->privateEventRepository->findAll($group_id);
         } catch(EntityNotFoundException) {
             return $this->respondNotFound();
         }
@@ -187,17 +213,13 @@ class UserGroupController extends ApiController
         }
 
         $privateEvent->setNotificationsEnabled($enableNotification);
-        $privateEventRepository->update($privateEvent);
+        $this->privateEventRepository->update($privateEvent);
 
-
-
-        return new PrivateEventResponse($privateEvent);
+        return new PrivateEventResponse($privateEvent, $this->normalizerFactory);
     }
 
     public function createGroup(
-        Request $request,
-        UserGroupRepositoryInterface $userGroupRepository,
-        UserRepositoryInterface $userRepository
+        Request $request
     ): JsonResponse
     {
         $requestData = json_decode($request->getContent(),true);
@@ -205,7 +227,7 @@ class UserGroupController extends ApiController
         $this->handleCreateGroupRequest($userGroupRequest, $requestData);
         $jwtUser = $this->getUser();
         try {
-            $user = $userRepository->findOrFail($jwtUser->getUserIdentifier());
+            $user = $this->userRepository->findOrFail($jwtUser->getUserIdentifier());
         } catch (EntityNotFoundException $e) {
             return $this->respondInternalServerError($e);
         }
@@ -214,7 +236,7 @@ class UserGroupController extends ApiController
         $userGroup->addUser($user);
 
         try {
-            $userGroupRepository->add($userGroup);
+            $this->userGroupRepository->add($userGroup);
         } catch(UniqueConstraintViolationException $e) {
             return $this->respondWithError('BAD_REQUEST', $e->getMessage());
         }
@@ -234,41 +256,32 @@ class UserGroupController extends ApiController
         }
     }
 
-    public function getGroups(
-        UserGroupRepositoryInterface $userGroupRepository,
-        UserRepositoryInterface $userRepository,
-        NormalizerFactory $normalizerFactory
-    ): JsonResponse
+    public function getGroups(): JsonResponse
     {
         $jwtUser = $this->getUser();
         try {
-            $user = $userRepository->findOrFail($jwtUser->getUserIdentifier());
-            $userGroups = $userGroupRepository->findAll();
+            $user = $this->userRepository->findOrFail($jwtUser->getUserIdentifier());
+            $userGroups = $this->userGroupRepository->findAll();
         } catch (EntityNotFoundException $e) {
             return $this->respondInternalServerError($e);
         }
         try {
-            return new GroupsResponse($userGroups, $user, $normalizerFactory);
-        } catch (ExceptionInterface $e) {
+            return new GroupsResponse($userGroups, $user, $this->normalizerFactory);
+        } catch (SerializerExceptionInterface $e) {
             return $this->respondInternalServerError($e);
         }
     }
 
-    public function getGroupUsers(
-        int $group_id,
-        UserGroupRepositoryInterface $userGroupRepository,
-        UserRepositoryInterface $userRepository,
-        NormalizerFactory $normalizerFactory
-    ): JsonResponse
+    public function getGroupUsers(int $group_id): JsonResponse
     {
         $jwtUser = $this->getUser();
         try {
-            $user = $userRepository->findOrFail($jwtUser->getUserIdentifier());
+            $user = $this->userRepository->findOrFail($jwtUser->getUserIdentifier());
         } catch (EntityNotFoundException $e) {
             return $this->respondInternalServerError($e);
         }
         try {
-            $userGroup = $userGroupRepository->findOrFail($group_id);
+            $userGroup = $this->userGroupRepository->findOrFail($group_id);
         } catch (EntityNotFoundException) {
             return $this->respondNotFound();
         }
@@ -278,35 +291,30 @@ class UserGroupController extends ApiController
             return $this->respondUnauthorized('Unauthorized. You are not a member of this group.');
         }
         try {
-            return new GroupUsersResponse($userGroup, $user, $normalizerFactory);
-        } catch (ExceptionInterface $e) {
+            return new GroupUsersResponse($userGroup, $user, $this->normalizerFactory);
+        } catch (SerializerExceptionInterface $e) {
             return $this->respondInternalServerError($e);
         }
     }
 
-    public function addGroupUser(
-        Request $request,
-        int $group_id,
-        UserGroupRepositoryInterface $userGroupRepository,
-        UserRepositoryInterface $userRepository
-    ): JsonResponse
+    public function addGroupUser(Request $request, int $group_id): JsonResponse
     {
         $requestData = json_decode($request->getContent(),true);
         $userId = $requestData["userId"];
 
         $jwtUser = $this->getUser();
         try {
-            $currentUser = $userRepository->findOrFail($jwtUser->getUserIdentifier());
+            $currentUser = $this->userRepository->findOrFail($jwtUser->getUserIdentifier());
         } catch (EntityNotFoundException $e) {
             return $this->respondInternalServerError($e);
         }
         try {
-            $user = $userRepository->findByIdOrFail($userId);
+            $user = $this->userRepository->findByIdOrFail($userId);
         } catch (EntityNotFoundException) {
             return $this->respondNotFound('User with given id does not exist.');
         }
         try {
-            $userGroup = $userGroupRepository->findOrFail($group_id);
+            $userGroup = $this->userGroupRepository->findOrFail($group_id);
         } catch (EntityNotFoundException) {
             return $this->respondNotFound('Group with given id does not exist.');
         }
@@ -320,7 +328,7 @@ class UserGroupController extends ApiController
         $user->addGroup($userGroup);
 
         try {
-            $userGroupRepository->addGroupUser($userGroup, $user);
+            $this->userGroupRepository->addGroupUser($userGroup, $user);
         } catch (UniqueConstraintViolationException $e) {
                 return match ($e->getViolatedConstraint()) {
                     'users_user_groups_pkey' =>
@@ -340,38 +348,32 @@ class UserGroupController extends ApiController
         ]);
     }
 
-    public function leaveGroup(
-        Request $request,
-        int $group_id,
-        UserGroupRepositoryInterface $userGroupRepository,
-        UserRepositoryInterface $userRepository,
-        NormalizerFactory $normalizerFactory
-    ):JsonResponse
+    public function leaveGroup(int $group_id):JsonResponse
     {
         $jwtUser = $this->getUser();
         try {
-            $user = $userRepository->findOrFail($jwtUser->getUserIdentifier());
+            $user = $this->userRepository->findOrFail($jwtUser->getUserIdentifier());
         } catch (EntityNotFoundException $e) {
             return $this->respondInternalServerError($e);
         }
         try {
-            $userGroup = $userGroupRepository->findOrFail($group_id);
+            $userGroup = $this->userGroupRepository->findOrFail($group_id);
         } catch (EntityNotFoundException $e) {
             return $this->respondNotFound();
         }
 
         // when owner leaves the group, a group is deleted (users are deleted on cascade)
         if($user->isEqualTo($userGroup->getOwner())) {
-            $userGroupRepository->delete($userGroup);
+            $this->userGroupRepository->delete($userGroup);
         } else {
-            $userGroupRepository->deleteUserFromGroup($userGroup->getGroupId(), $user->getId());
+            $this->userGroupRepository->deleteUserFromGroup($userGroup->getGroupId(), $user->getId());
         }
 
-        $userGroups = $userGroupRepository->findAllGroupsForUser($user->getId());
+        $userGroups = $this->userGroupRepository->findAllGroupsForUser($user->getId());
 
         try {
-            return new GroupsResponse($userGroups, $user, $normalizerFactory);
-        } catch (ExceptionInterface $e) {
+            return new GroupsResponse($userGroups, $user, $this->normalizerFactory);
+        } catch (SerializerExceptionInterface $e) {
             return $this->respondInternalServerError($e);
         }
     }
@@ -380,4 +382,6 @@ class UserGroupController extends ApiController
     {
         return $this->setStatusCode(204)->response([]);
     }
+
+
 }

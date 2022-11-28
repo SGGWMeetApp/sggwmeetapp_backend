@@ -8,7 +8,7 @@ use App\Serializer\UserNormalizer;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Serializer\Exception\ExceptionInterface as SerializerExceptionInterface;
 
-class EventsResponse extends JsonResponse
+class PublicEventsResponse extends JsonResponse
 {
     private NormalizerFactory $normalizerFactory;
     /**

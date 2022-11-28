@@ -2,32 +2,35 @@
 
 namespace App\Response;
 
+use App\Factory\NormalizerFactory;
 use App\Model\PrivateEvent;
-use App\Serializer\PrivateEventNormalizer;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\Serializer\Exception\ExceptionInterface as SerializerExceptionInterface;
 
 class PrivateEventResponse extends JsonResponse
 {
+    private NormalizerFactory $normalizerFactory;
 
     /**
      * PrivateEventResponse constructor
      * @param PrivateEvent $privateEvent
+     * @param NormalizerFactory $normalizerFactory
+     * @throws SerializerExceptionInterface
      */
-    public function __construct(PrivateEvent $privateEvent)
+    public function __construct(PrivateEvent $privateEvent, NormalizerFactory $normalizerFactory)
     {
+        $this->normalizerFactory = $normalizerFactory;
         parent::__construct($this->responseData($privateEvent));
     }
 
+    /**
+     * @throws SerializerExceptionInterface
+     */
     public function responseData(PrivateEvent $privateEvent): array
     {
-        $privateEventNormalizer = new PrivateEventNormalizer();
-        $privateEventData = $privateEventNormalizer->normalize($privateEvent);
+        $privateEventData = $this->normalizerFactory->getNormalizer($privateEvent)->normalize($privateEvent);
         $eventAuthor = $privateEvent->getAuthor();
-        $authorData = [
-            'firstName' => $eventAuthor->getFirstName(),
-            'lastName' => $eventAuthor->getLastName(),
-            'email' => $eventAuthor->getUserIdentifier()
-        ];
+        $authorData = $this->normalizerFactory->getNormalizer($eventAuthor)->normalize($eventAuthor);
         return [
             ...$privateEventData,
             "author" => $authorData

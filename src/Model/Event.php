@@ -23,7 +23,15 @@ abstract class Event
      * @param User $author
      * @param bool $canEdit
      */
-    public function __construct(?int $id, string $name, Place $location, ?string $description, \DateTimeInterface $startDate, User $author, bool $canEdit=true)
+    public function __construct(
+        ?int                $id,
+        string              $name,
+        Place               $location,
+        ?string             $description,
+        \DateTimeInterface  $startDate,
+        User                $author,
+        bool                $canEdit=true
+    )
     {
         $this->id = $id;
         $this->name = $name;
@@ -53,22 +61,20 @@ abstract class Event
         return $this->name;
     }
 
-    /**
-     * @return Place
-     */
+    public function setName(string $name): void
+    {
+        $this->name = $name;
+    }
+
     public function getLocation(): Place
     {
         return $this->location;
     }
 
-    /**
-     * @param Place $location
-     */
     public function setLocation(Place $location): void
     {
         $this->location = $location;
     }
-
 
     public function getDescription(): ?string
     {

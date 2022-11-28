@@ -22,10 +22,10 @@ class PrivateEventRepository extends BaseRepository implements PrivateEventRepos
     /**
      * @param Connection $connection
      */
-    public function __construct(Connection $connection)
+    public function __construct(Connection $connection, PrivateEventNormalizer $privateEventNormalizer)
     {
         $this->connection = $connection;
-        $this->privateEventNormalizer = new PrivateEventNormalizer();
+        $this->privateEventNormalizer = $privateEventNormalizer;
     }
 
 

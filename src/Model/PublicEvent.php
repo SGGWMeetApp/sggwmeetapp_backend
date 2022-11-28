@@ -3,17 +3,9 @@
 namespace App\Model;
 
 use App\Security\User;
-use App\Model\Place;
 
-class PublicEvent
+class PublicEvent extends Event
 {
-    private ?int $id;
-    private string $name;
-    private ?string $description;
-    private ?Place $location;
-    private \DateTimeInterface $startDate;
-    private User $author;
-    private bool $canEdit;
 
     /**
      * @param int|null $id
@@ -24,89 +16,32 @@ class PublicEvent
      * @param User $author
      * @param bool $canEdit
      */
-    public function __construct(?int $id, string $name, Place $location , ?string $description, \DateTimeInterface $startDate, User $author, bool $canEdit=true)
+    public function __construct(
+        ?int                $id,
+        string              $name,
+        Place               $location,
+        ?string             $description,
+        \DateTimeInterface  $startDate,
+        User                $author,
+        bool                $canEdit=true
+    )
     {
-        $this->id = $id;
-        $this->name = $name;
-        $this->location = $location;
-        $this->description = $description;
-        $this->startDate = $startDate;
-        $this->author = $author;
-        $this->canEdit =$canEdit;
+        parent::__construct($id, $name, $location, $description, $startDate, $author, $canEdit);
     }
 
-    public function getId(): ?int
+    public function convertToPrivateEvent(UserGroup $userGroup): PrivateEvent
     {
-        return $this->id;
-    }
-
-    /**
-     * @param int|null $id
-     */
-    public function setId(?int $id): void
-    {
-        $this->id = $id;
-    }
-
-    public function getName(): string
-    {
-        return $this->name;
-    }
-
-    /**
-     * @param string $name
-     */
-    public function setName(string $name): void
-    {
-        $this->name = $name;
-    }
-
-    public function getLocation(): Place
-    {
-        return $this->location;
-    }
-
-    /**
-     * @param \App\Model\Place|null $location
-     */
-    public function setLocation(?\App\Model\Place $location): void
-    {
-        $this->location = $location;
-    }
-
-    public function getDescription(): ?string
-    {
-        return $this->description;
-    }
-
-    public function setDescription(?string $description): void
-    {
-        $this->description = $description;
-    }
-
-    public function getStartDate(): \DateTimeInterface
-    {
-        return $this->startDate;
-    }
-
-    public function setStartDate(\DateTimeInterface $startDate): void
-    {
-        $this->startDate =$startDate;
-    }
-
-    public function getAuthor(): User
-    {
-        return $this->author;
-    }
-
-    public function setAuthor(User $author): void
-    {
-        $this->author =$author;
-    }
-
-    public function getCanEdit(): bool
-    {
-        return $this->canEdit;
+        return new PrivateEvent(
+            $this->getId(),
+            $this->getName(),
+            $this->getLocation(),
+            $this->getDescription(),
+            $this->getStartDate(),
+            $this->getAuthor(),
+            $userGroup,
+            $this->getCanEdit(),
+            true
+        );
     }
 
 }
