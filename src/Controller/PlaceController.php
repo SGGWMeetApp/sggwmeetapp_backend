@@ -13,17 +13,17 @@ use App\Model\ReviewAssessment;
 use App\Repository\EntityNotFoundException;
 use App\Repository\PlaceRepositoryInterface;
 use App\Repository\PlaceReviewRepositoryInterface;
-use App\Repository\PublicEventRepositoryInterface;
 use App\Repository\ReviewAssessmentRepositoryInterface;
 use App\Repository\UniqueConstraintViolationException;
 use App\Repository\UserRepositoryInterface;
+use App\Repository\EventRepositoryInterface;
 use App\Request\PlaceFiltersRequest;
 use App\Request\ReviewAssessmentRequest;
 use App\Request\ReviewPlaceRequest;
 use App\Response\PlaceReviewResponse;
 use App\Serializer\PlaceNormalizer;
 use App\Serializer\PlaceReviewNormalizer;
-use App\Serializer\PublicEventNormalizer;
+use App\Serializer\EventNormalizer;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Serializer\Exception\ExceptionInterface as SerializerExceptionInterface;
@@ -108,8 +108,8 @@ class PlaceController extends ApiController
     public function getPlaceEventsAction(
         int $place_id,
         PlaceRepositoryInterface        $placeRepository,
-        PublicEventRepositoryInterface  $publicEventRepository,
-        PublicEventNormalizer           $publicEventNormalizer
+        EventRepositoryInterface        $eventRepository,
+        EventNormalizer                 $eventNormalizer
     ): JsonResponse
     {
         try {
@@ -117,10 +117,10 @@ class PlaceController extends ApiController
         } catch (EntityNotFoundException) {
             return $this->respondNotFound();
         }
-        $placeEvents = $publicEventRepository->findAllForPlace($place);
+        $placeEvents = $eventRepository->findAllForPlace($place);
         $normalizedEvents = [];
         foreach ($placeEvents as $event) {
-            $normalizedEvents [] = $publicEventNormalizer->normalize($event);
+            $normalizedEvents [] = $eventNormalizer->normalize($event);
         }
         return $this->response(["events" => $normalizedEvents]);
     }

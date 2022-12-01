@@ -2,7 +2,9 @@
 
 namespace App\Serializer;
 
+use App\Model\Event;
 use App\Model\GeoLocation;
+use App\Model\PrivateEvent;
 use App\Model\PublicEvent;
 use App\Model\Place;
 use Symfony\Component\Serializer\Exception\InvalidArgumentException;
@@ -10,7 +12,7 @@ use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 use App\Security\User;
 
-class PublicEventNormalizer implements NormalizerInterface, DenormalizerInterface
+class EventNormalizer implements NormalizerInterface, DenormalizerInterface
 {
     private UserNormalizer $authorNormalizer;
     private PlaceNormalizer $placeNormalizer;
@@ -26,19 +28,22 @@ class PublicEventNormalizer implements NormalizerInterface, DenormalizerInterfac
      */
     public function normalize(mixed $object, string $format = null, array $context = []): float|int|bool|\ArrayObject|array|string|null
     {
-        if (!$object instanceof PublicEvent) {
-            throw new InvalidArgumentException('This normalizer only accepts objects of type App\Model\PublicEvent');
+        if (!$object instanceof Event) {
+            throw new InvalidArgumentException('This normalizer only accepts objects of type App\Model\Event');
         }
         return [
-            "id" => $object->getId(),
-            "name" => $object->getName(),
-            "description" => $object->getDescription(),
-            "locationData" => $this->placeNormalizer->normalize($object->getLocation()),
-            "startDate" => $object->getStartDate()->format('Y-m-d\TH:i:s.v\Z'),
-            "author" => $this->authorNormalizer->normalize($object->getAuthor(), 'json', [
+            'id' => $object->getId(),
+            'name' => $object->getName(),
+            'description' => $object->getDescription(),
+            'locationData' => $this->placeNormalizer->normalize($object->getLocation(), 'json', [
+                'modelProperties' => PlaceNormalizer::LOCATION_PROPERTIES
+            ]),
+            'startDate' => $object->getStartDate()->format('Y-m-d\TH:i:s.v\Z'),
+            'author' => $this->authorNormalizer->normalize($object->getAuthor(), 'json', [
                 'modelProperties' => UserNormalizer::AUTHOR_PROPERTIES
             ]),
-            "canEdit" => $object->getCanEdit(),
+            'canEdit' => $object->getCanEdit(),
+            'notification24hEnabled' => $object->isNotificationsEnabled()
         ];
     }
 
@@ -47,20 +52,20 @@ class PublicEventNormalizer implements NormalizerInterface, DenormalizerInterfac
      */
     public function supportsNormalization(mixed $data, string $format = null, array $context = []): bool
     {
-        return $data instanceof PublicEvent;
+        return $data instanceof Event;
     }
 
     /**
      * @throws \Exception
      */
-    public function denormalize(mixed $data, string $type, string $format = null, array $context = []): PublicEvent
+    public function denormalize(mixed $data, string $type, string $format = null, array $context = []): Event
     {
         $user = new User(
-            (int)$data['user_id'],
+            $data['user_id'],
             $data['first_name'],
             $data['last_name'],
             $data['email'],
-            "TRZYMAJ JEZYK ZA ZĘBAMI",
+            "",
             $data['phone_number_prefix'],
             $data['phone_number'],
             $data['userdes'],
@@ -68,7 +73,7 @@ class PublicEventNormalizer implements NormalizerInterface, DenormalizerInterfac
         );
         $user->setAvatarUrl($data['avatar_path']);
         $place = new Place(
-            (int)$data['location_id'],
+            $data['location_id'],
             $data['locname'],
             new GeoLocation(
                 $data['lat'],
@@ -85,19 +90,35 @@ class PublicEventNormalizer implements NormalizerInterface, DenormalizerInterfac
         foreach($photoPaths as $photoPath) {
             $place->addPhotoPath($photoPath);
         }
-        return new PublicEvent(
-            (int)$data['event_id'],
-            $data['eventname'],
-            $place,
-            $data['evntdes'],
-            new \DateTimeImmutable($data['start_date']),
-            $user,
-            $data['can_edit']
-        );
+
+        if($data['is_public']) {
+            return new PublicEvent(
+                $data['event_id'],
+                $data['eventname'],
+                $place,
+                $data['evntdes'],
+                new \DateTimeImmutable($data['start_date']),
+                $user,
+                $data['can_edit']
+            );
+        } else {
+            return new PrivateEvent(
+                $data['event_id'],
+                $data['eventname'],
+                $place,
+                $data['evntdes'],
+                new \DateTimeImmutable($data['start_date']),
+                $user,
+                null,
+                $data['can_edit'],
+            );
+        }
+
+
     }
 
     public function supportsDenormalization(mixed $data, string $type, string $format = null, array $context = []): bool
     {
-        return is_array($data) && $type == 'PublicEvent';
+        return is_array($data) && $type == 'Event';
     }
 }

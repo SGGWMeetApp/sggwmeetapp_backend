@@ -3,42 +3,42 @@
 namespace App\Response;
 
 use App\Factory\NormalizerFactory;
-use App\Model\PrivateEvent;
+use App\Model\Event;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Serializer\Exception\ExceptionInterface as SerializerExceptionInterface;
 
-class PrivateEventsResponse extends JsonResponse
+class EventsResponse extends JsonResponse
 {
     private NormalizerFactory $normalizerFactory;
     /**
      * @throws SerializerExceptionInterface
      */
     public function __construct(
-        ?string $collectionName,
+        ?string                 $collectionName,
         NormalizerFactory       $normalizerFactory,
-        PrivateEvent             ...$privateEvents
+        Event                   ...$events
     )
     {
         $this->normalizerFactory = $normalizerFactory;
         if ($collectionName === null) {
-            parent::__construct($this->responseData($privateEvents));
+            parent::__construct($this->responseData($events));
         } else {
-            parent::__construct([$collectionName => $this->responseData($privateEvents)]);
+            parent::__construct([$collectionName => $this->responseData($events)]);
         }
     }
 
     /**
      * @throws SerializerExceptionInterface
      */
-    private function responseData(array $privateEvents): array
+    private function responseData(array $events): array
     {
-        if (count($privateEvents) < 1) {
+        if (count($events) < 1) {
             return [];
         }
-        $privateEventNormalizer = $this->normalizerFactory->getNormalizer($privateEvents[0]);
+        $eventNormalizer = $this->normalizerFactory->getNormalizer($events[0]);
         $normalizedEvents = [];
-        foreach($privateEvents as $privateEvent) {
-            $normalizedEvents [] = $privateEventNormalizer->normalize($privateEvent);
+        foreach($events as $event) {
+            $normalizedEvents [] = $eventNormalizer->normalize($event);
         }
         return $normalizedEvents;
     }

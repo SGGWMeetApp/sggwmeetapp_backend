@@ -21,11 +21,11 @@ place_get_details:
     methods: GET
 events_get_all:
     path: /api/events
-    controller: App\Controller\EventController::getPublicEventsAction
+    controller: App\Controller\EventController::getPublicEvents
     methods: GET
 place_get_events:
     path: /api/places/{place_id}/events
-    controller: App\Controller\PlaceController::getPlaceEventsAction
+    controller: App\Controller\PlaceController::getPlaceEvents
     methods: GET
 group_get_events:
     path: /api/groups/{group_id}/events
@@ -47,7 +47,7 @@ event_update:
     methods: PUT
 events_get_upcoming:
     path: /api/events/upcoming
-    controller: App\Controller\EventController::getUpcomingEventsAction
+    controller: App\Controller\EventController::getUpcomingEvents
     methods: GET
 place_review_add:
     path: /api/places/{place_id}/reviews

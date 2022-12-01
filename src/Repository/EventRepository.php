@@ -2,26 +2,29 @@
 
 namespace App\Repository;
 
+use App\Model\Event;
 use App\Model\Place;
 use App\Model\PublicEvent;
-use App\Serializer\PublicEventNormalizer;
+use App\Model\UserGroup;
+use App\Serializer\EventNormalizer;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception as DbalException;
 use Doctrine\DBAL\Exception\DriverException;
+use Doctrine\DBAL\ParameterType;
 
-class PublicEventRepository extends BaseRepository implements PublicEventRepositoryInterface
+class EventRepository extends BaseRepository implements EventRepositoryInterface
 {
     private Connection $connection;
-    private PublicEventNormalizer $publicEventNormalizer;
+    private EventNormalizer $eventNormalizer;
     private string $tableName = 'app_owner.events';
 
     /**
      * @param Connection $connection
      */
-    public function __construct(Connection $connection, PublicEventNormalizer $publicEventNormalizer)
+    public function __construct(Connection $connection, EventNormalizer $eventNormalizer)
     {
         $this->connection = $connection;
-        $this->publicEventNormalizer = $publicEventNormalizer;
+        $this->eventNormalizer = $eventNormalizer;
     }
 
     private function getAllEventsQueryString(): string
@@ -39,6 +42,8 @@ class PublicEventRepository extends BaseRepository implements PublicEventReposit
                 p.description AS evntDes,
                 p.start_date,
                 p.can_edit,
+                p.is_public,
+                p.notification_enabled,
                 b.user_id,
                 b.first_name,
                 b.last_name,
@@ -58,8 +63,8 @@ class PublicEventRepository extends BaseRepository implements PublicEventReposit
                     WHERE lcp.location_id = p.location_id
                 )) AS photo_paths
                 FROM ' . $this->tableName .' p
-                INNER JOIN users b ON p.owner_id = b.user_id
-                INNER JOIN locations l ON p.location_id =l.location_id
+                INNER JOIN app_owner.users b ON p.owner_id = b.user_id
+                INNER JOIN app_owner.locations l ON p.location_id = l.location_id
         ';
     }
 
@@ -70,7 +75,7 @@ class PublicEventRepository extends BaseRepository implements PublicEventReposit
      * @throws UniqueConstraintViolationException
      * @throws \Exception
      */
-    public function findOrFail(int $eventId): PublicEvent
+    public function findOrFail(int $eventId): Event
     {
         $sql = $this->getAllEventsQueryString() . ' WHERE event_id = :eventId';
         try {
@@ -78,7 +83,7 @@ class PublicEventRepository extends BaseRepository implements PublicEventReposit
             $statement->bindValue('eventId', $eventId);
             $result = $statement->executeQuery();
             if ($data = $result->fetchAssociative()) {
-                return $this->publicEventNormalizer->denormalize($data, 'PublicEvent');
+                return $this->eventNormalizer->denormalize($data, 'Event');
             }
             throw new EntityNotFoundException();
         } catch (DriverException $e) {
@@ -95,15 +100,15 @@ class PublicEventRepository extends BaseRepository implements PublicEventReposit
      */
     public function findAll(): array
     {
-        $sql = $this->getAllEventsQueryString();
+        $sql = $this->getAllEventsQueryString() . 'WHERE p.is_public = true';
         try {
             $statement = $this->connection->prepare($sql);
             $result = $statement->executeQuery();
-            $publicEvents = [];
+            $events = [];
             while($data = $result->fetchAssociative()) {
-                $publicEvents [] = $this->publicEventNormalizer->denormalize($data, 'PublicEvent');
+                $events [] = $this->eventNormalizer->denormalize($data, 'Event');
             }
-            return $publicEvents;
+            return $events;
         } catch (DriverException $e) {
             $this->handleDriverException($e);
         }
@@ -125,7 +130,7 @@ class PublicEventRepository extends BaseRepository implements PublicEventReposit
             $result = $statement->executeQuery();
             $placeEvents = [];
             while($data = $result->fetchAssociative()) {
-                $placeEvents [] = $this->publicEventNormalizer->denormalize($data, 'PublicEvent');
+                $placeEvents [] = $this->eventNormalizer->denormalize($data, 'Event');
             }
             return $placeEvents;
         } catch (DriverException $e) {
@@ -133,6 +138,29 @@ class PublicEventRepository extends BaseRepository implements PublicEventReposit
         }
     }
 
+    /**
+     * @throws UniqueConstraintViolationException
+     * @throws DriverException
+     * @throws EntityNotFoundException
+     * @throws DbalException
+     * @throws \Exception
+     */
+    public function findAllForGroup(UserGroup $userGroup): array
+    {
+        $sql = $this->getAllEventsQueryString() . ' WHERE p.group_id = :groupId';
+        try {
+            $statement = $this->connection->prepare($sql);
+            $statement->bindValue('groupId', $userGroup->getGroupId());
+            $result = $statement->executeQuery();
+            $groupEvents = [];
+            while($data = $result->fetchAssociative()) {
+                $groupEvents [] = $this->eventNormalizer->denormalize($data, 'Event');
+            }
+            return $groupEvents;
+        } catch (DriverException $e) {
+            $this->handleDriverException($e);
+        }
+    }
 
     /**
      * @throws DriverException
@@ -145,15 +173,15 @@ class PublicEventRepository extends BaseRepository implements PublicEventReposit
     {
         $test = new \DateTimeImmutable("+7 day");
         $sql = $this->getAllEventsQueryString() .
-            sprintf(' WHERE p.start_date < \'%s\'', $test->format(self::DEFAULT_DATETIME_FORMAT));
+            sprintf(' WHERE p.is_public = true AND p.start_date < \'%s\'', $test->format(self::DEFAULT_DATETIME_FORMAT));
         try {
             $statement = $this->connection->prepare($sql);
             $result = $statement->executeQuery();
-            $publicEvents = [];
+            $events = [];
             while($data = $result->fetchAssociative()) {
-                $publicEvents [] = $this->publicEventNormalizer->denormalize($data, 'PublicEvent');
+                $events [] = $this->eventNormalizer->denormalize($data, 'Event');
             }
-            return $publicEvents;
+            return $events;
         } catch (DriverException $e) {
             $this->handleDriverException($e);
         }
@@ -166,24 +194,26 @@ class PublicEventRepository extends BaseRepository implements PublicEventReposit
      * @throws UniqueConstraintViolationException
      * @throws DbalException
      */
-    public function add(PublicEvent $publicEvent): void
+    public function add(Event $event): void
     {
         $sql = 'INSERT INTO ' . $this->tableName .
-        ' (location_id, start_date, name, description, owner_id, is_public, can_edit )
-        VALUES(:locationID, :startDate, :name, :description, :ownerID, true, :canEdit) RETURNING event_id';
+            ' (location_id, start_date, name, description, owner_id, is_public, can_edit, notification_enabled)
+        VALUES(:locationID, :startDate, :name, :description, :ownerID, :isPublic, :canEdit, :notificationEnabled) RETURNING event_id';
         try {
             $statement = $this->connection->prepare($sql);
-            $statement->bindValue('startDate', $publicEvent->getStartDate()->format(self::DEFAULT_DATETIME_FORMAT));
-            $statement->bindValue('name', $publicEvent->getName());
-            $statement->bindValue('description', $publicEvent->getDescription());
-            $statement->bindValue('locationID', $publicEvent->getLocation()->getId());
-            $statement->bindValue('ownerID', $publicEvent->getAuthor()->getId());
-            $statement->bindValue('canEdit', $publicEvent->getCanEdit());
+            $statement->bindValue('startDate', $event->getStartDate()->format(self::DEFAULT_DATETIME_FORMAT));
+            $statement->bindValue('name', $event->getName());
+            $statement->bindValue('description', $event->getDescription());
+            $statement->bindValue('locationID', $event->getLocation()->getId());
+            $statement->bindValue('ownerID', $event->getAuthor()->getId());
+            $statement->bindValue('canEdit', $event->getCanEdit());
+            $statement->bindValue('notificationEnabled', $event->isNotificationsEnabled(), ParameterType::BOOLEAN);
+            $statement->bindValue('isPublic', $event instanceof PublicEvent);
 
             $result = $statement->executeQuery();
             $data = $result->fetchAssociative();
             if ($data) {
-                $publicEvent->setId($data['event_id']);
+                $event->setId($data['event_id']);
             }
         } catch (DriverException $e) {
             $this->handleDriverException($e);
@@ -196,22 +226,25 @@ class PublicEventRepository extends BaseRepository implements PublicEventReposit
      * @throws UniqueConstraintViolationException
      * @throws DbalException
      */
-    public function update(PublicEvent $publicEvent): void
+    public function update(Event $event): void
     {
         $sql = 'UPDATE '. $this->tableName .
             ' SET
-                start_date=:startDate,
-                name=:name,
-                description=:description,
-                location_id=:locationId 
-            WHERE event_id=:eventId';
+                start_date = :startDate,
+                name = :name,
+                description = :description,
+                location_id = :locationId,
+                notification_enabled = :notificationEnabled
+            WHERE event_id = :eventId';
+
         try {
             $statement = $this->connection->prepare($sql);
-            $statement->bindValue('startDate', $publicEvent->getStartDate()->format(self::DEFAULT_DATETIME_FORMAT));
-            $statement->bindValue('name', $publicEvent->getName());
-            $statement->bindValue('description', $publicEvent->getDescription());
-            $statement->bindValue('locationId', $publicEvent->getLocation()->getId());
-            $statement->bindValue('eventId', $publicEvent->getId());
+            $statement->bindValue('startDate', $event->getStartDate()->format(self::DEFAULT_DATETIME_FORMAT));
+            $statement->bindValue('name', $event->getName());
+            $statement->bindValue('description', $event->getDescription());
+            $statement->bindValue('locationId', $event->getLocation()->getId());
+            $statement->bindValue('notificationEnabled', $event->isNotificationsEnabled(), ParameterType::BOOLEAN);
+            $statement->bindValue('eventId', $event->getId());
             $statement->executeQuery();
         } catch (DriverException $e) {
             $this->handleDriverException($e);
@@ -224,18 +257,18 @@ class PublicEventRepository extends BaseRepository implements PublicEventReposit
      * @throws EntityNotFoundException
      * @throws DbalException
      */
-    public function delete(PublicEvent $publicEvent): void
+    public function delete(Event $event): void
     {
         $sql = 'DELETE FROM '. $this->tableName .
-        ' WHERE event_id=:eventId';
+            ' WHERE event_id = :eventId';
         try {
             $statement = $this->connection->prepare($sql);
-            $statement->bindValue('eventId', $publicEvent->getId());
+            $statement->bindValue('eventId', $event->getId());
             $statement->executeQuery();
 
         } catch (DriverException $e) {
             $this->handleDriverException($e);
         }
     }
-   
+
 }

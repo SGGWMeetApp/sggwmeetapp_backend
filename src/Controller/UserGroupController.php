@@ -9,18 +9,17 @@ use App\Form\UserGroupDataType;
 use App\Model\PrivateEvent;
 use App\Model\UserGroup;
 use App\Repository\PlaceRepositoryInterface;
-use App\Repository\PrivateEventRepositoryInterface;
-use App\Repository\PublicEventRepositoryInterface;
+use App\Repository\EventRepositoryInterface;
 use App\Repository\UniqueConstraintViolationException;
 use App\Repository\UserRepositoryInterface;
 use App\Repository\EntityNotFoundException;
 use App\Repository\UserGroupRepositoryInterface;
 use App\Request\CreateUserGroupRequest;
 use App\Request\PrivateEventRequest;
-use App\Response\PrivateEventResponse;
 use App\Response\GroupUsersResponse;
 use App\Response\GroupsResponse;
-use App\Response\PrivateEventsResponse;
+use App\Response\EventsResponse;
+use App\Response\EventResponse;
 use App\Security\User;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -31,24 +30,21 @@ class UserGroupController extends ApiController
 {
     private UserRepositoryInterface $userRepository;
     private UserGroupRepositoryInterface $userGroupRepository;
-    private PublicEventRepositoryInterface $publicEventRepository;
-    private PrivateEventRepositoryInterface $privateEventRepository;
+    private EventRepositoryInterface $eventRepository;
     private PlaceRepositoryInterface $placeRepository;
     private NormalizerFactory $normalizerFactory;
 
     public function __construct(
         UserRepositoryInterface         $userRepository,
         UserGroupRepositoryInterface    $userGroupRepository,
-        PublicEventRepositoryInterface  $publicEventRepository,
-        PrivateEventRepositoryInterface $privateEventRepository,
+        EventRepositoryInterface        $eventRepository,
         PlaceRepositoryInterface        $placeRepository,
         NormalizerFactory               $normalizerFactory
     )
     {
         $this->userRepository = $userRepository;
         $this->userGroupRepository = $userGroupRepository;
-        $this->publicEventRepository = $publicEventRepository;
-        $this->privateEventRepository = $privateEventRepository;
+        $this->eventRepository = $eventRepository;
         $this->placeRepository = $placeRepository;
         $this->normalizerFactory = $normalizerFactory;
     }
@@ -73,8 +69,9 @@ class UserGroupController extends ApiController
         if(!$userGroup->containsUser($user)) {
             return $this->respondUnauthorized('Unauthorized. You are not a member of this group.');
         }
-        $privateEvents = $this->privateEventRepository->findAll($group_id);
-        return new PrivateEventsResponse('events', $this->normalizerFactory, ...$privateEvents);
+
+        $privateEvents = $this->eventRepository->findAllForGroup($userGroup);
+        return new EventsResponse('events', $this->normalizerFactory, ...$privateEvents);
     }
 
     /**
@@ -115,15 +112,15 @@ class UserGroupController extends ApiController
     private function createGroupEventFromPublicEvent(int $publicEventId, UserGroup $userGroup): JsonResponse
     {
         try {
-            $publicEvent = $this->publicEventRepository->findOrFail($publicEventId);
+            $publicEvent = $this->eventRepository->findOrFail($publicEventId);
         } catch (EntityNotFoundException) {
             return $this->respondNotFound('Public event not found.');
         }
         $privateEvent = $publicEvent->convertToPrivateEvent($userGroup);
-        $this->privateEventRepository->add($privateEvent);
+        $this->eventRepository->add($privateEvent);
         $userGroup->addEvent($privateEvent);
 
-        return new PrivateEventResponse($privateEvent, $this->normalizerFactory);
+        return new EventResponse($privateEvent, $this->normalizerFactory);
     }
 
     /**
@@ -149,10 +146,10 @@ class UserGroupController extends ApiController
             $eventAuthor,
             $userGroup
         );
-        $this->privateEventRepository->add($privateEvent);
+        $this->eventRepository->add($privateEvent);
         $userGroup->addEvent($privateEvent);
 
-        return new PrivateEventResponse($privateEvent, $this->normalizerFactory);
+        return new EventResponse($privateEvent, $this->normalizerFactory);
     }
 
     private function handlePrivateEventRequest(PrivateEventRequest $request, mixed $requestData): void
@@ -162,10 +159,7 @@ class UserGroupController extends ApiController
         if (!$form->isValid()) {
             throw new FormException($form);
         }
-
     }
-
-    //TODO: enableGroupEventNotifications
 
     /**
      * @throws SerializerExceptionInterface
@@ -193,8 +187,8 @@ class UserGroupController extends ApiController
         }
 
         try {
-            $privateEvent = $this->privateEventRepository->findOrFail($event_id);
-            $groupEvents = $this->privateEventRepository->findAll($group_id);
+            $privateEvent = $this->eventRepository->findOrFail($event_id);
+            $groupEvents = $this->eventRepository->findAll($group_id);
         } catch(EntityNotFoundException) {
             return $this->respondNotFound();
         }
@@ -213,9 +207,9 @@ class UserGroupController extends ApiController
         }
 
         $privateEvent->setNotificationsEnabled($enableNotification);
-        $this->privateEventRepository->update($privateEvent);
+        $this->eventRepository->update($privateEvent);
 
-        return new PrivateEventResponse($privateEvent, $this->normalizerFactory);
+        return new EventResponse($privateEvent, $this->normalizerFactory);
     }
 
     public function createGroup(
@@ -262,6 +256,10 @@ class UserGroupController extends ApiController
         try {
             $user = $this->userRepository->findOrFail($jwtUser->getUserIdentifier());
             $userGroups = $this->userGroupRepository->findAll();
+            foreach($userGroups as $userGroup) {
+                $events = $this->eventRepository->findAllForGroup($userGroup);
+                $userGroup->setEvents($events);
+            }
         } catch (EntityNotFoundException $e) {
             return $this->respondInternalServerError($e);
         }

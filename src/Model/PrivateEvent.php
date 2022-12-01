@@ -7,7 +7,6 @@ use App\Security\User;
 class PrivateEvent extends Event
 {
     private ?UserGroup $userGroup;
-    private bool $notificationsEnabled;
 
     public function __construct(
         ?int                $id,
@@ -21,9 +20,8 @@ class PrivateEvent extends Event
         bool                $notificationsEnabled=true
     )
     {
-        parent::__construct($id, $name, $location, $description, $startDate, $author, $canEdit);
+        parent::__construct($id, $name, $location, $description, $startDate, $author, $canEdit, $notificationsEnabled);
         $this->userGroup = $userGroup;
-        $this->notificationsEnabled = $notificationsEnabled;
     }
 
     /**
@@ -40,30 +38,6 @@ class PrivateEvent extends Event
     public function setUserGroup(UserGroup $userGroup): void
     {
         $this->userGroup = $userGroup;
-    }
-
-    /**
-     * @return bool
-     */
-    public function isNotificationsEnabled(): bool
-    {
-        return $this->notificationsEnabled;
-    }
-
-    /**
-     * @param bool $notificationsEnabled
-     */
-    public function setNotificationsEnabled(bool $notificationsEnabled): void
-    {
-        $this->notificationsEnabled = $notificationsEnabled;
-    }
-
-    public function isEqualTo(PrivateEvent $privateEvent): bool
-    {
-        if ($this->getId() != $privateEvent->getId()) {
-            return false;
-        }
-        return true;
     }
 
 }

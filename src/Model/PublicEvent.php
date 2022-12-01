@@ -15,6 +15,7 @@ class PublicEvent extends Event
      * @param \DateTimeInterface $startDate
      * @param User $author
      * @param bool $canEdit
+     * @param bool $notificationsEnabled
      */
     public function __construct(
         ?int                $id,
@@ -23,10 +24,11 @@ class PublicEvent extends Event
         ?string             $description,
         \DateTimeInterface  $startDate,
         User                $author,
-        bool                $canEdit=true
+        bool                $canEdit=true,
+        bool                $notificationsEnabled=true
     )
     {
-        parent::__construct($id, $name, $location, $description, $startDate, $author, $canEdit);
+        parent::__construct($id, $name, $location, $description, $startDate, $author, $canEdit, $notificationsEnabled);
     }
 
     public function convertToPrivateEvent(UserGroup $userGroup): PrivateEvent

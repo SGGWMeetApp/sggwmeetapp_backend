@@ -12,6 +12,7 @@ use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 class PlaceNormalizer implements NormalizerInterface, DenormalizerInterface
 {
     private Filesystem $filesystem;
+    public const LOCATION_PROPERTIES = ['name'];
 
     public function __construct(Filesystem $uploadsFilesystem)
     {
@@ -20,6 +21,7 @@ class PlaceNormalizer implements NormalizerInterface, DenormalizerInterface
 
     /**
      * @inheritDoc
+     * @throws \Exception
      */
     public function normalize(mixed $object, string $format = null, array $context = [])
     {
@@ -30,7 +32,8 @@ class PlaceNormalizer implements NormalizerInterface, DenormalizerInterface
         foreach($object->getPhotoPaths() as $path) {
             $publicPhotoPaths [] = $this->filesystem->publicUrl($path);
         }
-        return [
+
+        $normalizedLocation = [
             "id" => $object->getId(),
             "name" => $object->getName(),
             "geolocation" => [
@@ -40,6 +43,20 @@ class PlaceNormalizer implements NormalizerInterface, DenormalizerInterface
             "locationCategoryCodes" => $object->getCategoryCodes(),
             "photoPath" => count($publicPhotoPaths) > 0 ? $publicPhotoPaths[0] : null,
         ];
+
+        if (array_key_exists('modelProperties', $context) && is_array($context['modelProperties'])) {
+            $locationProperties = [];
+            try {
+                foreach ($context['modelProperties'] as $modelProperty) {
+                    $locationProperties [$modelProperty] = $normalizedLocation[$modelProperty];
+                }
+                return $locationProperties;
+            } catch (\OutOfBoundsException) {
+                throw new \Exception("One or more properties do not exist for location model in PlaceNormalizer normalize() method.");
+            }
+        }
+
+        return $normalizedLocation;
     }
 
     /**

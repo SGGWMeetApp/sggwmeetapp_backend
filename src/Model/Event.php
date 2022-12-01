@@ -13,6 +13,7 @@ abstract class Event
     private \DateTimeInterface $startDate;
     private User $author;
     private bool $canEdit;
+    private bool $notificationsEnabled;
 
     /**
      * @param int|null $id
@@ -22,6 +23,7 @@ abstract class Event
      * @param \DateTimeInterface $startDate
      * @param User $author
      * @param bool $canEdit
+     * @param bool $notificationsEnabled
      */
     public function __construct(
         ?int                $id,
@@ -30,7 +32,8 @@ abstract class Event
         ?string             $description,
         \DateTimeInterface  $startDate,
         User                $author,
-        bool                $canEdit=true
+        bool                $canEdit,
+        bool                $notificationsEnabled
     )
     {
         $this->id = $id;
@@ -40,6 +43,7 @@ abstract class Event
         $this->startDate = $startDate;
         $this->author = $author;
         $this->canEdit = $canEdit;
+        $this->notificationsEnabled = $notificationsEnabled;
     }
 
     public function getId(): ?int
@@ -109,6 +113,30 @@ abstract class Event
     public function getCanEdit(): bool
     {
         return $this->canEdit;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isNotificationsEnabled(): bool
+    {
+        return $this->notificationsEnabled;
+    }
+
+    /**
+     * @param bool $notificationsEnabled
+     */
+    public function setNotificationsEnabled(bool $notificationsEnabled): void
+    {
+        $this->notificationsEnabled = $notificationsEnabled;
+    }
+
+    public function isEqualTo(Event $event): bool
+    {
+        if ($this->getId() != $event->getId()) {
+            return false;
+        }
+        return true;
     }
 
 }

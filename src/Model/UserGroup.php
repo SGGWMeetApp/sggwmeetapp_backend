@@ -46,6 +46,18 @@ class UserGroup {
         $this->incomingEventsCount = $incomingEventsCount;
     }
 
+    public function calculateIncomingEventsCount(): void
+    {
+        $eventsCount = 0;
+        $now = time();
+        foreach($this->events as $event) {
+            if($event->getStartDate()->getTimestamp() > $now) {
+                $eventsCount++;
+            }
+        }
+        $this->incomingEventsCount = $eventsCount;
+    }
+
     /**
      * @return int
      */
