@@ -21,6 +21,7 @@ use App\Response\GroupsResponse;
 use App\Response\EventsResponse;
 use App\Response\EventResponse;
 use App\Security\User;
+use App\Serializer\UserNormalizer;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Serializer\Exception\ExceptionInterface as SerializerExceptionInterface;
@@ -188,11 +189,11 @@ class UserGroupController extends ApiController
 
         try {
             $privateEvent = $this->eventRepository->findOrFail($event_id);
-            $groupEvents = $this->eventRepository->findAll($group_id);
+            $groupEvents = $this->eventRepository->findAllForGroup($userGroup);
         } catch(EntityNotFoundException) {
             return $this->respondNotFound();
         }
-
+        //TODO: Replace this bit by checking the userGroup property of event for equality with $userGroup
         // check if event is in group
         $eventInGroup = false;
         foreach($groupEvents as $groupEvent) {
@@ -338,10 +339,9 @@ class UserGroupController extends ApiController
         }
 
         return $this->response([
-            "id" => $user->getId(),
-            "firstName" => $user->getFirstName(),
-            "lastName" => $user->getLastName(),
-            "email" => $user->getEmail(),
+            ...$this->normalizerFactory->getNormalizer($user)->normalize($user, 'json', [
+                'modelProperties' => UserNormalizer::AUTHOR_PROPERTIES
+            ]),
             "isAdmin" => false
         ]);
     }

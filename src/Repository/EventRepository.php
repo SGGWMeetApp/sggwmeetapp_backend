@@ -20,6 +20,7 @@ class EventRepository extends BaseRepository implements EventRepositoryInterface
 
     /**
      * @param Connection $connection
+     * @param EventNormalizer $eventNormalizer
      */
     public function __construct(Connection $connection, EventNormalizer $eventNormalizer)
     {
@@ -171,9 +172,9 @@ class EventRepository extends BaseRepository implements EventRepositoryInterface
      */
     public function findUpcoming(): array
     {
-        $test = new \DateTimeImmutable("+7 day");
+        $sevenDaysFromNow = new \DateTimeImmutable("+7 day");
         $sql = $this->getAllEventsQueryString() .
-            sprintf(' WHERE p.is_public = true AND p.start_date < \'%s\'', $test->format(self::DEFAULT_DATETIME_FORMAT));
+            sprintf(' WHERE p.is_public = true AND p.start_date < \'%s\'', $sevenDaysFromNow->format(self::DEFAULT_DATETIME_FORMAT));
         try {
             $statement = $this->connection->prepare($sql);
             $result = $statement->executeQuery();
@@ -201,15 +202,15 @@ class EventRepository extends BaseRepository implements EventRepositoryInterface
         VALUES(:locationID, :startDate, :name, :description, :ownerID, :isPublic, :canEdit, :notificationEnabled) RETURNING event_id';
         try {
             $statement = $this->connection->prepare($sql);
+            $statement->bindValue('locationID', $event->getLocation()->getId());
             $statement->bindValue('startDate', $event->getStartDate()->format(self::DEFAULT_DATETIME_FORMAT));
             $statement->bindValue('name', $event->getName());
             $statement->bindValue('description', $event->getDescription());
-            $statement->bindValue('locationID', $event->getLocation()->getId());
             $statement->bindValue('ownerID', $event->getAuthor()->getId());
-            $statement->bindValue('canEdit', $event->getCanEdit());
+            $statement->bindValue('isPublic', $event instanceof PublicEvent, ParameterType::BOOLEAN);
+            $statement->bindValue('canEdit', $event->getCanEdit(), ParameterType::BOOLEAN);
             $statement->bindValue('notificationEnabled', $event->isNotificationsEnabled(), ParameterType::BOOLEAN);
-            $statement->bindValue('isPublic', $event instanceof PublicEvent);
-
+            //TODO: For private event group id column should be set (use QueryBuilder instead of raw sql string)
             $result = $statement->executeQuery();
             $data = $result->fetchAssociative();
             if ($data) {

@@ -109,6 +109,7 @@ class EventNormalizer implements NormalizerInterface, DenormalizerInterface
                 $data['evntdes'],
                 new \DateTimeImmutable($data['start_date']),
                 $user,
+                //TODO: Group should be included here instead of null
                 null,
                 $data['can_edit'],
             );

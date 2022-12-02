@@ -39,6 +39,7 @@ class PrivateEventRequest
     /**
      * @Assert\NotNull()
      * @Assert\Type("\DateTime")
+     * @Assert\GreaterThan("now UTC")
      */
     public $startDate;
 }
