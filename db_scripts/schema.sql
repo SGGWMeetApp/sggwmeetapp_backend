@@ -38,6 +38,15 @@ CREATE UNIQUE INDEX username_inx ON users (lower(username));
 
 CREATE UNIQUE INDEX email_inx ON users (lower(username));
 
+CREATE TABLE share_location_users (
+    user_id integer NOT NULL,
+    share_to_user_id integer NOT NULL,
+    is_excluded  boolean NOT NULL DEFAULT FALSE,
+    FOREIGN KEY (user_id) REFERENCES users (user_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (share_to_user_id) REFERENCES users (user_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    UNIQUE (user_id, share_to_user_id)
+);
+
 CREATE TABLE user_groups (
     group_id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     name varchar(255) NOT NULL,
