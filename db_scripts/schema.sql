@@ -17,6 +17,8 @@ DROP TABLE IF EXISTS users_user_groups CASCADE;
 
 DROP TABLE IF EXISTS user_groups CASCADE;
 
+DROP TABLE IF EXISTS share_location_users CASCADE;
+
 DROP TABLE IF EXISTS users CASCADE;
 
 CREATE TABLE users (
@@ -31,6 +33,10 @@ CREATE TABLE users (
     location_sharing_mode integer NOT NULL DEFAULT 0,
     description text NULL,
     avatar_path varchar(255) NULL,
+    notification_mode integer NOT NULL DEFAULT 0,
+    event_notification boolean NOT NULL DEFAULT TRUE,
+    group_add_notification boolean NOT NULL DEFAULT TRUE,
+    group_remove_notification boolean NOT NULL DEFAULT TRUE,
     UNIQUE (phone_number_prefix, phone_number)
 );
 
@@ -41,7 +47,7 @@ CREATE UNIQUE INDEX email_inx ON users (lower(username));
 CREATE TABLE share_location_users (
     user_id integer NOT NULL,
     share_to_user_id integer NOT NULL,
-    is_excluded  boolean NOT NULL DEFAULT FALSE,
+    is_excluded boolean NOT NULL DEFAULT FALSE,
     FOREIGN KEY (user_id) REFERENCES users (user_id) ON DELETE CASCADE ON UPDATE CASCADE,
     FOREIGN KEY (share_to_user_id) REFERENCES users (user_id) ON DELETE CASCADE ON UPDATE CASCADE,
     UNIQUE (user_id, share_to_user_id)
