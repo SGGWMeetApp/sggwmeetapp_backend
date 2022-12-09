@@ -33,7 +33,6 @@ CREATE TABLE users (
     location_sharing_mode integer NOT NULL DEFAULT 0,
     description text NULL,
     avatar_path varchar(255) NULL,
-    notification_mode integer NOT NULL DEFAULT 0,
     event_notification boolean NOT NULL DEFAULT TRUE,
     group_add_notification boolean NOT NULL DEFAULT TRUE,
     group_remove_notification boolean NOT NULL DEFAULT TRUE,
