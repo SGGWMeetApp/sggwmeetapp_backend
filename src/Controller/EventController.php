@@ -8,41 +8,50 @@ use App\Response\EventsResponse;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use App\Model\PublicEvent;
-use App\Repository\PublicEventRepositoryInterface;
+use App\Repository\EventRepositoryInterface;
 use App\Repository\UniqueConstraintViolationException;
 use App\Repository\UserRepositoryInterface;
 use App\Repository\PlaceRepositoryInterface;
 use App\Request\PublicEventRequest;
-use App\Response\PublicEventResponse;
+use App\Response\EventResponse;
 use App\Form\PublicEventType;
 use App\Exception\FormException;
 use Symfony\Component\Serializer\Exception\ExceptionInterface as SerializerExceptionInterface;
 
 class EventController extends ApiController {
 
+    private UserRepositoryInterface $userRepository;
+    private EventRepositoryInterface $eventRepository;
+    private PlaceRepositoryInterface $placeRepository;
+    private NormalizerFactory $normalizerFactory;
+
+    public function __construct(
+        UserRepositoryInterface         $userRepository,
+        EventRepositoryInterface        $eventRepository,
+        PlaceRepositoryInterface        $placeRepository,
+        NormalizerFactory               $normalizerFactory
+    )
+    {
+        $this->userRepository = $userRepository;
+        $this->eventRepository = $eventRepository;
+        $this->placeRepository = $placeRepository;
+        $this->normalizerFactory = $normalizerFactory;
+    }
+
     /**
      * @throws SerializerExceptionInterface
      */
-    public function getPublicEventsAction(
-        PublicEventRepositoryInterface $publicEventRepository,
-        NormalizerFactory $normalizerFactory
-    ): JsonResponse
+    public function getPublicEvents(): JsonResponse
     {
         try {
-            $events=$publicEventRepository->findAll();
+            $events= $this->eventRepository->findAllPublicEvents();
         } catch (\Throwable $e) {
             return $this->respondInternalServerError($e);
         }
-        return new EventsResponse('publicEvents', $normalizerFactory, ...$events);
+        return new EventsResponse('events', $this->normalizerFactory, ...$events);
     }
 
-    public function createPublicEvent(
-        Request $request,
-        UserRepositoryInterface $userRepository,
-        PublicEventRepositoryInterface $publicEventRepository,  
-        PlaceRepositoryInterface $placeRepository,
-        NormalizerFactory $normalizerFactory
-    ): JsonResponse
+    public function createPublicEvent(Request $request): JsonResponse
     {
         $requestData = json_decode($request->getContent(),true);
         $addPublicEventRequest = new PublicEventRequest();
@@ -50,12 +59,12 @@ class EventController extends ApiController {
         
         $jwtUser = $this->getUser();
         try {
-            $user = $userRepository->findOrFail($jwtUser->getUserIdentifier());
+            $user = $this->userRepository->findOrFail($jwtUser->getUserIdentifier());
         } catch (EntityNotFoundException $e) {
             return $this->respondInternalServerError($e);
         }
         try {
-            $location = $placeRepository->findOrFail($addPublicEventRequest->locationId);
+            $location = $this->placeRepository->findOrFail($addPublicEventRequest->locationId);
        } catch (EntityNotFoundException) {
             return $this->respondNotFound();
        }
@@ -68,7 +77,7 @@ class EventController extends ApiController {
             $user
         );
         try {
-            $publicEventRepository->add($publicEvent);
+            $this->eventRepository->add($publicEvent);
         } catch (UniqueConstraintViolationException $e) {
             return match ($e->getViolatedConstraint()) {
                 'rating_unq_inx' => $this->setStatusCode(409)
@@ -78,11 +87,12 @@ class EventController extends ApiController {
             };
         }
         try {
-            return new PublicEventResponse($publicEvent, $normalizerFactory);
+            return new EventResponse($publicEvent, $this->normalizerFactory);
         } catch (SerializerExceptionInterface $e) {
             return $this->respondInternalServerError($e);
         }
     }
+
 
     private function handlePublicEventRequest(PublicEventRequest $request, mixed $requestData): void
     {
@@ -94,14 +104,7 @@ class EventController extends ApiController {
     }
 
 
-    public function updateEvent(
-        Request                         $request,
-        int                             $event_id,
-        PublicEventRepositoryInterface  $publicEventRepository,
-        UserRepositoryInterface         $userRepository,
-        PlaceRepositoryInterface        $placeRepository,
-        NormalizerFactory               $normalizerFactory
-    ): JsonResponse 
+    public function updateEvent(Request $request, int $event_id): JsonResponse
     {
         $requestData = json_decode($request->getContent(),true);
         $updatePublicEventRequest = new PublicEventRequest();
@@ -109,12 +112,12 @@ class EventController extends ApiController {
 
         $jwtUser = $this->getUser();
         try {
-            $user = $userRepository->findOrFail($jwtUser->getUserIdentifier());
+            $user = $this->userRepository->findOrFail($jwtUser->getUserIdentifier());
         } catch (EntityNotFoundException $e) {
             return $this->respondInternalServerError($e);
         }
         try {
-             $publicEvent = $publicEventRepository->findOrFail($event_id);
+             $publicEvent = $this->eventRepository->findOrFail($event_id);
              if(!($publicEvent->getCanEdit())){
                 return $this->setStatusCode(409)
                 ->respondWithError('Can_edit=False', 'Event nie ma możliwości edycji.');
@@ -126,7 +129,7 @@ class EventController extends ApiController {
              return $this->respondNotFound('Event not found.');
         }
         try {
-            $location = $placeRepository->findOrFail($updatePublicEventRequest->locationId);
+            $location = $this->placeRepository->findOrFail($updatePublicEventRequest->locationId);
         } catch (EntityNotFoundException) {
             return $this->respondNotFound('Location not found.');
         }
@@ -136,7 +139,7 @@ class EventController extends ApiController {
         $publicEvent->setDescription($updatePublicEventRequest->description);
         $publicEvent->setStartDate($updatePublicEventRequest->startDate);
         try {
-            $publicEventRepository->update($publicEvent);
+            $this->eventRepository->update($publicEvent);
         } catch (UniqueConstraintViolationException $e) {
             return match ($e->getViolatedConstraint()) {
                 'rating_unq_inx' => $this->setStatusCode(409)
@@ -146,7 +149,7 @@ class EventController extends ApiController {
             };
         }
         try {
-            return new PublicEventResponse($publicEvent, $normalizerFactory);
+            return new EventResponse($publicEvent, $this->normalizerFactory);
         } catch (SerializerExceptionInterface $e) {
             return $this->respondInternalServerError($e);
         }
@@ -155,17 +158,14 @@ class EventController extends ApiController {
     /**
      * @throws SerializerExceptionInterface
      */
-    public function getUpcomingEventsAction(
-        PublicEventRepositoryInterface  $publicEventRepository,
-        NormalizerFactory $normalizerFactory
-    ): JsonResponse 
+    public function getUpcomingEvents(): JsonResponse
     {
         try {
-            $events = $publicEventRepository->findUpcoming();
+            $events = $this->eventRepository->findUpcomingPublicEvents();
         } catch (\Throwable $e) {
             return $this->respondInternalServerError($e);
         }
-        return new EventsResponse('publicEvents', $normalizerFactory,  ...$events);
+        return new EventsResponse('events', $this->normalizerFactory,  ...$events);
     }
 
 }

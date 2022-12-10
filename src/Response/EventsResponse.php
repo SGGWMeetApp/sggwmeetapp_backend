@@ -3,8 +3,7 @@
 namespace App\Response;
 
 use App\Factory\NormalizerFactory;
-use App\Model\PublicEvent;
-use App\Serializer\UserNormalizer;
+use App\Model\Event;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Serializer\Exception\ExceptionInterface as SerializerExceptionInterface;
 
@@ -15,43 +14,31 @@ class EventsResponse extends JsonResponse
      * @throws SerializerExceptionInterface
      */
     public function __construct(
-        ?string $collectionName,
+        ?string                 $collectionName,
         NormalizerFactory       $normalizerFactory,
-        PublicEvent             ...$publicEvents
+        Event                   ...$events
     )
     {
         $this->normalizerFactory = $normalizerFactory;
         if ($collectionName === null) {
-            parent::__construct($this->responseData($publicEvents));
+            parent::__construct($this->responseData($events));
         } else {
-            parent::__construct([$collectionName => $this->responseData($publicEvents)]);
+            parent::__construct([$collectionName => $this->responseData($events)]);
         }
     }
 
     /**
      * @throws SerializerExceptionInterface
      */
-    public function responseData(array $publicEvents): array
+    private function responseData(array $events): array
     {
-        $normalizedEvents = [];
-        if(count($publicEvents) < 1) {
-            return $normalizedEvents;
+        if (count($events) < 1) {
+            return [];
         }
-        $firstEvent = $publicEvents[0];
-        $publicEventNormalizer = $this->normalizerFactory->getNormalizer($firstEvent);
-        $userNormalizer = $this->normalizerFactory->getNormalizer($firstEvent->getAuthor());
-        $placeNormalizer = $this->normalizerFactory->getNormalizer($firstEvent->getLocation());
-        foreach($publicEvents as $event) {
-            $normalizedEvent = $publicEventNormalizer->normalize($event);
-            $authorData = $userNormalizer->normalize($event->getAuthor(), 'json', [
-                'modelProperties' => UserNormalizer::AUTHOR_PROPERTIES
-            ]);
-            $locationData=$placeNormalizer->normalize($event->getLocation());
-            $normalizedEvents [] = [
-                ...$normalizedEvent,
-                'locationData' => $locationData,
-                'author' => $authorData
-            ];
+        $eventNormalizer = $this->normalizerFactory->getNormalizer($events[0]);
+        $normalizedEvents = [];
+        foreach($events as $event) {
+            $normalizedEvents [] = $eventNormalizer->normalize($event);
         }
         return $normalizedEvents;
     }

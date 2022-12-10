@@ -11,10 +11,17 @@ use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 
 class UserGroupNormalizer implements NormalizerInterface, DenormalizerInterface
 {
+    private UserNormalizer $authorNormalizer;
+
+    public function __construct(UserNormalizer $authorNormalizer)
+    {
+        $this->authorNormalizer = $authorNormalizer;
+    }
+
     /**
      * @inheritDoc
      */
-    public function normalize(mixed $object, string $format = null, array $context = [])
+    public function normalize(mixed $object, string $format = null, array $context = []): float|array|bool|\ArrayObject|int|string|null
     {
         if (!$object instanceof UserGroup) {
             throw new InvalidArgumentException('This normalizer only accepts objects of type App\Model\UserGroup');
@@ -56,7 +63,7 @@ class UserGroupNormalizer implements NormalizerInterface, DenormalizerInterface
     /**
      * @inheritDoc
      */
-    public function supportsNormalization(mixed $data, string $format = null)
+    public function supportsNormalization(mixed $data, string $format = null): bool
     {
         return $data instanceof UserGroup;
     }
@@ -73,7 +80,6 @@ class UserGroupNormalizer implements NormalizerInterface, DenormalizerInterface
             $data['name'],
             null,
             count($users)
-        //incoming events count
         );
 
         foreach($users as $userData) {

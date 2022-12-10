@@ -11,9 +11,9 @@ class UserGroup {
     private ?User $owner;
 
     private array $users = [];
-    private array $meetupEvents = [];
-
     private int $memberCount;
+
+    private array $events = [];
     private int $incomingEventsCount = 0;
 
     /**
@@ -44,6 +44,18 @@ class UserGroup {
     public function setIncomingEventsCount(int $incomingEventsCount): void
     {
         $this->incomingEventsCount = $incomingEventsCount;
+    }
+
+    public function calculateIncomingEventsCount(): void
+    {
+        $eventsCount = 0;
+        $now = time();
+        foreach($this->events as $event) {
+            if($event->getStartDate()->getTimestamp() > $now) {
+                $eventsCount++;
+            }
+        }
+        $this->incomingEventsCount = $eventsCount;
     }
 
     /**
@@ -81,17 +93,17 @@ class UserGroup {
     /**
      * @return array
      */
-    public function getMeetupEvents(): array
+    public function getEvents(): array
     {
-        return $this->meetupEvents;
+        return $this->events;
     }
 
     /**
-     * @param array $meetupEvents
+     * @param array $events
      */
-    public function setMeetupEvents(array $meetupEvents): void
+    public function setEvents(array $events): void
     {
-        $this->meetupEvents = $meetupEvents;
+        $this->events = $events;
     }
 
     /**
@@ -142,10 +154,44 @@ class UserGroup {
         $this->owner = $owner;
     }
 
+    /**
+     * @param User $user
+     */
     public function addUser(User $user): void
     {
         $this->users[] = $user;
     }
 
+    /**
+     * @param PrivateEvent $event
+     */
+    public function addEvent(PrivateEvent $event): void
+    {
+        $this->events[] = $event;
+    }
+
+    /**
+     * @param User $user
+     * @return bool
+     */
+    public function containsUser(User $user): bool
+    {
+        foreach($this->users as $groupUser) {
+            if($user->isEqualTo($groupUser)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param UserGroup $userGroup
+     * @return bool
+     */
+    public function isEqualTo(UserGroup $userGroup): bool
+    {
+        return $this->getGroupId() === $userGroup->getGroupId();
+    }
 
 }

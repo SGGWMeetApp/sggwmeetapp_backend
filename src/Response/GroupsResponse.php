@@ -32,6 +32,7 @@ class GroupsResponse extends JsonResponse
     {
         $normalizedUserGroups = [];
         foreach($userGroups as $userGroup) {
+            $userGroup->calculateIncomingEventsCount();
             $isUserAdmin = $user->isEqualTo($userGroup->getOwner());
             $normalizedUserGroup = $this->normalizerFactory->getNormalizer($userGroup)->normalize($userGroup);
             $normalizedUserGroup["adminData"]["isUserAdmin"] = $isUserAdmin;

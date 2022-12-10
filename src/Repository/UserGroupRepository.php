@@ -237,9 +237,25 @@ class UserGroupRepository extends BaseRepository implements UserGroupRepositoryI
         }
     }
 
+    /**
+     * @throws DbalException\DriverException
+     * @throws EntityNotFoundException
+     * @throws DbalException
+     * @throws UniqueConstraintViolationException
+     */
     public function update(UserGroup $userGroup): void
     {
-        // TODO: Implement update() method.
+        $sql = 'UPDATE ' . $this->tableName .
+            ' SET name = :name, owner_id = :ownerId WHERE group_id = :groupId';
+        try {
+            $statement = $this->connection->prepare($sql);
+            $statement->bindValue('name', $userGroup->getName());
+            $statement->bindValue('ownerId', $userGroup->getOwner()->getId(), ParameterType::INTEGER);
+            $statement->bindValue('groupId', $userGroup->getGroupId());
+            $statement->executeQuery();
+        } catch (DbalException\DriverException $e) {
+            $this->handleDriverException($e);
+        }
     }
 
     /**
