@@ -117,7 +117,7 @@ class PlaceController extends ApiController
         } catch (EntityNotFoundException) {
             return $this->respondNotFound();
         }
-        $placeEvents = $eventRepository->findAllForPlace($place);
+        $placeEvents = $eventRepository->findAllPublicEventsForPlace($place);
         $normalizedEvents = [];
         foreach ($placeEvents as $event) {
             $normalizedEvents [] = $eventNormalizer->normalize($event);

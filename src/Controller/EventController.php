@@ -44,7 +44,7 @@ class EventController extends ApiController {
     public function getPublicEvents(): JsonResponse
     {
         try {
-            $events= $this->eventRepository->findAll();
+            $events= $this->eventRepository->findAllPublicEvents();
         } catch (\Throwable $e) {
             return $this->respondInternalServerError($e);
         }
@@ -161,7 +161,7 @@ class EventController extends ApiController {
     public function getUpcomingEvents(): JsonResponse
     {
         try {
-            $events = $this->eventRepository->findUpcoming();
+            $events = $this->eventRepository->findUpcomingPublicEvents();
         } catch (\Throwable $e) {
             return $this->respondInternalServerError($e);
         }

@@ -7,6 +7,7 @@ use App\Model\GeoLocation;
 use App\Model\PrivateEvent;
 use App\Model\PublicEvent;
 use App\Model\Place;
+use App\Model\UserGroup;
 use Symfony\Component\Serializer\Exception\InvalidArgumentException;
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
@@ -16,11 +17,13 @@ class EventNormalizer implements NormalizerInterface, DenormalizerInterface
 {
     private UserNormalizer $authorNormalizer;
     private PlaceNormalizer $placeNormalizer;
+    private UserGroupNormalizer $userGroupNormalizer;
 
-    public function __construct(UserNormalizer $authorNormalizer, PlaceNormalizer $placeNormalizer)
+    public function __construct(UserNormalizer $authorNormalizer, PlaceNormalizer $placeNormalizer, UserGroupNormalizer $userGroupNormalizer)
     {
         $this->authorNormalizer = $authorNormalizer;
         $this->placeNormalizer = $placeNormalizer;
+        $this->userGroupNormalizer = $userGroupNormalizer;
     }
 
     /**
@@ -99,7 +102,8 @@ class EventNormalizer implements NormalizerInterface, DenormalizerInterface
                 $data['evntdes'],
                 new \DateTimeImmutable($data['start_date']),
                 $user,
-                $data['can_edit']
+                $data['can_edit'],
+                $data['notification_enabled']
             );
         } else {
             return new PrivateEvent(
@@ -109,9 +113,23 @@ class EventNormalizer implements NormalizerInterface, DenormalizerInterface
                 $data['evntdes'],
                 new \DateTimeImmutable($data['start_date']),
                 $user,
-                //TODO: Group should be included here instead of null
-                null,
+                new UserGroup(
+                    $data['group_id'],
+                    $data['group_name'],
+                    new User(
+                        $data['group_owner_id'],
+                        $data['group_owner_first_name'],
+                        $data['group_owner_last_name'],
+                        $data['group_owner_email'],
+                        '',
+                        $data['group_owner_phone_number_prefix'],
+                        $data['group_owner_phone_number'],
+                        $data['group_owner_description'],
+                        ['ROLE_USER']
+                    )
+                ),
                 $data['can_edit'],
+                $data['notification_enabled']
             );
         }
 

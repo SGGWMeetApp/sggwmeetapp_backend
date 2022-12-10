@@ -179,32 +179,21 @@ class UserGroupController extends ApiController
         try {
             $userGroup = $this->userGroupRepository->findOrFail($group_id);
         } catch (EntityNotFoundException) {
-            return $this->respondNotFound();
+            return $this->respondNotFound('User group not found.');
         }
 
-        $isUserInGroup = $userGroup->containsUser($user);
-        if(!$isUserInGroup) {
+        if(!$userGroup->containsUser($user)) {
             return $this->respondUnauthorized('Unauthorized. You are not a member of this group.');
         }
 
         try {
-            $privateEvent = $this->eventRepository->findOrFail($event_id);
-            $groupEvents = $this->eventRepository->findAllForGroup($userGroup);
+             $privateEvent = $this->eventRepository->findOrFail($event_id);
         } catch(EntityNotFoundException) {
-            return $this->respondNotFound();
-        }
-        //TODO: Replace this bit by checking the userGroup property of event for equality with $userGroup
-        // check if event is in group
-        $eventInGroup = false;
-        foreach($groupEvents as $groupEvent) {
-            if($privateEvent->isEqualTo($groupEvent)) {
-                $eventInGroup = true;
-                break;
-            }
+            return $this->respondNotFound('Group event not found.');
         }
 
-        if(!$eventInGroup) {
-            return $this->respondNotFound();
+        if(!$privateEvent instanceof PrivateEvent || !$privateEvent->getUserGroup()->isEqualTo($userGroup)) {
+            return $this->respondNotFound('Group event not found.');
         }
 
         $privateEvent->setNotificationsEnabled($enableNotification);

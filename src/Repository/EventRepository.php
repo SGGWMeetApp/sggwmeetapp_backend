@@ -4,6 +4,7 @@ namespace App\Repository;
 
 use App\Model\Event;
 use App\Model\Place;
+use App\Model\PrivateEvent;
 use App\Model\PublicEvent;
 use App\Model\UserGroup;
 use App\Serializer\EventNormalizer;
@@ -27,7 +28,6 @@ class EventRepository extends BaseRepository implements EventRepositoryInterface
         $this->connection = $connection;
         $this->eventNormalizer = $eventNormalizer;
     }
-
     private function getAllEventsQueryString(): string
     {
         return '
@@ -62,10 +62,14 @@ class EventRepository extends BaseRepository implements EventRepositoryInterface
                 ARRAY_TO_JSON(ARRAY(SELECT lcp.photo_path
                     FROM app_owner.location_photos lcp
                     WHERE lcp.location_id = p.location_id
-                )) AS photo_paths
+                )) AS photo_paths,
+                ug.group_id,
+                ug.name as group_name,
+                ug.owner_id as group_owner_id
                 FROM ' . $this->tableName .' p
                 INNER JOIN app_owner.users b ON p.owner_id = b.user_id
                 INNER JOIN app_owner.locations l ON p.location_id = l.location_id
+                LEFT OUTER JOIN app_owner.user_groups ug ON (p.group_id = ug.group_id)
         ';
     }
 
@@ -83,7 +87,11 @@ class EventRepository extends BaseRepository implements EventRepositoryInterface
             $statement = $this->connection->prepare($sql);
             $statement->bindValue('eventId', $eventId);
             $result = $statement->executeQuery();
+
             if ($data = $result->fetchAssociative()) {
+                if(!$data["is_public"]) {
+                    $data = array_merge($data, $this->findGroupOwner($data['group_id']));
+                }
                 return $this->eventNormalizer->denormalize($data, 'Event');
             }
             throw new EntityNotFoundException();
@@ -99,9 +107,9 @@ class EventRepository extends BaseRepository implements EventRepositoryInterface
      * @throws UniqueConstraintViolationException
      * @throws \Exception
      */
-    public function findAll(): array
+    public function findAllPublicEvents(): array
     {
-        $sql = $this->getAllEventsQueryString() . 'WHERE p.is_public = true';
+        $sql = $this->getAllEventsQueryString() . 'WHERE p.is_public = TRUE';
         try {
             $statement = $this->connection->prepare($sql);
             $result = $statement->executeQuery();
@@ -122,9 +130,9 @@ class EventRepository extends BaseRepository implements EventRepositoryInterface
      * @throws DbalException
      * @throws \Exception
      */
-    public function findAllForPlace(Place $place): array
+    public function findAllPublicEventsForPlace(Place $place): array
     {
-        $sql = $this->getAllEventsQueryString() . ' WHERE p.location_id = :locationId';
+        $sql = $this->getAllEventsQueryString() . ' WHERE p.location_id = :locationId AND p.is_public = TRUE';
         try {
             $statement = $this->connection->prepare($sql);
             $statement->bindValue('locationId', $place->getId());
@@ -148,13 +156,18 @@ class EventRepository extends BaseRepository implements EventRepositoryInterface
      */
     public function findAllForGroup(UserGroup $userGroup): array
     {
-        $sql = $this->getAllEventsQueryString() . ' WHERE p.group_id = :groupId';
+       $sql = $this->getAllEventsQueryString() . ' WHERE p.group_id = :groupId';
+
         try {
             $statement = $this->connection->prepare($sql);
             $statement->bindValue('groupId', $userGroup->getGroupId());
             $result = $statement->executeQuery();
+
+            $ownerData = $this->findGroupOwner($userGroup->getGroupId());
+
             $groupEvents = [];
             while($data = $result->fetchAssociative()) {
+                $data = array_merge($data, $ownerData);
                 $groupEvents [] = $this->eventNormalizer->denormalize($data, 'Event');
             }
             return $groupEvents;
@@ -170,11 +183,12 @@ class EventRepository extends BaseRepository implements EventRepositoryInterface
      * @throws DbalException
      * @throws \Exception
      */
-    public function findUpcoming(): array
+    public function findUpcomingPublicEvents(): array
     {
         $sevenDaysFromNow = new \DateTimeImmutable("+7 day");
         $sql = $this->getAllEventsQueryString() .
-            sprintf(' WHERE p.is_public = true AND p.start_date < \'%s\'', $sevenDaysFromNow->format(self::DEFAULT_DATETIME_FORMAT));
+            sprintf(' WHERE p.is_public = TRUE AND p.start_date < \'%s\'', $sevenDaysFromNow->format(self::DEFAULT_DATETIME_FORMAT));
+
         try {
             $statement = $this->connection->prepare($sql);
             $result = $statement->executeQuery();
@@ -188,6 +202,40 @@ class EventRepository extends BaseRepository implements EventRepositoryInterface
         }
     }
 
+    /**
+     * @throws DriverException
+     * @throws EntityNotFoundException
+     * @throws UniqueConstraintViolationException
+     * @throws DbalException
+     */
+    private function findGroupOwner(int $userGroupId): array
+    {
+        $sql =  '
+            SELECT
+                ug.owner_id as group_owner_id,
+               -- u.user_id,
+               -- u.username as group_owner_username, 
+                u.first_name as group_owner_first_name, 
+                u.last_name as group_owner_last_name,
+                u.email as group_owner_email,
+                u.phone_number_prefix as group_owner_phone_number_prefix,
+                u.phone_number as group_owner_phone_number,
+                u.description as group_owner_description
+            FROM app_owner.user_groups ug
+            INNER JOIN users u ON ug.owner_id = u.user_id
+            WHERE ug.group_id = :groupId
+        ';
+
+        try {
+            $statement = $this->connection->prepare($sql);
+            $statement->bindValue('groupId', $userGroupId);
+            return $statement->executeQuery()->fetchAllAssociative()[0];
+
+        } catch(DriverException $e) {
+            $this->handleDriverException($e);
+        }
+    }
+
 
     /**
      * @throws DriverException
@@ -197,11 +245,13 @@ class EventRepository extends BaseRepository implements EventRepositoryInterface
      */
     public function add(Event $event): void
     {
+        $groupId = $event instanceof PrivateEvent ? $event->getUserGroup()->getGroupId() : null;
         $sql = 'INSERT INTO ' . $this->tableName .
-            ' (location_id, start_date, name, description, owner_id, is_public, can_edit, notification_enabled)
-        VALUES(:locationID, :startDate, :name, :description, :ownerID, :isPublic, :canEdit, :notificationEnabled) RETURNING event_id';
+            ' (group_id, location_id, start_date, name, description, owner_id, is_public, can_edit, notification_enabled)
+        VALUES(:groupId, :locationID, :startDate, :name, :description, :ownerID, :isPublic, :canEdit, :notificationEnabled) RETURNING event_id';
         try {
             $statement = $this->connection->prepare($sql);
+            $statement->bindValue('groupId', $groupId);
             $statement->bindValue('locationID', $event->getLocation()->getId());
             $statement->bindValue('startDate', $event->getStartDate()->format(self::DEFAULT_DATETIME_FORMAT));
             $statement->bindValue('name', $event->getName());
@@ -210,7 +260,6 @@ class EventRepository extends BaseRepository implements EventRepositoryInterface
             $statement->bindValue('isPublic', $event instanceof PublicEvent, ParameterType::BOOLEAN);
             $statement->bindValue('canEdit', $event->getCanEdit(), ParameterType::BOOLEAN);
             $statement->bindValue('notificationEnabled', $event->isNotificationsEnabled(), ParameterType::BOOLEAN);
-            //TODO: For private event group id column should be set (use QueryBuilder instead of raw sql string)
             $result = $statement->executeQuery();
             $data = $result->fetchAssociative();
             if ($data) {

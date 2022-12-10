@@ -15,11 +15,11 @@ interface EventRepositoryInterface
 
     public function findAllForGroup(UserGroup $userGroup): array;
 
-    public function findAll(): array;
+    public function findAllPublicEvents(): array;
 
-    public function findUpcoming(): array;
+    public function findUpcomingPublicEvents(): array;
 
-    public function findAllForPlace(Place $place): array;
+    public function findAllPublicEventsForPlace(Place $place): array;
 
     public function add(Event $event): void;
 

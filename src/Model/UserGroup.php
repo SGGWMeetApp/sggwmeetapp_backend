@@ -185,4 +185,13 @@ class UserGroup {
         return false;
     }
 
+    /**
+     * @param UserGroup $userGroup
+     * @return bool
+     */
+    public function isEqualTo(UserGroup $userGroup): bool
+    {
+        return $this->getGroupId() === $userGroup->getGroupId();
+    }
+
 }
