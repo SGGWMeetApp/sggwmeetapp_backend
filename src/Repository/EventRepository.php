@@ -107,7 +107,7 @@ class EventRepository extends BaseRepository implements EventRepositoryInterface
      * @throws UniqueConstraintViolationException
      * @throws \Exception
      */
-    public function findAll(): array
+    public function findAllPublicEvents(): array
     {
         $sql = $this->getAllEventsQueryString() . 'WHERE p.is_public = TRUE';
         try {
@@ -130,9 +130,9 @@ class EventRepository extends BaseRepository implements EventRepositoryInterface
      * @throws DbalException
      * @throws \Exception
      */
-    public function findAllForPlace(Place $place): array
+    public function findAllPublicEventsForPlace(Place $place): array
     {
-        $sql = $this->getAllEventsQueryString() . ' WHERE p.location_id = :locationId';
+        $sql = $this->getAllEventsQueryString() . ' WHERE p.location_id = :locationId AND p.is_public = TRUE';
         try {
             $statement = $this->connection->prepare($sql);
             $statement->bindValue('locationId', $place->getId());
@@ -183,7 +183,7 @@ class EventRepository extends BaseRepository implements EventRepositoryInterface
      * @throws DbalException
      * @throws \Exception
      */
-    public function findUpcoming(): array
+    public function findUpcomingPublicEvents(): array
     {
         $sevenDaysFromNow = new \DateTimeImmutable("+7 day");
         $sql = $this->getAllEventsQueryString() .
