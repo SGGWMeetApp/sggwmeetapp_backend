@@ -2,7 +2,9 @@
 
 namespace App\Security;
 
+use App\Model\NotificationSetting;
 use App\Model\UserGroup;
+use App\Model\UserNotificationSettings;
 use Symfony\Component\Security\Core\User\EquatableInterface;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
@@ -23,6 +25,7 @@ class User implements UserInterface, EquatableInterface, PasswordAuthenticatedUs
     private ?string $description;
     private array $userGroups;
     private ?string $avatarUrl = null;
+    private UserNotificationSettings $notificationSettings;
 
     public function __construct($id, $firstName, $lastName, $email, $password, $phonePrefix, $phone, $description, $roles, $userGroups=[])
     {
@@ -36,6 +39,7 @@ class User implements UserInterface, EquatableInterface, PasswordAuthenticatedUs
         $this->phone = $phone;
         $this->description = $description;
         $this->userGroups[] = $userGroups;
+        $this->notificationSettings = new UserNotificationSettings();
     }
 
     /**
@@ -206,5 +210,10 @@ class User implements UserInterface, EquatableInterface, PasswordAuthenticatedUs
     public function setAvatarUrl(?string $avatarUrl): void
     {
         $this->avatarUrl = $avatarUrl;
+    }
+
+    public function getNotificationSettings(): UserNotificationSettings
+    {
+        return $this->notificationSettings;
     }
 }
