@@ -216,4 +216,16 @@ class User implements UserInterface, EquatableInterface, PasswordAuthenticatedUs
     {
         return $this->notificationSettings;
     }
+
+    public function setNotificationSettings(array $newSettings): UserNotificationSettings
+    {
+        $allSettings = $this->notificationSettings->getSettings();
+        /** @var NotificationSetting $setting */
+        foreach ($allSettings as $setting) {
+            if (array_key_exists($setting->getName(), $newSettings)) {
+                $setting->setEnabled($newSettings[$setting->getName()]);
+            }
+        }
+        return $this->notificationSettings;
+    }
 }

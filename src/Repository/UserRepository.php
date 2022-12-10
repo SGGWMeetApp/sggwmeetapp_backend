@@ -3,11 +3,14 @@
 namespace App\Repository;
 
 use App\Filter\UserFilters;
+use App\Model\NotificationSetting;
+use App\Model\UserNotificationSettings;
 use App\Security\User;
 use App\Serializer\UserNormalizer;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception as DbalException;
 use Doctrine\DBAL\Exception\DriverException;
+use Doctrine\DBAL\ParameterType;
 use Doctrine\DBAL\Query\QueryBuilder;
 use Symfony\Component\Serializer\Exception\ExceptionInterface as SerializerExceptionInterface;
 
@@ -207,6 +210,29 @@ class UserRepository extends BaseRepository implements UserRepositoryInterface
             $statement->bindValue('userId', $user->getId());
             $statement->bindValue('avatarPath', $user->getAvatarUrl());
             $statement->executeQuery();
+        } catch (DriverException $e) {
+            $this->handleDriverException($e);
+        }
+    }
+
+    /**
+     * @throws DriverException
+     * @throws UniqueConstraintViolationException
+     * @throws EntityNotFoundException
+     * @throws DbalException
+     */
+    public function updateUserNotificationSettings(User $user, UserNotificationSettings $userNotificationSettings): void
+    {
+        $queryBuilder = new QueryBuilder($this->connection);
+        $queryBuilder->update($this->tableName);
+        /** @var NotificationSetting $setting */
+        foreach ($userNotificationSettings->getSettings() as $setting) {
+            $queryBuilder
+                ->set($setting->getName(), ':'.$setting->getName())
+                ->setParameter($setting->getName(), $setting->isEnabled(),ParameterType::BOOLEAN);
+        }
+        try {
+            $queryBuilder->executeQuery();
         } catch (DriverException $e) {
             $this->handleDriverException($e);
         }

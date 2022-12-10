@@ -41,6 +41,14 @@ class NotificationSetting
         return $this->enabled;
     }
 
+    /**
+     * @param bool $enabled
+     */
+    public function setEnabled(bool $enabled): void
+    {
+        $this->enabled = $enabled;
+    }
+
     public function enable(): void {
         $this->enabled = true;
     }

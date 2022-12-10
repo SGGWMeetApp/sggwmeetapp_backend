@@ -5,13 +5,16 @@ namespace App\Controller;
 use App\Exception\FormException;
 use App\Filter\UserFilters;
 use App\Form\SearchUsersForGroupType;
+use App\Form\UpdateUserNotificationsType;
 use App\Form\UpdateUserType;
 use App\Repository\EntityNotFoundException;
 use App\Repository\UserRepositoryInterface;
 use App\Request\GetUsersEligibleForGroupRequest;
+use App\Request\UpdateUserNotificationsRequest;
 use App\Request\UpdateUserRequest;
 use App\Security\User;
 use App\Serializer\UserNormalizer;
+use App\Serializer\UserNotificationSettingsNormalizer;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Serializer\Exception\ExceptionInterface as SerializerExceptionInterface;
@@ -139,6 +142,67 @@ class UserController extends ApiController
         if (array_key_exists('description', $userData)) {
             $userToUpdate->setDescription($userData['description']);
         }
+    }
+
+    /**
+     * @throws SerializerExceptionInterface
+     */
+    public function updateUserNotificationSettings(
+        Request $request,
+        int $user_id,
+        UserRepositoryInterface $userRepository,
+        UserNotificationSettingsNormalizer $settingsNormalizer
+    ): JsonResponse
+    {
+        $requestData = json_decode($request->getContent(),true);
+        $updateUserNotificationsRequest = new UpdateUserNotificationsRequest();
+        $form = $this->createForm(UpdateUserNotificationsType::class, $updateUserNotificationsRequest);
+        $form->submit($requestData);
+        if (!$form->isValid()) {
+            throw new FormException($form);
+        }
+
+        $jwtUser = $this->getUser();
+        try {
+            $currentUser = $userRepository->findOrFail($jwtUser->getUserIdentifier());
+            $userToUpdate = $userRepository->findByIdOrFail($user_id);
+        } catch (EntityNotFoundException) {
+            return $this->respondNotFound();
+        }
+        if(!$currentUser->isEqualTo($userToUpdate)) {
+            return $this->respondUnauthorized();
+        }
+        $changedSettings = array_filter($requestData, fn ($val) => $val !== null);
+        $preparedSettings = [];
+        foreach ($changedSettings as $settingName => $settingEnabled) {
+            $preparedSettings [strtolower(preg_replace("/[A-Z]/","_$0", lcfirst($settingName)))] = $settingEnabled;
+        }
+        $currentUser->setNotificationSettings($preparedSettings);
+        try {
+            $userRepository->updateUserNotificationSettings($currentUser, $currentUser->getNotificationSettings());
+        } catch (\Throwable $e) {
+            return $this->respondInternalServerError($e);
+        }
+        return $this->response($settingsNormalizer->normalize($currentUser->getNotificationSettings()));
+    }
+
+    public function getUserNotificationSettings(
+        int $user_id,
+        UserRepositoryInterface $userRepository,
+        UserNotificationSettingsNormalizer $settingsNormalizer
+    ): JsonResponse
+    {
+        $jwtUser = $this->getUser();
+        try {
+            $currentUser = $userRepository->findOrFail($jwtUser->getUserIdentifier());
+            $userToUpdate = $userRepository->findByIdOrFail($user_id);
+        } catch (EntityNotFoundException) {
+            return $this->respondNotFound();
+        }
+        if(!$currentUser->isEqualTo($userToUpdate)) {
+            return $this->respondUnauthorized();
+        }
+        return $this->response($settingsNormalizer->normalize($currentUser->getNotificationSettings()));
     }
 
 }

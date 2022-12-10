@@ -23,13 +23,13 @@ class UserNotificationSettings
 
     public function getEnabledSettings(): array
     {
-        $enabledNotifications = [];
+        $enabledSettings = [];
         foreach($this->settings as $setting) {
             if ($setting->isEnabled()) {
-                $enabledNotifications [] = $setting;
+                $enabledSettings [] = $setting;
             }
         }
-        return $enabledNotifications;
+        return $enabledSettings;
     }
 
     public function getSettingByName(string $name): NotificationSetting {

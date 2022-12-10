@@ -77,12 +77,7 @@ class UserNormalizer implements NormalizerInterface, DenormalizerInterface
         $user->setAvatarUrl($data['avatar_path']);
         $notificationKeys = ['event_notification', 'group_add_notification', 'group_remove_notification'];
         foreach ($notificationKeys as $notificationKey) {
-            $setting = $user->getNotificationSettings()->getSettingByName($notificationKey);
-            if ($data[$notificationKey]) {
-                $setting->enable();
-            } else {
-                $setting->disable();
-            }
+            $user->getNotificationSettings()->addSetting(new NotificationSetting($notificationKey, $data[$notificationKey]));
         }
         return $user;
     }

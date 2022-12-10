@@ -3,6 +3,7 @@
 namespace App\Repository;
 
 use App\Filter\UserFilters;
+use App\Model\UserNotificationSettings;
 use App\Security\User;
 
 interface UserRepositoryInterface
@@ -26,4 +27,6 @@ interface UserRepositoryInterface
     public function add(User $user): void;
 
     public function update(User $user): void;
+
+    public function updateUserNotificationSettings(User $user, UserNotificationSettings $userNotificationSettings): void;
 }
