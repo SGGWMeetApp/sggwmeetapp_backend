@@ -2,6 +2,7 @@
 
 namespace App\Request;
 
+use App\Constraint\UserPassword;
 use Symfony\Component\Validator\Constraints as Assert;
 
 class RegisterUserRequest
@@ -15,9 +16,7 @@ class RegisterUserRequest
     public $email;
 
     /**
-     * @Assert\NotBlank()
-     * @Assert\Type("string")
-     * @Assert\Length(min="8")
+     * @UserPassword()
      * @var string
      */
     public $password;

@@ -29,4 +29,6 @@ interface UserRepositoryInterface
     public function update(User $user): void;
 
     public function updateUserNotificationSettings(User $user, UserNotificationSettings $userNotificationSettings): void;
+
+    public function updateUserPassword(User $user, string $passwordHash): void;
 }

@@ -125,6 +125,10 @@ edit_user_notification_settings:
     requirements:
         user_id: '\d+'
     methods: PATCH
+change_user_password:
+    path: /api/change_password
+    controller: App\Controller\SecurityController::changePassword
+    methods: POST
 enable_event_notifications:
     path: /api/groups/{group_id}/events/{event_id}/notifications
     controller: App\Controller\UserGroupController::enableGroupEventNotifications

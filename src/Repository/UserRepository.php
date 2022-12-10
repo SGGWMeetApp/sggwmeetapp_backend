@@ -238,5 +238,24 @@ class UserRepository extends BaseRepository implements UserRepositoryInterface
         }
     }
 
+    /**
+     * @throws DriverException
+     * @throws UniqueConstraintViolationException
+     * @throws EntityNotFoundException
+     * @throws DbalException
+     */
+    public function updateUserPassword(User $user, string $passwordHash): void
+    {
+        $sql = 'UPDATE '.$this->tableName.' SET password = :password WHERE user_id = :user_id';
+        try {
+            $statement = $this->connection->prepare($sql);
+            $statement->bindValue('password', $passwordHash);
+            $statement->bindValue('user_id', $user->getId());
+            $statement->executeQuery();
+        } catch (DriverException $e) {
+            $this->handleDriverException($e);
+        }
+    }
+
 
 }

@@ -3,9 +3,12 @@
 namespace App\Controller;
 
 use App\Exception\FormException;
+use App\Form\ChangePasswordType;
 use App\Form\RegistrationType;
+use App\Repository\EntityNotFoundException;
 use App\Repository\UniqueConstraintViolationException;
 use App\Repository\UserRepositoryInterface;
+use App\Request\ChangePasswordRequest;
 use App\Request\RegisterUserRequest;
 use App\Security\User;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
@@ -59,5 +62,38 @@ class SecurityController extends ApiController
             return $this->respondInternalServerError($e);
         }
         return $this->response(['token' => $JWTManager->create($user)]);
+    }
+
+    public function changePassword(
+        Request $request,
+        UserPasswordHasherInterface $passwordHasher,
+        UserRepositoryInterface $userRepository
+    ): JsonResponse
+    {
+        $requestData = json_decode($request->getContent(),true);
+        $changePasswordRequest = new ChangePasswordRequest();
+        $form = $this->createForm(ChangePasswordType::class, $changePasswordRequest);
+        $form->submit($requestData);
+
+        if (!$form->isValid()) {
+            throw new FormException($form);
+        }
+        if ($changePasswordRequest->newPassword === $changePasswordRequest->oldPassword) {
+            return $this
+                ->setStatusCode(400)
+                ->respondWithError('BAD_REQUEST', 'New password cannot be the same as old password.');
+        }
+        $jwtUser = $this->getUser();
+        try {
+            $currentUser = $userRepository->findOrFail($jwtUser->getUserIdentifier());
+        } catch (EntityNotFoundException $e) {
+            return $this->respondInternalServerError($e);
+        }
+        if(!$passwordHasher->isPasswordValid($currentUser, $changePasswordRequest->oldPassword)) {
+            return $this->setStatusCode(409)->respondWithError('WRONG_PASSWORD', 'Old password is incorrect.');
+        }
+        $newPasswordEncoded = $passwordHasher->hashPassword($currentUser, $changePasswordRequest->newPassword);
+        $userRepository->updateUserPassword($currentUser, $newPasswordEncoded);
+        return $this->respondWithSuccessMessage('Password changed successfully.');
     }
 }
