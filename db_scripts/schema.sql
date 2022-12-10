@@ -36,6 +36,10 @@ CREATE TABLE users (
     event_notification boolean NOT NULL DEFAULT TRUE,
     group_add_notification boolean NOT NULL DEFAULT TRUE,
     group_remove_notification boolean NOT NULL DEFAULT TRUE,
+    selector varchar(20) not null,
+    hashed_token varchar(20) not null,
+    requested_at timestamp NOT NULL,
+    expires_at timestamp NOT NULL,
     UNIQUE (phone_number_prefix, phone_number)
 );
 
