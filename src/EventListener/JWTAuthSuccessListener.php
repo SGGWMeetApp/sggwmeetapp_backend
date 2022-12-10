@@ -2,34 +2,31 @@
 
 namespace App\EventListener;
 
+use App\Factory\NormalizerFactory;
 use App\Security\User;
-use League\Flysystem\Filesystem;
 use Lexik\Bundle\JWTAuthenticationBundle\Event\AuthenticationSuccessEvent;
+use Symfony\Component\Serializer\Exception\ExceptionInterface as SerializerExceptionInterface;
 
 class JWTAuthSuccessListener
 {
-    private Filesystem $filesystem;
+    private NormalizerFactory $normalizerFactory;
 
-    public function __construct(Filesystem $uploadsFilesystem)
+    public function __construct(NormalizerFactory $normalizerFactory)
     {
-        $this->filesystem = $uploadsFilesystem;
+        $this->normalizerFactory = $normalizerFactory;
     }
 
-    public function onJWTAuthenticationSuccess(AuthenticationSuccessEvent $event)
+    /**
+     * @throws SerializerExceptionInterface
+     */
+    public function onJWTAuthenticationSuccess(AuthenticationSuccessEvent $event): void
     {
         $data = $event->getData();
         $user = $event->getUser();
         if (!$user instanceof User) {
             return;
         }
-        $data['userData'] = [
-            'firstName' => $user->getFirstName(),
-            'lastName' => $user->getLastName(),
-            'phoneNumberPrefix' => $user->getPhonePrefix(),
-            'phoneNumber' => $user->getPhone(),
-            'description' => $user->getDescription(),
-            'avatarUrl' => $user->getAvatarUrl() ? $this->filesystem->publicUrl($user->getAvatarUrl()) : null
-        ];
+        $data['userData'] = $this->normalizerFactory->getNormalizer($user)->normalize($user);
         $event->setData($data);
     }
 }
