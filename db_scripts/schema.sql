@@ -36,16 +36,22 @@ CREATE TABLE users (
     event_notification boolean NOT NULL DEFAULT TRUE,
     group_add_notification boolean NOT NULL DEFAULT TRUE,
     group_remove_notification boolean NOT NULL DEFAULT TRUE,
-    selector varchar(20) not null,
-    hashed_token varchar(20) not null,
-    requested_at timestamp NOT NULL,
-    expires_at timestamp NOT NULL,
     UNIQUE (phone_number_prefix, phone_number)
 );
 
 CREATE UNIQUE INDEX username_inx ON users (lower(username));
 
 CREATE UNIQUE INDEX email_inx ON users (lower(username));
+
+CREATE TABLE password_reset (
+    reset_id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    user_id integer NOT NULL,
+    selector varchar(20) NOT NULL,
+    hashed_token varchar(20) NOT NULL,
+    requested_at timestamp NOT NULL,
+    expires_at timestamp NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users (user_id) ON DELETE CASCADE ON UPDATE CASCADE
+);
 
 CREATE TABLE share_location_users (
     user_id integer NOT NULL,
