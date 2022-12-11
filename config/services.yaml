@@ -69,3 +69,5 @@ services:
         parent: App\Controller\ApiController
     App\Controller\FileUploadController:
         parent: App\Controller\ApiController
+    App\Controller\ResetPasswordController:
+        parent: App\Controller\ApiController

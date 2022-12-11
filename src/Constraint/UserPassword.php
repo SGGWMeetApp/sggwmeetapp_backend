@@ -16,7 +16,7 @@ class UserPassword extends Constraint
     {
         return [
             new Assert\NotBlank(),
-            new Assert\Length(['min' => 8])
+            new Assert\Length(['min' => 8, 'max' => 4096])
         ];
     }
 }

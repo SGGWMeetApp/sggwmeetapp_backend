@@ -9,6 +9,14 @@ register:
 api_login_check:
     path: /api/login_check
     methods: POST
+app_handle_reset_password:
+    path: /reset_password/handle/{token}
+    controller: App\Controller\ResetPasswordController::handlePasswordResetAction
+    methods: POST
+app_request_reset_password:
+    path: /reset_password
+    controller: App\Controller\ResetPasswordController::requestPasswordResetAction
+    methods: POST
 places_get_all:
     path: /api/places
     controller: App\Controller\PlaceController::getPlacesAction
