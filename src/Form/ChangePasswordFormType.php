@@ -17,6 +17,10 @@ class ChangePasswordFormType extends AbstractType
                     'constraints' => [
                         new UserPassword()
                     ],
+                    'label' => 'Password'
+                ],
+                'second_options' => [
+                    'label' => 'Repeat Password'
                 ],
                 'invalid_message' => 'The password fields must match.'
             ])

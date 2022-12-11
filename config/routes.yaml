@@ -12,6 +12,8 @@ api_login_check:
 app_handle_reset_password:
     path: /reset_password/handle/{token}
     controller: App\Controller\ResetPasswordController::handlePasswordResetAction
+    requirements:
+        token: '.*'
     methods: POST
 app_request_reset_password:
     path: /reset_password

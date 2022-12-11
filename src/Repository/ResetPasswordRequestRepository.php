@@ -16,7 +16,7 @@ class ResetPasswordRequestRepository extends BaseRepository implements ResetPass
     public function __construct(
         private readonly Connection $connection,
         private readonly UserRepositoryInterface $userRepository,
-        private readonly string $tableName = 'app_owner.password_resets'
+        private readonly string $tableName = 'app_owner.password_reset'
     )
     {
     }
@@ -38,7 +38,7 @@ class ResetPasswordRequestRepository extends BaseRepository implements ResetPass
                     $data['selector'],
                     $data['hashed_token'],
                     new \DateTime($data['requested_at']),
-                    new \DateTime($data['expired_at']
+                    new \DateTime($data['expires_at']
                     )
                 );
             } else {
@@ -105,6 +105,7 @@ class ResetPasswordRequestRepository extends BaseRepository implements ResetPass
             $statement->bindValue('expires_at',
                 $resetPasswordRequest->getExpiresAt()->format(self::DEFAULT_DATETIME_FORMAT)
             );
+            $statement->executeQuery();
         } catch (DriverException $e) {
             $this->handleDriverException($e);
         }

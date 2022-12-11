@@ -8,6 +8,7 @@ use App\Form\ResetPasswordRequestFormType;
 use App\Repository\EntityNotFoundException;
 use App\Repository\UserRepositoryInterface;
 use App\Request\ResetPasswordRequest;
+use App\Security\User;
 use Symfony\Bridge\Twig\Mime\TemplatedEmail;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -16,6 +17,7 @@ use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use SymfonyCasts\Bundle\ResetPassword\Controller\ResetPasswordControllerTrait;
+use SymfonyCasts\Bundle\ResetPassword\Exception\ExpiredResetPasswordTokenException;
 use SymfonyCasts\Bundle\ResetPassword\Exception\ResetPasswordExceptionInterface;
 use SymfonyCasts\Bundle\ResetPassword\Exception\TooManyPasswordRequestsException;
 use SymfonyCasts\Bundle\ResetPassword\ResetPasswordHelperInterface;
@@ -110,14 +112,15 @@ class ResetPasswordController extends ApiController
         }
 
         try {
+            /** @var User $user */
             $user = $this->resetPasswordHelper->validateTokenAndFetchUser($token);
+        } catch (ExpiredResetPasswordTokenException $e) {
+            return $this->setStatusCode(400)->respondWithError('EXPIRED_LINK', $e->getReason());
         } catch (ResetPasswordExceptionInterface $e) {
             $this->logger->error($e->getMessage());
             $this->logger->debug($e->getReason());
             return $this->respondInternalServerError($e);
         }
-
-        // The token is valid; allow the user to change their password.
         $requestData = json_decode($request->getContent(), true);
         $form = $this->createForm(ChangePasswordFormType::class);
         $form->submit($requestData);
