@@ -47,6 +47,9 @@ services:
     App\EventListener\JWTAuthSuccessListener:
         tags:
             - { name: kernel.event_listener, event: lexik_jwt_authentication.on_authentication_success, method: onJWTAuthenticationSuccess}
+    App\EventListener\JWTAuthFailureListener:
+        tags:
+            - { name: kernel.event_listener, event: lexik_jwt_authentication.on_authentication_failure, method: onJWTAuthenticationFailure}
     App\Serializer\FormExceptionNormalizer:
         tags: [ 'serializer.normalizer' ]
     App\Factory\NormalizerFactory:
