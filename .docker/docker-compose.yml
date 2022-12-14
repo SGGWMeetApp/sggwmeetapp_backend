@@ -1,4 +1,4 @@
-version: "3"
+version: "3.3"
 
 services:
     php:
@@ -6,6 +6,9 @@ services:
             context: ./php
             args:
                 TIMEZONE: ${TIMEZONE}
+        depends_on:
+            rabbitmq:
+                condition: service_healthy
         environment:
             - MESSENGER_TRANSPORT_DSN=${MESSENGER_TRANSPORT_DSN}
         volumes:
@@ -15,6 +18,8 @@ services:
     nginx:
         build:
             context: ./nginx
+        depends_on:
+            - php
         volumes:
             - symfony_dockerized_app_sync:/var/www/symfony/
         ports:
@@ -30,6 +35,11 @@ services:
             - rabbitmq:/var/lib/rabbitmq:cached
         networks:
             - symfony
+        healthcheck:
+            test: rabbitmq-diagnostics -q ping
+            interval: 5s
+            timeout: 10s
+            retries: 5
 
 volumes:
     symfony_dockerized_app_sync:

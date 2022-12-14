@@ -42,6 +42,8 @@ RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local
 
 WORKDIR /var/www/symfony
 
-CMD composer i -o ; php bin/console lexik:jwt:generate-keypair --overwrite ; chmod 644 config/jwt/private.pem ; php-fpm
+COPY startup.sh /home/root/
+RUN chmod +x /home/root/startup.sh
+CMD ["/home/root/startup.sh"]
 
 EXPOSE 9000
