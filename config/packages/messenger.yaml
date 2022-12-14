@@ -6,11 +6,18 @@ when@prod:
 
             transports:
                 # https://symfony.com/doc/current/messenger.html#transport-configuration
-                async: '%env(MESSENGER_TRANSPORT_DSN)%'
+                async:
+                    dsn: '%env(MESSENGER_TRANSPORT_DSN)%'
+                    retry_strategy:
+                        max_retries: 3
+                        delay: 5000
+                        multiplier: 2
+                        max_delay: 0
                 # failed: 'doctrine://default?queue_name=failed'
-                # sync: 'sync://'
+                sync: 'sync://'
 
             routing:
+                'Symfony\Component\Mailer\Messenger\SendEmailMessage': async
                 # Route your messages to the transports
                 # 'App\Message\YourMessage': async
 when@dev:
@@ -18,6 +25,8 @@ when@dev:
         messenger:
             transports:
                 sync: 'sync://'
+            routing:
+                'Symfony\Component\Mailer\Messenger\SendEmailMessage': sync
 # when@test:
 #    framework:
 #        messenger:
