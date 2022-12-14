@@ -25,6 +25,7 @@
         "symfony/framework-bundle": "5.4.*",
         "symfony/google-mailer": "5.4.*",
         "symfony/mailer": "5.4.*",
+        "symfony/messenger": "^6.2",
         "symfony/mime": "5.4.*",
         "symfony/monolog-bundle": "^3.8",
         "symfony/proxy-manager-bridge": "5.4.*",
