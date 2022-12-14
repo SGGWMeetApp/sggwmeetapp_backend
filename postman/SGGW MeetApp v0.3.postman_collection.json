@@ -28,7 +28,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"username\": \"kcwikowski007@onet.pl\",\r\n    \"password\": \"7c83kam6zH349k7\"\r\n}",
+							"raw": "{\r\n    \"username\": \"kcwikowski007@yahoo.com\",\r\n    \"password\": \"Password1234\"\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -80,6 +80,70 @@
 							],
 							"path": [
 								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Request password reset",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwt_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"email\": \"kcwikowski007@gmail.com\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/reset_password",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"reset_password"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Reset password with token",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"password\": {\r\n        \"first\": \"Password1234\",\r\n        \"second\": \"Password1234\"\r\n    }\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/reset_password/handle/e3FfNibsZuXjZop5gX1nN0SfJ75vt6UvEd8rlzRQ",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"reset_password",
+								"handle",
+								"e3FfNibsZuXjZop5gX1nN0SfJ75vt6UvEd8rlzRQ"
 							]
 						}
 					},
@@ -844,7 +908,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"userData\": {\r\n        \"firstName\": \"Jack\",\r\n        \"lastName\": \"Sparrow\",\r\n        \"description\": \"cos\",\r\n        \"phoneNumber\": \"777111777\",\r\n        \"phoneNumberPrefix\": \"777\"\r\n    }\r\n}",
+							"raw": "{\r\n    \"userData\": {\r\n        \"firstName\": \"yahoo\",\r\n        \"lastName\": \"mail\",\r\n        \"description\": \"cos\",\r\n        \"phoneNumber\": \"727111777\",\r\n        \"phoneNumberPrefix\": \"117\"\r\n    }\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -852,14 +916,14 @@
 							}
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/users/11",
+							"raw": "{{baseUrl}}/api/users/5",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
 								"api",
 								"users",
-								"11"
+								"5"
 							]
 						}
 					},
