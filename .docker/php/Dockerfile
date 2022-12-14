@@ -19,6 +19,8 @@ RUN apt-get update && apt-get install -y \
     libonig-dev \
     libxslt1-dev \
     libpq-dev \
+    libxml2-dev \
+    librabbitmq-dev \
     acl \
     && echo 'alias sf="php bin/console"' >> ~/.bashrc
 
@@ -26,6 +28,10 @@ RUN docker-php-ext-configure gd --with-jpeg --with-freetype
 
 RUN docker-php-ext-install \
     pdo pdo_mysql pdo_pgsql pgsql zip xsl gd intl opcache exif mbstring
+
+RUN pecl install amqp
+
+RUN docker-php-ext-enable amqp
 
 # Set timezone
 RUN ln -snf /usr/share/zoneinfo/${TIMEZONE} /etc/localtime && echo ${TIMEZONE} > /etc/timezone \

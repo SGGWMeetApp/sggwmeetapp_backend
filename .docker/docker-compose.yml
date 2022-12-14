@@ -6,6 +6,8 @@ services:
             context: ./php
             args:
                 TIMEZONE: ${TIMEZONE}
+        environment:
+            - MESSENGER_TRANSPORT_DSN=${MESSENGER_TRANSPORT_DSN}
         volumes:
             - symfony_dockerized_app_sync:/var/www/symfony/
         networks:
@@ -21,10 +23,18 @@ services:
             - symfony
         env_file:
             - .env.nginx.local
+    rabbitmq:
+        build:
+            context: ./rabbitmq
+        volumes:
+            - rabbitmq:/var/lib/rabbitmq:cached
+        networks:
+            - symfony
 
 volumes:
     symfony_dockerized_app_sync:
         external: true
+    rabbitmq:
 
 networks:
     symfony:
