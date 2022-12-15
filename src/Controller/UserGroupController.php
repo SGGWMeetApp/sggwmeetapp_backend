@@ -339,12 +339,16 @@ class UserGroupController extends ApiController
             };
         }
 
-        return $this->response([
-            ...$this->normalizerFactory->getNormalizer($user)->normalize($user, 'json', [
-                'modelProperties' => UserNormalizer::AUTHOR_PROPERTIES
-            ]),
-            "isAdmin" => false
-        ]);
+        try {
+            return $this->response([
+                ...$this->normalizerFactory->getNormalizer($user)->normalize($user, 'json', [
+                    'modelProperties' => UserNormalizer::AUTHOR_PROPERTIES
+                ]),
+                "isAdmin" => false
+            ]);
+        } catch (SerializerExceptionInterface $e) {
+            return $this->respondInternalServerError($e);
+        }
     }
 
     public function leaveGroup(int $group_id):JsonResponse
@@ -357,7 +361,7 @@ class UserGroupController extends ApiController
         }
         try {
             $userGroup = $this->userGroupRepository->findOrFail($group_id);
-        } catch (EntityNotFoundException $e) {
+        } catch (EntityNotFoundException) {
             return $this->respondNotFound();
         }
 
