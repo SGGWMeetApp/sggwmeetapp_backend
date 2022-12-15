@@ -44,6 +44,6 @@ WORKDIR /var/www/symfony
 
 COPY startup.sh /home/root/
 RUN chmod +x /home/root/startup.sh
-CMD ["/home/root/startup.sh"]
+CMD ["/bin/bash", "/home/root/startup.sh"]
 
 EXPOSE 9000
