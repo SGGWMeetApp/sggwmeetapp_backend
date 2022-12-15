@@ -8,6 +8,7 @@ use App\Filter\PlaceFilters;
 use App\Form\PlaceFiltersType;
 use App\Form\PlaceReviewType;
 use App\Form\ReviewAssessmentType;
+use App\Model\Place;
 use App\Model\PlaceReview;
 use App\Model\ReviewAssessment;
 use App\Repository\EntityNotFoundException;
@@ -74,6 +75,7 @@ class PlaceController extends ApiController
         $placeFilters = $this->createPlaceFiltersFromRequest($request);
         $places = $placeRepository->findAll($placeFilters);
         $normalizedPlaces = [];
+        /** @var Place $place */
         foreach($places as $place) {
             $normalizedPlace = $placeNormalizer->normalize($place);
             $normalizedPlaces [] = [

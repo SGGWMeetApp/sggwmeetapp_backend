@@ -38,6 +38,7 @@ class EventRepository extends BaseRepository implements EventRepositoryInterface
                 l.description AS locDes,
                 l.lat,
                 l.long,
+                l.text_location AS text_location,
                 l.rating_pct,
                 p.name AS eventName,
                 p.description AS evntDes,

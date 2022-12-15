@@ -23,7 +23,7 @@ class PlaceNormalizer implements NormalizerInterface, DenormalizerInterface
      * @inheritDoc
      * @throws \Exception
      */
-    public function normalize(mixed $object, string $format = null, array $context = [])
+    public function normalize(mixed $object, string $format = null, array $context = []): float|int|bool|\ArrayObject|array|string|null
     {
         if (!$object instanceof Place) {
             throw new InvalidArgumentException('This normalizer only accepts objects of type App\Model\Place');
@@ -40,6 +40,8 @@ class PlaceNormalizer implements NormalizerInterface, DenormalizerInterface
                 "latitude" => $object->getGeoLocation()->getLatitude(),
                 "longitude" => $object->getGeoLocation()->getLongitude()
             ],
+            "textLocation" => $object->getTextLocation(),
+            "description" => $object->getDescription(),
             "locationCategoryCodes" => $object->getCategoryCodes(),
             "photoPath" => count($publicPhotoPaths) > 0 ? $publicPhotoPaths[0] : null,
         ];
@@ -73,6 +75,7 @@ class PlaceNormalizer implements NormalizerInterface, DenormalizerInterface
             $data['location_id'],
             $data['name'],
             new GeoLocation($data['lat'], $data['long']),
+            $data['text_location'],
             $data['description'],
             $data['rating_pct']
         );

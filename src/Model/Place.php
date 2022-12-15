@@ -8,6 +8,7 @@ class Place
     private string $name;
     private ?string $description;
     private GeoLocation $geoLocation;
+    private string $textLocation;
     private ?float $ratingPercent;
     private array $categoryCodes;
     private array $photoPaths;
@@ -17,14 +18,16 @@ class Place
      * @param int|null $id
      * @param string $name
      * @param GeoLocation $geoLocation
+     * @param string $textLocation
      * @param string|null $description
      * @param float|null $ratingPercent
      */
-    public function __construct(?int $id, string $name, GeoLocation $geoLocation, ?string $description, ?float $ratingPercent)
+    public function __construct(?int $id, string $name, GeoLocation $geoLocation, string $textLocation, ?string $description, ?float $ratingPercent)
     {
         $this->id = $id;
         $this->name = $name;
         $this->geoLocation = $geoLocation;
+        $this->textLocation = $textLocation;
         $this->description = $description;
         $this->ratingPercent = $ratingPercent;
         $this->categoryCodes = [];
@@ -44,6 +47,11 @@ class Place
     public function getGeoLocation(): GeoLocation
     {
         return $this->geoLocation;
+    }
+
+    public function getTextLocation(): string
+    {
+        return $this->textLocation;
     }
 
     public function getDescription(): ?string

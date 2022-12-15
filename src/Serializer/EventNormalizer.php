@@ -17,13 +17,11 @@ class EventNormalizer implements NormalizerInterface, DenormalizerInterface
 {
     private UserNormalizer $authorNormalizer;
     private PlaceNormalizer $placeNormalizer;
-    private UserGroupNormalizer $userGroupNormalizer;
 
-    public function __construct(UserNormalizer $authorNormalizer, PlaceNormalizer $placeNormalizer, UserGroupNormalizer $userGroupNormalizer)
+    public function __construct(UserNormalizer $authorNormalizer, PlaceNormalizer $placeNormalizer)
     {
         $this->authorNormalizer = $authorNormalizer;
         $this->placeNormalizer = $placeNormalizer;
-        $this->userGroupNormalizer = $userGroupNormalizer;
     }
 
     /**
@@ -82,6 +80,7 @@ class EventNormalizer implements NormalizerInterface, DenormalizerInterface
                 $data['lat'],
                 $data['long'],
             ),
+            $data['text_location'],
             $data['locdes'],
             $data['rating_pct']
         );
