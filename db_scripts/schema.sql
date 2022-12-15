@@ -36,6 +36,7 @@ CREATE TABLE users (
     event_notification boolean NOT NULL DEFAULT TRUE,
     group_add_notification boolean NOT NULL DEFAULT TRUE,
     group_remove_notification boolean NOT NULL DEFAULT TRUE,
+    creation_date timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
     UNIQUE (phone_number_prefix, phone_number)
 );
 
