@@ -83,6 +83,10 @@ groups_get_all:
     path: /api/groups
     controller: App\Controller\UserGroupController::getGroups
     methods: GET
+groups_get_user_groups:
+    path: /api/users/{user_id}/groups
+    controller: App\Controller\UserGroupController::getGroupsForUser
+    methods: GET
 create_group:
     path: /api/groups
     controller: App\Controller\UserGroupController::createGroup

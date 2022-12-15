@@ -240,6 +240,18 @@ class UserGroupController extends ApiController
         }
     }
 
+    public function getGroupsForUser(int $user_id): JsonResponse
+    {
+        $jwtUser = $this->getUser();
+        try {
+            $user = $this->userRepository->findOrFail($jwtUser->getUserIdentifier());
+            $userGroups = $this->userGroupRepository->findAllGroupsForUser($user_id);
+            return new GroupsResponse($userGroups, $user, $this->normalizerFactory);
+        } catch (\Throwable $e) {
+            return $this->respondInternalServerError($e);
+        }
+    }
+
     public function getGroups(): JsonResponse
     {
         $jwtUser = $this->getUser();
