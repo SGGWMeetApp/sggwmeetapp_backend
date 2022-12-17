@@ -381,8 +381,43 @@ class UserGroupController extends ApiController
         }
     }
 
-    public function leaveGroupEvent(int $event_id): JsonResponse
+    public function leaveGroupEvent(int $group_id, int $event_id): JsonResponse
     {
+        $jwtUser = $this->getUser();
+        try {
+            $currentUser = $this->userRepository->findOrFail($jwtUser->getUserIdentifier());
+        } catch (EntityNotFoundException $e) {
+            return $this->respondInternalServerError($e);
+        }
+
+        try {
+            $userGroup = $this->userGroupRepository->findOrFail($group_id);
+        } catch (EntityNotFoundException) {
+            return $this->respondNotFound('User group not found.');
+        }
+
+        $isUserInGroup = $userGroup->containsUser($currentUser);
+        if(!$isUserInGroup) {
+            return $this->respondUnauthorized('Unauthorized. You are not a member of this group.');
+        }
+
+        try {
+            $event = $this->eventRepository->findOrFail($event_id);
+        } catch (EntityNotFoundException) {
+            return $this->respondNotFound('Group event not found.');
+        }
+
+        if(!$event instanceof PrivateEvent || !$event->getUserGroup()->isEqualTo($userGroup)) {
+            return $this->respondNotFound('Group event not found.');
+        }
+
+        $isOwner = $event->getAuthor()->isEqualTo($currentUser);
+        if(!$isOwner) {
+            return $this->respondUnauthorized('Unauthorized. You are not authorized to delete events in this group.');
+        }
+
+        $this->eventRepository->delete($event);
+
         return $this->setStatusCode(204)->response([]);
     }
 
