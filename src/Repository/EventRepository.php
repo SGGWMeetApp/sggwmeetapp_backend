@@ -186,12 +186,14 @@ class EventRepository extends BaseRepository implements EventRepositoryInterface
      */
     public function findUpcomingPublicEvents(): array
     {
-        $sevenDaysFromNow = new \DateTimeImmutable("+7 day");
+        $sevenDaysFromNow = new \DateTimeImmutable('+7 day');
+        $now = new \DateTimeImmutable('now');
         $sql = $this->getAllEventsQueryString() .
-            sprintf(' WHERE p.is_public = TRUE AND p.start_date < \'%s\'', $sevenDaysFromNow->format(self::DEFAULT_DATETIME_FORMAT));
-
+            ' WHERE p.is_public = TRUE AND p.start_date > :date_low AND p.start_date < :date_high';
         try {
             $statement = $this->connection->prepare($sql);
+            $statement->bindValue('date_low', $now->format(self::DEFAULT_DATETIME_FORMAT));
+            $statement->bindValue('date_high', $sevenDaysFromNow->format(self::DEFAULT_DATETIME_FORMAT));
             $result = $statement->executeQuery();
             $events = [];
             while($data = $result->fetchAssociative()) {
