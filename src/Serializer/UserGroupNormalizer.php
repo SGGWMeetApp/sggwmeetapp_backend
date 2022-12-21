@@ -11,12 +11,6 @@ use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 
 class UserGroupNormalizer implements NormalizerInterface, DenormalizerInterface
 {
-    private UserNormalizer $authorNormalizer;
-
-    public function __construct(UserNormalizer $authorNormalizer)
-    {
-        $this->authorNormalizer = $authorNormalizer;
-    }
 
     /**
      * @inheritDoc
@@ -42,6 +36,7 @@ class UserGroupNormalizer implements NormalizerInterface, DenormalizerInterface
         ];
 
         $normalizedUsers = [];
+        /** @var User $user */
         foreach($object->getUsers() as $user) {
             $isAdmin = $user->isEqualTo($owner);
             $normalizedUsers [] = [
@@ -49,6 +44,7 @@ class UserGroupNormalizer implements NormalizerInterface, DenormalizerInterface
                 "firstName" => $user->getFirstName(),
                 "lastName" => $user->getLastName(),
                 "email" => $user->getEmail(),
+                "registrationDate" => $user->getRegistrationDate()->format('Y-m-d\TH:i:s.v\Z'),
                 "isAdmin" => $isAdmin
             ];
         }
@@ -70,6 +66,7 @@ class UserGroupNormalizer implements NormalizerInterface, DenormalizerInterface
 
     /**
      * @inheritDoc
+     * @throws \Exception
      */
     public function denormalize(mixed $data, string $type, string $format = null, array $context = []): UserGroup
     {
@@ -92,6 +89,7 @@ class UserGroupNormalizer implements NormalizerInterface, DenormalizerInterface
                 $userData->phone_number_prefix,
                 $userData->phone_number,
                 $userData->description,
+                new \DateTime($userData->creation_date),
                 ['ROLE_USER']);
 
             $userGroup->addUser($user);

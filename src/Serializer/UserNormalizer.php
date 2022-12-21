@@ -37,6 +37,7 @@ class UserNormalizer implements NormalizerInterface, DenormalizerInterface
             'phoneNumberPrefix' => $object->getPhonePrefix(),
             'phoneNumber' => $object->getPhone(),
             'description' => $object->getDescription(),
+            'registrationDate' => $object->getRegistrationDate()->format('Y-m-d\TH:i:s.v\Z'),
             'avatarUrl' => $object->getAvatarUrl() ? $this->filesystem->publicUrl($object->getAvatarUrl()) : null
         ];
         if (array_key_exists('modelProperties', $context) && is_array($context['modelProperties'])) {
@@ -61,6 +62,9 @@ class UserNormalizer implements NormalizerInterface, DenormalizerInterface
         return $data instanceof User;
     }
 
+    /**
+     * @throws \Exception
+     */
     public function denormalize(mixed $data, string $type, string $format = null, array $context = []): User
     {
         $user = new User(
@@ -72,6 +76,7 @@ class UserNormalizer implements NormalizerInterface, DenormalizerInterface
             trim($data['phone_number_prefix']),
             trim($data['phone_number']),
             trim($data['description']),
+            new \DateTime($data['creation_date']),
             ['ROLE_USER']
         );
         $user->setAvatarUrl($data['avatar_path']);

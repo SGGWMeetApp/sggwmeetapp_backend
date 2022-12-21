@@ -48,7 +48,8 @@ class UserGroupRepository extends BaseRepository implements UserGroupRepositoryI
                     u2.email,
                     u2.phone_number_prefix,
                     u2.phone_number,
-                    u2.description
+                    u2.description,
+                    u2.creation_date
                 FROM user_groups ug2
                 JOIN users_user_groups uug2 on ug2.group_id = uug2.group_id
                 JOIN users u2 on uug2.user_id = u2.user_id

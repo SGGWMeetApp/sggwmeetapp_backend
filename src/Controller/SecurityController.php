@@ -42,6 +42,7 @@ class SecurityController extends ApiController
             $registrationRequest->userData['phoneNumberPrefix'],
             $registrationRequest->userData['phoneNumber'],
             $registrationRequest->userData['description'],
+            new \DateTime('now'),
             ['ROLE_USER']
         );
         $user->setPassword($passwordHasher->hashPassword($user, $user->getPassword()));

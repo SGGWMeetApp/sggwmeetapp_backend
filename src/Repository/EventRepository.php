@@ -54,6 +54,7 @@ class EventRepository extends BaseRepository implements EventRepositoryInterface
                 b.phone_number,
                 b.avatar_path,
                 b.description AS userDes,
+                b.creation_date AS "userRegistrationDate",
                 ARRAY_TO_JSON(ARRAY(SELECT lc.name
                     FROM app_owner.location_categories lc
                     INNER JOIN app_owner.locations_location_categories llc

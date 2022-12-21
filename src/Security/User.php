@@ -26,8 +26,9 @@ class User implements UserInterface, EquatableInterface, PasswordAuthenticatedUs
     private array $userGroups;
     private ?string $avatarUrl = null;
     private UserNotificationSettings $notificationSettings;
+    private \DateTimeInterface $registrationDate;
 
-    public function __construct($id, $firstName, $lastName, $email, $password, $phonePrefix, $phone, $description, $roles, $userGroups=[])
+    public function __construct($id, $firstName, $lastName, $email, $password, $phonePrefix, $phone, $description, $registrationDate, $roles, $userGroups=[])
     {
         $this->id = $id;
         $this->firstName = $firstName;
@@ -38,45 +39,31 @@ class User implements UserInterface, EquatableInterface, PasswordAuthenticatedUs
         $this->phonePrefix = $phonePrefix;
         $this->phone = $phone;
         $this->description = $description;
-        $this->userGroups[] = $userGroups;
+        $this->registrationDate = $registrationDate;
+        $this->userGroups = $userGroups;
         $this->notificationSettings = new UserNotificationSettings();
     }
 
-    /**
-     * @return array
-     */
     public function getUserGroups(): array
     {
         return $this->userGroups;
     }
 
-    /**
-     * @param array $userGroups
-     */
     public function setUserGroups(array $userGroups): void
     {
         $this->userGroups = $userGroups;
     }
 
-    /**
-     * @param UserGroup $userGroup
-     */
     public function addGroup(UserGroup $userGroup): void
     {
         $this->userGroups[] = $userGroup;
     }
 
-    /**
-     * @return int|null
-     */
     public function getId(): ?int
     {
         return $this->id;
     }
 
-    /**
-     * @param int|null $id
-     */
     public function setId(?int $id): void
     {
         $this->id = $id;
@@ -200,6 +187,11 @@ class User implements UserInterface, EquatableInterface, PasswordAuthenticatedUs
     public function setDescription(?string $description): void
     {
         $this->description = $description;
+    }
+
+    public function getRegistrationDate(): \DateTimeInterface
+    {
+        return $this->registrationDate;
     }
 
     public function getAvatarUrl(): ?string

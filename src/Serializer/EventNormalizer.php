@@ -70,6 +70,7 @@ class EventNormalizer implements NormalizerInterface, DenormalizerInterface
             $data['phone_number_prefix'],
             $data['phone_number'],
             $data['userdes'],
+            new \DateTime($data['userRegistrationDate']),
             ['ROLE_USER']
         );
         $user->setAvatarUrl($data['avatar_path']);
@@ -124,6 +125,7 @@ class EventNormalizer implements NormalizerInterface, DenormalizerInterface
                         $data['group_owner_phone_number_prefix'],
                         $data['group_owner_phone_number'],
                         $data['group_owner_description'],
+                        new \DateTime($data['userRegistrationDate']),
                         ['ROLE_USER']
                     )
                 ),

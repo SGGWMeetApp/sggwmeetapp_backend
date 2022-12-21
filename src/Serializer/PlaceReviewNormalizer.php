@@ -69,6 +69,7 @@ class PlaceReviewNormalizer implements NormalizerInterface, DenormalizerInterfac
                     $data['phone_number_prefix'],
                     $data['phone_number'],
                     $data['description'],
+                    new \DateTime($data['creation_date']),
                     ['ROLE_USER']);
                 $user->setAvatarUrl($data['avatar_path']);
                 $placeReview = new PlaceReview(
