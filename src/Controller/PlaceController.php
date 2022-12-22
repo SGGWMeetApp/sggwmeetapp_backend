@@ -39,7 +39,8 @@ class PlaceController extends ApiController
         PlaceRepositoryInterface $placeRepository,
         PlaceReviewRepositoryInterface $placeReviewRepository,
         PlaceNormalizer $placeNormalizer,
-        PlaceReviewNormalizer $placeReviewsNormalizer
+        PlaceReviewNormalizer $placeReviewsNormalizer,
+        ReviewAssessmentRepositoryInterface $reviewAssessmentRepository
     ): JsonResponse
     {
         try {
@@ -49,9 +50,13 @@ class PlaceController extends ApiController
         }
         $normalizedPlace = $placeNormalizer->normalize($place);
         $placeReviews = $placeReviewRepository->findAllForPlace($place_id);
+        $reviewIds = array_map(fn($value) => $value->getReviewId(), $placeReviews);
+        $userAssessments = $reviewAssessmentRepository->findUserAssessmentsForReviews(11, $reviewIds);
         $normalizedReviews = [];
         foreach($placeReviews as $placeReview) {
-            $normalizedReviews [] = $placeReviewsNormalizer->normalize($placeReview);
+            $normalizedReview = $placeReviewsNormalizer->normalize($placeReview);
+            $normalizedReview['userVote'] = $userAssessments[$normalizedReview['id']]['isPositive'];
+            $normalizedReviews [] = $normalizedReview;
         }
 
         return $this->response([
