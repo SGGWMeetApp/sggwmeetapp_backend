@@ -2,6 +2,9 @@
 
 namespace App\Serializer;
 
+use App\Model\AccountData;
+use App\Model\PhoneNumber;
+use App\Model\UserData;
 use App\Model\UserGroup;
 use App\Security\User;
 
@@ -23,8 +26,8 @@ class UserGroupNormalizer implements NormalizerInterface, DenormalizerInterface
 
         $owner = $object->getOwner();
         $adminData = [
-            "firstName" => $owner->getFirstName(),
-            "lastName" => $owner->getLastName(),
+            "firstName" => $owner->getUserData()->getFirstName(),
+            "lastName" => $owner->getUserData()->getLastName(),
         ];
 
         $userGroupData = [
@@ -41,9 +44,9 @@ class UserGroupNormalizer implements NormalizerInterface, DenormalizerInterface
             $isAdmin = $user->isEqualTo($owner);
             $normalizedUsers [] = [
                 "id" => $user->getId(),
-                "firstName" => $user->getFirstName(),
-                "lastName" => $user->getLastName(),
-                "email" => $user->getEmail(),
+                "firstName" => $user->getUserData()->getFirstName(),
+                "lastName" => $user->getUserData()->getLastName(),
+                "email" => $user->getAccountData()->getEmail(),
                 "registrationDate" => $user->getRegistrationDate()->format('Y-m-d\TH:i:s.v\Z'),
                 "isAdmin" => $isAdmin
             ];
@@ -82,16 +85,22 @@ class UserGroupNormalizer implements NormalizerInterface, DenormalizerInterface
         foreach($users as $userData) {
             $user = new User(
                 $userData->user_id,
-                $userData->first_name,
-                $userData->last_name,
-                $userData->email,
-                '',
-                $userData->phone_number_prefix,
-                $userData->phone_number,
-                $userData->description,
-                new \DateTime($userData->creation_date),
-                ['ROLE_USER']);
-
+                new UserData(
+                    $userData->first_name,
+                    $userData->last_name,
+                    $userData->description,
+                    new PhoneNumber(
+                        $userData->phone_number_prefix,
+                        $userData->phone_number
+                    )
+                ),
+                new AccountData(
+                    $userData->email,
+                    '',
+                    ['ROLE_USER']
+                ),
+                new \DateTime($userData->creation_date)
+            );
             $userGroup->addUser($user);
 
             if($user->getId() == $data["owner_id"]) {

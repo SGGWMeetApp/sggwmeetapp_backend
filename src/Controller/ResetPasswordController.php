@@ -70,11 +70,11 @@ class ResetPasswordController extends ApiController
         }
 
         $email = (new TemplatedEmail())
-            ->to($user->getEmail())
+            ->to($user->getAccountData()->getEmail())
             ->subject('SGGW MeetApp - Your Reset Password Request')
             ->htmlTemplate('reset_password/email.html.twig')
             ->context([
-                'username' => $user->getFirstName().' '.$user->getLastName(),
+                'username' => $user->getUserData()->getFirstName().' '.$user->getUserData()->getLastName(),
                 'resetToken' => $resetToken,
             ]);
 
