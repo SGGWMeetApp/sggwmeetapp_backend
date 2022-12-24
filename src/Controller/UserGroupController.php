@@ -258,10 +258,6 @@ class UserGroupController extends ApiController
         try {
             $user = $this->userRepository->findOrFail($jwtUser->getUserIdentifier());
             $userGroups = $this->userGroupRepository->findAll();
-            foreach($userGroups as $userGroup) {
-                $events = $this->eventRepository->findAllForGroup($userGroup);
-                $userGroup->setEvents($events);
-            }
         } catch (EntityNotFoundException $e) {
             return $this->respondInternalServerError($e);
         }

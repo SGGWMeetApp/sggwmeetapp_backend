@@ -98,7 +98,7 @@ class UserGroupNormalizer implements NormalizerInterface, DenormalizerInterface
                 $userGroup->setOwner($user);
             }
         }
-
+        $userGroup->setIncomingEventsCount($data['incoming_events_count']);
         return $userGroup;
     }
 
