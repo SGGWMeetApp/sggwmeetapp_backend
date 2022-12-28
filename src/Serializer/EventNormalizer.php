@@ -2,11 +2,14 @@
 
 namespace App\Serializer;
 
+use App\Model\AccountData;
 use App\Model\Event;
 use App\Model\GeoLocation;
+use App\Model\PhoneNumber;
 use App\Model\PrivateEvent;
 use App\Model\PublicEvent;
 use App\Model\Place;
+use App\Model\UserData;
 use App\Model\UserGroup;
 use Symfony\Component\Serializer\Exception\InvalidArgumentException;
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
@@ -63,17 +66,23 @@ class EventNormalizer implements NormalizerInterface, DenormalizerInterface
     {
         $user = new User(
             $data['user_id'],
-            $data['first_name'],
-            $data['last_name'],
-            $data['email'],
-            "",
-            $data['phone_number_prefix'],
-            $data['phone_number'],
-            $data['userdes'],
+            new UserData(
+                $data['first_name'],
+                $data['last_name'],
+                $data['userdes'],
+                new PhoneNumber(
+                    $data['phone_number_prefix'],
+                    $data['phone_number']
+                )
+            ),
+            new AccountData(
+                $data['email'],
+                "",
+                ['ROLE_USER']
+            ),
             new \DateTime($data['userRegistrationDate']),
-            ['ROLE_USER']
         );
-        $user->setAvatarUrl($data['avatar_path']);
+        $user->getUserData()->setAvatarUrl($data['avatar_path']);
         $place = new Place(
             $data['location_id'],
             $data['locname'],
@@ -118,15 +127,21 @@ class EventNormalizer implements NormalizerInterface, DenormalizerInterface
                     $data['group_name'],
                     new User(
                         $data['group_owner_id'],
-                        $data['group_owner_first_name'],
-                        $data['group_owner_last_name'],
-                        $data['group_owner_email'],
-                        '',
-                        $data['group_owner_phone_number_prefix'],
-                        $data['group_owner_phone_number'],
-                        $data['group_owner_description'],
-                        new \DateTime($data['userRegistrationDate']),
-                        ['ROLE_USER']
+                        new UserData(
+                            $data['group_owner_first_name'],
+                            $data['group_owner_last_name'],
+                            $data['group_owner_description'],
+                            new PhoneNumber(
+                                $data['group_owner_phone_number_prefix'],
+                                $data['group_owner_phone_number'],
+                            )
+                        ),
+                        new AccountData(
+                            $data['group_owner_email'],
+                            '',
+                            ['ROLE_USER']
+                        ),
+                        new \DateTime($data['userRegistrationDate'])
                     )
                 ),
                 $data['can_edit'],

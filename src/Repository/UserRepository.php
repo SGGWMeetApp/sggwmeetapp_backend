@@ -173,11 +173,11 @@ class UserRepository extends BaseRepository implements UserRepositoryInterface
             $statement->bindValue('username', $user->getUserIdentifier());
             $statement->bindValue('email', $user->getUserIdentifier());
             $statement->bindValue('password', $user->getPassword());
-            $statement->bindValue('firstName', $user->getFirstName());
-            $statement->bindValue('lastName', $user->getLastName());
-            $statement->bindValue('phonePrefix', $user->getPhonePrefix());
-            $statement->bindValue('phone', $user->getPhone());
-            $statement->bindValue('description', $user->getDescription());
+            $statement->bindValue('firstName', $user->getUserData()->getFirstName());
+            $statement->bindValue('lastName', $user->getUserData()->getLastName());
+            $statement->bindValue('phonePrefix', $user->getUserData()->getPhoneNumber()->getPrefix());
+            $statement->bindValue('phone', $user->getUserData()->getPhoneNumber()->getNumber());
+            $statement->bindValue('description', $user->getUserData()->getDescription());
             $statement->executeQuery();
         } catch (DriverException $e) {
             $this->handleDriverException($e);
@@ -202,13 +202,13 @@ class UserRepository extends BaseRepository implements UserRepositoryInterface
         WHERE user_id = :userId';
         try {
             $statement = $this->connection->prepare($sql);
-            $statement->bindValue('firstName', $user->getFirstName());
-            $statement->bindValue('lastName', $user->getLastName());
-            $statement->bindValue('phonePrefix', $user->getPhonePrefix());
-            $statement->bindValue('phoneNumber', $user->getPhone());
-            $statement->bindValue('description', $user->getDescription());
+            $statement->bindValue('firstName', $user->getUserData()->getFirstName());
+            $statement->bindValue('lastName', $user->getUserData()->getLastName());
+            $statement->bindValue('phonePrefix', $user->getUserData()->getPhoneNumber()->getPrefix());
+            $statement->bindValue('phoneNumber', $user->getUserData()->getPhoneNumber()->getNumber());
+            $statement->bindValue('description', $user->getUserData()->getDescription());
+            $statement->bindValue('avatarPath', $user->getUserData()->getAvatarUrl());
             $statement->bindValue('userId', $user->getId());
-            $statement->bindValue('avatarPath', $user->getAvatarUrl());
             $statement->executeQuery();
         } catch (DriverException $e) {
             $this->handleDriverException($e);

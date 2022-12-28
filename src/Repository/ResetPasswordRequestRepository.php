@@ -127,7 +127,7 @@ class ResetPasswordRequestRepository extends BaseRepository implements ResetPass
      */
     public function getUserIdentifier(object $user): string
     {
-        return $user->getEmail();
+        return $user->getAccountData()->getEmail();
     }
 
     /**

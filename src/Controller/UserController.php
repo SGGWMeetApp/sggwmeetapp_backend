@@ -70,7 +70,7 @@ class UserController extends ApiController
             return $this->respondNotFound();
         }
         return $this->response([
-            "email" => $user->getEmail(),
+            "email" => $user->getAccountData()->getEmail(),
             "userData" => $userNormalizer->normalize($user, null, ['modelProperties' => [
                 'id',
                 'firstName',
@@ -113,7 +113,7 @@ class UserController extends ApiController
         $this->updateUserWithRequestData($userToUpdate, $updateUserRequest);
         $userRepository->update($userToUpdate);
         return $this->response([
-            "email" => $userToUpdate->getEmail(),
+            "email" => $userToUpdate->getAccountData()->getEmail(),
             "userData" => $userNormalizer->normalize($userToUpdate, null, ['modelProperties' => [
                 'firstName',
                 'lastName',
