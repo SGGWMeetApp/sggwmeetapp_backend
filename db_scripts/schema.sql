@@ -130,7 +130,7 @@ CREATE TABLE event_attenders (
     is_going boolean NOT NULL DEFAULT TRUE,
     PRIMARY KEY (event_id, user_id),
     FOREIGN KEY (event_id) REFERENCES events (event_id) ON DELETE CASCADE ON UPDATE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES users (user_id) ON DELETE CASCADE ON UPDATE CASCAD
+    FOREIGN KEY (user_id) REFERENCES users (user_id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 CREATE INDEX user_id_inx ON event_attenders (user_id);
