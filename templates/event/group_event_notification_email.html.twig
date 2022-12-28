@@ -1,0 +1,9 @@
+<p>Dear {{username}},</p><br/>
+
+<p>{{ event.author.firstName }} {{ event.author.lastName }} has created a new event &quot;{{ event.name }}&quot;
+    in group {{ event.userGroup.name }}.</p>
+
+<p>The event begins at {{ event.startDate|date("d/m/Y H:i", "Europe/Berlin") }} Warsaw time and will take place at
+    {{ event.location.name }}.</p><br/>
+
+<p>Best regards,<br/>SGGW MeetApp Team</p>

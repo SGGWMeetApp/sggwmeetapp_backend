@@ -41,6 +41,9 @@ services:
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
+    app.group_event.add:
+        alias: App\Event\AddGroupEventEvent
+
     App\EventListener\ExceptionListener:
         tags:
             - { name: kernel.event_listener, event: kernel.exception }
@@ -50,11 +53,17 @@ services:
     App\EventListener\JWTAuthFailureListener:
         tags:
             - { name: kernel.event_listener, event: lexik_jwt_authentication.on_authentication_failure, method: onJWTAuthenticationFailure}
+    App\EventListener\AddGroupEventListener:
+        tags:
+            - { name: kernel.event_listener, event: app.group_event.add, method: onGroupEventAdd}
+
     App\Serializer\FormExceptionNormalizer:
         tags: [ 'serializer.normalizer' ]
+
     App\Factory\NormalizerFactory:
         arguments: [ !tagged serializer.normalizer ]
         public: true
+
     App\Controller\ApiController:
         calls:
             - setLogger: ['@logger']

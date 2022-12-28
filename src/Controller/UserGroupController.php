@@ -2,11 +2,13 @@
 
 namespace App\Controller;
 
+use App\Event\AddGroupEventEvent;
 use App\Exception\FormException;
 use App\Form\PrivateEventType;
 use App\Factory\NormalizerFactory;
 use App\Form\UserGroupDataType;
 use App\Model\PrivateEvent;
+use App\Model\PublicEvent;
 use App\Model\UserGroup;
 use App\Repository\PlaceRepositoryInterface;
 use App\Repository\EventRepositoryInterface;
@@ -22,9 +24,11 @@ use App\Response\EventsResponse;
 use App\Response\EventResponse;
 use App\Security\User;
 use App\Serializer\UserNormalizer;
+use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Serializer\Exception\ExceptionInterface as SerializerExceptionInterface;
+use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 
 class UserGroupController extends ApiController
@@ -34,13 +38,15 @@ class UserGroupController extends ApiController
     private EventRepositoryInterface $eventRepository;
     private PlaceRepositoryInterface $placeRepository;
     private NormalizerFactory $normalizerFactory;
+    private ?EventDispatcherInterface $eventDispatcher;
 
     public function __construct(
         UserRepositoryInterface         $userRepository,
         UserGroupRepositoryInterface    $userGroupRepository,
         EventRepositoryInterface        $eventRepository,
         PlaceRepositoryInterface        $placeRepository,
-        NormalizerFactory               $normalizerFactory
+        NormalizerFactory               $normalizerFactory,
+        ?EventDispatcherInterface       $eventDispatcher = null
     )
     {
         $this->userRepository = $userRepository;
@@ -48,6 +54,7 @@ class UserGroupController extends ApiController
         $this->eventRepository = $eventRepository;
         $this->placeRepository = $placeRepository;
         $this->normalizerFactory = $normalizerFactory;
+        $this->eventDispatcher = $eventDispatcher;
     }
 
 
@@ -101,27 +108,41 @@ class UserGroupController extends ApiController
         }
 
         if($addPrivateEventRequest->publicEventId !== null) {
-            return $this->createGroupEventFromPublicEvent($addPrivateEventRequest->publicEventId, $userGroup);
+            $responseData = $this->createGroupEventFromPublicEvent($addPrivateEventRequest->publicEventId, $userGroup);
         } else {
-            return $this->createGroupEventFromScratch($addPrivateEventRequest, $user, $userGroup);
+            $responseData = $this->createGroupEventFromScratch($addPrivateEventRequest, $user, $userGroup);
         }
+        if($this->eventDispatcher !== null && $responseData['event'] !== null) {
+            $addGroupEventEvent = new AddGroupEventEvent($responseData['event']);
+            $this->eventDispatcher->dispatch($addGroupEventEvent, 'app.group_event.add');
+        }
+        return $responseData['response'];
     }
 
     /**
      * @throws SerializerExceptionInterface
      */
-    private function createGroupEventFromPublicEvent(int $publicEventId, UserGroup $userGroup): JsonResponse
+    private function createGroupEventFromPublicEvent(int $publicEventId, UserGroup $userGroup): array
     {
+        $notFoundResponse = [
+            'event' => null,
+            'response' => $this->respondNotFound('Public event not found.')
+        ];
         try {
             $publicEvent = $this->eventRepository->findOrFail($publicEventId);
         } catch (EntityNotFoundException) {
-            return $this->respondNotFound('Public event not found.');
+            return $notFoundResponse;
+        }
+        if(!$publicEvent instanceof PublicEvent) {
+            return $notFoundResponse;
         }
         $privateEvent = $publicEvent->convertToPrivateEvent($userGroup);
         $this->eventRepository->add($privateEvent);
         $userGroup->addEvent($privateEvent);
-
-        return new EventResponse($privateEvent, $this->normalizerFactory);
+        return [
+            'event' => $privateEvent,
+            'response' => new EventResponse($privateEvent, $this->normalizerFactory)
+        ];
     }
 
     /**
@@ -131,12 +152,15 @@ class UserGroupController extends ApiController
         PrivateEventRequest $addPrivateEventRequest,
         User $eventAuthor,
         UserGroup $userGroup
-    ): JsonResponse
+    ): array
     {
         try {
             $location = $this->placeRepository->findOrFail($addPrivateEventRequest->locationId);
         } catch (EntityNotFoundException) {
-            return $this->respondNotFound('Location not found.');
+            return [
+                'event' => null,
+                'response' => $this->respondNotFound('Location not found.')
+            ];
         }
         $privateEvent = new PrivateEvent(
             null,
@@ -149,8 +173,10 @@ class UserGroupController extends ApiController
         );
         $this->eventRepository->add($privateEvent);
         $userGroup->addEvent($privateEvent);
-
-        return new EventResponse($privateEvent, $this->normalizerFactory);
+        return [
+            'event' => $privateEvent,
+            'response' => new EventResponse($privateEvent, $this->normalizerFactory)
+        ];
     }
 
     private function handlePrivateEventRequest(PrivateEventRequest $request, mixed $requestData): void
