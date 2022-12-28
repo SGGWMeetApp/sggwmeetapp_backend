@@ -52,27 +52,11 @@ class User implements UserInterface, EquatableInterface, PasswordAuthenticatedUs
     }
 
     /**
-     * @param UserData $userData
-     */
-    public function setUserData(UserData $userData): void
-    {
-        $this->userData = $userData;
-    }
-
-    /**
      * @return AccountData
      */
     public function getAccountData(): AccountData
     {
         return $this->accountData;
-    }
-
-    /**
-     * @param AccountData $accountData
-     */
-    public function setAccountData(AccountData $accountData): void
-    {
-        $this->accountData = $accountData;
     }
 
     public function getUserGroups(): array
