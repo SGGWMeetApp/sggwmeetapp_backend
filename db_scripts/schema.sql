@@ -124,6 +124,17 @@ CREATE TABLE events (
     FOREIGN KEY (owner_id) REFERENCES users (user_id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
+CREATE TABLE event_attenders (
+    event_id integer NOT NULL,
+    user_id integer NOT NULL,
+    is_going boolean NOT NULL DEFAULT TRUE,
+    PRIMARY KEY (event_id, user_id),
+    FOREIGN KEY (event_id) REFERENCES events (event_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users (user_id) ON DELETE CASCADE ON UPDATE CASCAD
+);
+
+CREATE INDEX user_id_inx ON event_attenders (user_id);
+
 CREATE TABLE event_notifications (
     notification_id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     event_id integer NOT NULL,
