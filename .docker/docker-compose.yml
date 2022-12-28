@@ -9,8 +9,6 @@ services:
         depends_on:
             rabbitmq:
                 condition: service_healthy
-        environment:
-            - MESSENGER_TRANSPORT_DSN=${MESSENGER_TRANSPORT_DSN}
         volumes:
             - symfony_dockerized_app_sync:/var/www/symfony/
         networks:

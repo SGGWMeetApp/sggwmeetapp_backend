@@ -22,6 +22,7 @@ RUN apt-get update && apt-get install -y \
     libxml2-dev \
     librabbitmq-dev \
     acl \
+    supervisor \
     && echo 'alias sf="php bin/console"' >> ~/.bashrc
 
 RUN docker-php-ext-configure gd --with-jpeg --with-freetype 
@@ -41,6 +42,8 @@ RUN ln -snf /usr/share/zoneinfo/${TIMEZONE} /etc/localtime && echo ${TIMEZONE} >
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
 WORKDIR /var/www/symfony
+
+COPY messenger-worker.conf /etc/supervisor/conf.d/messenger-worker.conf
 
 COPY startup.sh /home/root/
 RUN chmod +x /home/root/startup.sh
