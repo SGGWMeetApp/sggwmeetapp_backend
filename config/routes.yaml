@@ -35,7 +35,7 @@ events_get_all:
     methods: GET
 place_get_events:
     path: /api/places/{place_id}/events
-    controller: App\Controller\PlaceController::getPlaceEvents
+    controller: App\Controller\PlaceController::getPlaceEventsAction
     methods: GET
 group_get_events:
     path: /api/groups/{group_id}/events
