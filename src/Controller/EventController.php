@@ -7,12 +7,12 @@ use App\Factory\NormalizerFactory;
 use App\Model\PrivateEvent;
 use App\Repository\EntityNotFoundException;
 use App\Response\EventsResponse;
+use App\Service\SecurityHelper\JWTIdentityHelper;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use App\Model\PublicEvent;
 use App\Repository\EventRepositoryInterface;
 use App\Repository\UniqueConstraintViolationException;
-use App\Repository\UserRepositoryInterface;
 use App\Repository\PlaceRepositoryInterface;
 use App\Request\PublicEventRequest;
 use App\Response\EventResponse;
@@ -23,21 +23,18 @@ use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 class EventController extends ApiController {
 
-    private UserRepositoryInterface $userRepository;
     private EventRepositoryInterface $eventRepository;
     private PlaceRepositoryInterface $placeRepository;
     private NormalizerFactory $normalizerFactory;
     private ?EventDispatcherInterface $eventDispatcher;
 
     public function __construct(
-        UserRepositoryInterface         $userRepository,
         EventRepositoryInterface        $eventRepository,
         PlaceRepositoryInterface        $placeRepository,
         NormalizerFactory               $normalizerFactory,
         ?EventDispatcherInterface       $eventDispatcher = null
     )
     {
-        $this->userRepository = $userRepository;
         $this->eventRepository = $eventRepository;
         $this->placeRepository = $placeRepository;
         $this->normalizerFactory = $normalizerFactory;
@@ -57,18 +54,12 @@ class EventController extends ApiController {
         return new EventsResponse('events', $this->normalizerFactory, ...$events);
     }
 
-    public function createPublicEvent(Request $request): JsonResponse
+    public function createPublicEvent(Request $request, JWTIdentityHelper $identityHelper): JsonResponse
     {
         $requestData = json_decode($request->getContent(),true);
         $addPublicEventRequest = new PublicEventRequest();
         $this->handlePublicEventRequest($addPublicEventRequest,$requestData);
-        
-        $jwtUser = $this->getUser();
-        try {
-            $user = $this->userRepository->findOrFail($jwtUser->getUserIdentifier());
-        } catch (EntityNotFoundException $e) {
-            return $this->respondInternalServerError($e);
-        }
+        $user = $identityHelper->getUser();
         try {
             $location = $this->placeRepository->findOrFail($addPublicEventRequest->locationId);
        } catch (EntityNotFoundException) {
@@ -105,18 +96,13 @@ class EventController extends ApiController {
     }
 
 
-    public function updateEvent(Request $request, int $event_id): JsonResponse
+    public function updateEvent(Request $request, int $event_id, JWTIdentityHelper $identityHelper): JsonResponse
     {
         $requestData = json_decode($request->getContent(),true);
         $updatePublicEventRequest = new PublicEventRequest();
         $this->handlePublicEventRequest($updatePublicEventRequest,$requestData);
 
-        $jwtUser = $this->getUser();
-        try {
-            $user = $this->userRepository->findOrFail($jwtUser->getUserIdentifier());
-        } catch (EntityNotFoundException $e) {
-            return $this->respondInternalServerError($e);
-        }
+        $user = $identityHelper->getUser();
         try {
              $publicEvent = $this->eventRepository->findOrFail($event_id);
              if(!($publicEvent->getCanEdit())){
@@ -164,14 +150,9 @@ class EventController extends ApiController {
         return new EventsResponse('events', $this->normalizerFactory,  ...$events);
     }
 
-    public function joinEvent(int $event_id, int $user_id): JsonResponse
+    public function joinEvent(int $event_id, int $user_id, JWTIdentityHelper $identityHelper): JsonResponse
     {
-        $jwtUser = $this->getUser();
-        try {
-            $currentUser = $this->userRepository->findOrFail($jwtUser->getUserIdentifier());
-        } catch (EntityNotFoundException $e) {
-            return $this->respondInternalServerError($e);
-        }
+        $currentUser = $identityHelper->getUser();
         if($currentUser->getId() !== $user_id) {
             return $this->respondUnauthorized();
         }
@@ -203,14 +184,9 @@ class EventController extends ApiController {
         return $this->respondWithSuccessMessage('Successfully joined event.');
     }
 
-    public function leaveEvent(int $event_id, int $user_id): JsonResponse
+    public function leaveEvent(int $event_id, int $user_id, JWTIdentityHelper $identityHelper): JsonResponse
     {
-        $jwtUser = $this->getUser();
-        try {
-            $currentUser = $this->userRepository->findOrFail($jwtUser->getUserIdentifier());
-        } catch (EntityNotFoundException $e) {
-            return $this->respondInternalServerError($e);
-        }
+        $currentUser = $identityHelper->getUser();
         if($currentUser->getId() !== $user_id) {
             return $this->respondUnauthorized();
         }
@@ -230,14 +206,9 @@ class EventController extends ApiController {
     /**
      * @throws SerializerExceptionInterface
      */
-    public function getUserEvents(int $user_id): JsonResponse
+    public function getUserEvents(int $user_id, JWTIdentityHelper $identityHelper): JsonResponse
     {
-        $jwtUser = $this->getUser();
-        try {
-            $currentUser = $this->userRepository->findOrFail($jwtUser->getUserIdentifier());
-        } catch (EntityNotFoundException $e) {
-            return $this->respondInternalServerError($e);
-        }
+        $currentUser = $identityHelper->getUser();
         if($currentUser->getId() !== $user_id) {
             return $this->respondUnauthorized();
         }

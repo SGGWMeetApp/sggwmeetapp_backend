@@ -14,6 +14,7 @@ use App\Repository\UserRepositoryInterface;
 use App\Request\ChangePasswordRequest;
 use App\Request\RegisterUserRequest;
 use App\Security\User;
+use App\Service\SecurityHelper\JWTIdentityHelper;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -77,7 +78,8 @@ class SecurityController extends ApiController
     public function changePassword(
         Request $request,
         UserPasswordHasherInterface $passwordHasher,
-        UserRepositoryInterface $userRepository
+        UserRepositoryInterface $userRepository,
+        JWTIdentityHelper $identityHelper
     ): JsonResponse
     {
         $requestData = json_decode($request->getContent(),true);
@@ -93,12 +95,7 @@ class SecurityController extends ApiController
                 ->setStatusCode(400)
                 ->respondWithError('BAD_REQUEST', 'New password cannot be the same as old password.');
         }
-        $jwtUser = $this->getUser();
-        try {
-            $currentUser = $userRepository->findOrFail($jwtUser->getUserIdentifier());
-        } catch (EntityNotFoundException $e) {
-            return $this->respondInternalServerError($e);
-        }
+        $currentUser = $identityHelper->getUser();
         if(!$passwordHasher->isPasswordValid($currentUser, $changePasswordRequest->oldPassword)) {
             return $this->setStatusCode(409)->respondWithError('WRONG_PASSWORD', 'Old password is incorrect.');
         }

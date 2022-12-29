@@ -25,6 +25,7 @@ use App\Response\PlaceReviewResponse;
 use App\Serializer\PlaceNormalizer;
 use App\Serializer\PlaceReviewNormalizer;
 use App\Serializer\EventNormalizer;
+use App\Service\SecurityHelper\JWTIdentityHelper;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Serializer\Exception\ExceptionInterface as SerializerExceptionInterface;
@@ -137,8 +138,8 @@ class PlaceController extends ApiController
         int $place_id,
         PlaceRepositoryInterface $placeRepository,
         PlaceReviewRepositoryInterface $placeReviewRepository,
-        UserRepositoryInterface $userRepository,
-        NormalizerFactory $normalizerFactory
+        NormalizerFactory $normalizerFactory,
+        JWTIdentityHelper $identityHelper
     ): JsonResponse
     {
         $requestData = json_decode($request->getContent(),true);
@@ -149,12 +150,7 @@ class PlaceController extends ApiController
         } catch (EntityNotFoundException) {
             return $this->respondNotFound();
         }
-        $jwtUser = $this->getUser();
-        try {
-            $user = $userRepository->findOrFail($jwtUser->getUserIdentifier());
-        } catch (EntityNotFoundException $e) {
-            return $this->respondInternalServerError($e);
-        }
+        $user = $identityHelper->getUser();
         $placeReview = new PlaceReview(null, $place_id, $user, $addReviewRequest->isPositive, $addReviewRequest->comment);
         try {
             $placeReviewRepository->add($placeReview);
@@ -187,19 +183,14 @@ class PlaceController extends ApiController
         int $place_id,
         int $review_id,
         PlaceReviewRepositoryInterface $placeReviewRepository,
-        UserRepositoryInterface $userRepository,
-        NormalizerFactory $normalizerFactory
+        NormalizerFactory $normalizerFactory,
+        JWTIdentityHelper $identityHelper
     ): JsonResponse
     {
         $requestData = json_decode($request->getContent(),true);
         $updateReviewRequest = new ReviewPlaceRequest();
         $this->handleAddPlaceReviewRequest($updateReviewRequest, $requestData);
-        $jwtUser = $this->getUser();
-        try {
-            $user = $userRepository->findOrFail($jwtUser->getUserIdentifier());
-        } catch (EntityNotFoundException $e) {
-            return $this->respondInternalServerError($e);
-        }
+        $user = $identityHelper->getUser();
         try {
             $placeReview = $placeReviewRepository->findOrFail($place_id, $review_id);
         } catch (EntityNotFoundException) {
@@ -223,7 +214,7 @@ class PlaceController extends ApiController
         Request $request,
         int $place_id,
         int $review_id,
-        UserRepositoryInterface $userRepository,
+        JWTIdentityHelper $identityHelper,
         PlaceReviewRepositoryInterface $placeReviewRepository,
         ReviewAssessmentRepositoryInterface $reviewAssessmentRepository
     ): JsonResponse
@@ -238,12 +229,7 @@ class PlaceController extends ApiController
         if ($requestData['isPositive'] === null) {
             $reviewAssessmentRequest->isPositive = null;
         }
-        $jwtUser = $this->getUser();
-        try {
-            $reviewer = $userRepository->findOrFail($jwtUser->getUserIdentifier());
-        } catch (EntityNotFoundException $e) {
-            return $this->respondInternalServerError($e);
-        }
+        $reviewer = $identityHelper->getUser();
         try {
             $placeReview = $placeReviewRepository->findOrFail($place_id, $review_id);
         } catch (EntityNotFoundException) {

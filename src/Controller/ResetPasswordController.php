@@ -131,7 +131,7 @@ class ResetPasswordController extends ApiController
         $this->resetPasswordHelper->removeResetRequest($token);
 
         $encodedPassword = $passwordHasher->hashPassword($user, $form->get('password')->getData());
-        $user->setPassword($encodedPassword);
+        $user->getAccountData()->setPassword($encodedPassword);
         $this->userRepository->updateUserPassword($user, $encodedPassword);
 
         // The session is cleaned up after the password has been changed.

@@ -15,6 +15,7 @@ use App\Request\UpdateUserRequest;
 use App\Security\User;
 use App\Serializer\UserNormalizer;
 use App\Serializer\UserNotificationSettingsNormalizer;
+use App\Service\SecurityHelper\JWTIdentityHelper;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Serializer\Exception\ExceptionInterface as SerializerExceptionInterface;
@@ -90,7 +91,8 @@ class UserController extends ApiController
         Request $request,
         int $user_id,
         UserRepositoryInterface $userRepository,
-        UserNormalizer $userNormalizer
+        UserNormalizer $userNormalizer,
+        JWTIdentityHelper $identityHelper
     ): JsonResponse
     {
         $requestData = json_decode($request->getContent(),true);
@@ -100,9 +102,8 @@ class UserController extends ApiController
         if (!$form->isValid()) {
             throw new FormException($form);
         }
-        $jwtUser = $this->getUser();
+        $currentUser = $identityHelper->getUser();
         try {
-            $currentUser = $userRepository->findOrFail($jwtUser->getUserIdentifier());
             $userToUpdate = $userRepository->findByIdOrFail($user_id);
         } catch (EntityNotFoundException) {
             return $this->respondNotFound();
@@ -129,19 +130,19 @@ class UserController extends ApiController
     {
         $userData = $updateUserRequest->userData;
         if ($firstName = $userData['firstName'] ?? null) {
-            $userToUpdate->setFirstName($firstName);
+            $userToUpdate->getUserData()->setFirstName($firstName);
         }
         if ($lastName = $userData['lastName'] ?? null) {
-            $userToUpdate->setLastName($lastName);
+            $userToUpdate->getUserData()->setLastName($lastName);
         }
         if ($phonePrefix = $userData['phoneNumberPrefix'] ?? null) {
-            $userToUpdate->setPhonePrefix($phonePrefix);
+            $userToUpdate->getUserData()->getPhoneNumber()->setPrefix($phonePrefix);
         }
         if ($phone = $userData['phoneNumber'] ?? null) {
-            $userToUpdate->setPhone($phone);
+            $userToUpdate->getUserData()->getPhoneNumber()->setNumber($phone);
         }
         if (array_key_exists('description', $userData)) {
-            $userToUpdate->setDescription($userData['description']);
+            $userToUpdate->getUserData()->setDescription($userData['description']);
         }
     }
 
@@ -152,7 +153,8 @@ class UserController extends ApiController
         Request $request,
         int $user_id,
         UserRepositoryInterface $userRepository,
-        UserNotificationSettingsNormalizer $settingsNormalizer
+        UserNotificationSettingsNormalizer $settingsNormalizer,
+        JWTIdentityHelper $identityHelper
     ): JsonResponse
     {
         $requestData = json_decode($request->getContent(),true);
@@ -163,9 +165,8 @@ class UserController extends ApiController
             throw new FormException($form);
         }
 
-        $jwtUser = $this->getUser();
+        $currentUser = $identityHelper->getUser();
         try {
-            $currentUser = $userRepository->findOrFail($jwtUser->getUserIdentifier());
             $userToUpdate = $userRepository->findByIdOrFail($user_id);
         } catch (EntityNotFoundException) {
             return $this->respondNotFound();
@@ -190,12 +191,12 @@ class UserController extends ApiController
     public function getUserNotificationSettings(
         int $user_id,
         UserRepositoryInterface $userRepository,
-        UserNotificationSettingsNormalizer $settingsNormalizer
+        UserNotificationSettingsNormalizer $settingsNormalizer,
+        JWTIdentityHelper $identityHelper
     ): JsonResponse
     {
-        $jwtUser = $this->getUser();
+        $currentUser = $identityHelper->getUser();
         try {
-            $currentUser = $userRepository->findOrFail($jwtUser->getUserIdentifier());
             $userToUpdate = $userRepository->findByIdOrFail($user_id);
         } catch (EntityNotFoundException) {
             return $this->respondNotFound();
@@ -203,7 +204,11 @@ class UserController extends ApiController
         if(!$currentUser->isEqualTo($userToUpdate)) {
             return $this->respondUnauthorized();
         }
-        return $this->response($settingsNormalizer->normalize($currentUser->getNotificationSettings()));
+        try {
+            return $this->response($settingsNormalizer->normalize($currentUser->getNotificationSettings()));
+        } catch (SerializerExceptionInterface $e) {
+            return $this->respondInternalServerError($e);
+        }
     }
 
 }

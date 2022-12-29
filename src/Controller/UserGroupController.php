@@ -24,6 +24,7 @@ use App\Response\EventsResponse;
 use App\Response\EventResponse;
 use App\Security\User;
 use App\Serializer\UserNormalizer;
+use App\Service\SecurityHelper\JWTIdentityHelper;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -61,14 +62,9 @@ class UserGroupController extends ApiController
     /**
      * @throws SerializerExceptionInterface
      */
-    public function getGroupPrivateEvents(int $group_id): JsonResponse
+    public function getGroupPrivateEvents(int $group_id, JWTIdentityHelper $identityHelper): JsonResponse
     {
-        $jwtUser = $this->getUser();
-        try {
-            $user = $this->userRepository->findOrFail($jwtUser->getUserIdentifier());
-        } catch (EntityNotFoundException $e) {
-            return $this->respondInternalServerError($e);
-        }
+        $user = $identityHelper->getUser();
         try {
             $userGroup = $this->userGroupRepository->findOrFail($group_id);
         } catch (EntityNotFoundException) {
@@ -85,18 +81,13 @@ class UserGroupController extends ApiController
     /**
      * @throws SerializerExceptionInterface
      */
-    public function createGroupPrivateEvent(int $group_id, Request $request): JsonResponse
+    public function createGroupPrivateEvent(int $group_id, Request $request, JWTIdentityHelper $identityHelper): JsonResponse
     {
         $requestData = json_decode($request->getContent(),true);
         $addPrivateEventRequest = new PrivateEventRequest();
         $this->handlePrivateEventRequest($addPrivateEventRequest, $requestData);
 
-        $jwtUser = $this->getUser();
-        try {
-            $user = $this->userRepository->findOrFail($jwtUser->getUserIdentifier());
-        } catch (EntityNotFoundException $e) {
-            return $this->respondInternalServerError($e);
-        }
+        $user = $identityHelper->getUser();
         try {
             $userGroup = $this->userGroupRepository->findOrFail($group_id);
         } catch (EntityNotFoundException) {
@@ -191,17 +182,17 @@ class UserGroupController extends ApiController
     /**
      * @throws SerializerExceptionInterface
      */
-    public function enableGroupEventNotifications(Request $request, int $group_id, int $event_id): JsonResponse
+    public function enableGroupEventNotifications(
+        Request $request,
+        int $group_id,
+        int $event_id,
+        JWTIdentityHelper $identityHelper
+    ): JsonResponse
     {
         $requestData = json_decode($request->getContent(),true);
         $enableNotification = $requestData["enable24hNotification"];
 
-        $jwtUser = $this->getUser();
-        try {
-            $user = $this->userRepository->findOrFail($jwtUser->getUserIdentifier());
-        } catch (EntityNotFoundException $e) {
-            return $this->respondInternalServerError($e);
-        }
+        $user = $identityHelper->getUser();
         try {
             $userGroup = $this->userGroupRepository->findOrFail($group_id);
         } catch (EntityNotFoundException) {
@@ -229,22 +220,17 @@ class UserGroupController extends ApiController
     }
 
     public function createGroup(
-        Request $request
+        Request $request,
+        JWTIdentityHelper $identityHelper
     ): JsonResponse
     {
         $requestData = json_decode($request->getContent(),true);
         $userGroupRequest = new CreateUserGroupRequest();
         $this->handleCreateGroupRequest($userGroupRequest, $requestData);
-        $jwtUser = $this->getUser();
-        try {
-            $user = $this->userRepository->findOrFail($jwtUser->getUserIdentifier());
-        } catch (EntityNotFoundException $e) {
-            return $this->respondInternalServerError($e);
-        }
+        $user = $identityHelper->getUser();
 
         $userGroup = new UserGroup(null, $userGroupRequest->name, $user);
         $userGroup->addUser($user);
-
         try {
             $this->userGroupRepository->add($userGroup);
         } catch(UniqueConstraintViolationException $e) {
@@ -266,11 +252,13 @@ class UserGroupController extends ApiController
         }
     }
 
-    public function getGroupsForUser(int $user_id): JsonResponse
+    public function getGroupsForUser(int $user_id, JWTIdentityHelper $identityHelper): JsonResponse
     {
-        $jwtUser = $this->getUser();
+        $user = $identityHelper->getUser();
+        if($user->getId() !== $user_id) {
+            return $this->respondUnauthorized();
+        }
         try {
-            $user = $this->userRepository->findOrFail($jwtUser->getUserIdentifier());
             $userGroups = $this->userGroupRepository->findAllGroupsForUser($user_id);
             return new GroupsResponse($userGroups, $user, $this->normalizerFactory);
         } catch (\Throwable $e) {
@@ -278,15 +266,10 @@ class UserGroupController extends ApiController
         }
     }
 
-    public function getGroups(): JsonResponse
+    public function getGroups(JWTIdentityHelper $identityHelper): JsonResponse
     {
-        $jwtUser = $this->getUser();
-        try {
-            $user = $this->userRepository->findOrFail($jwtUser->getUserIdentifier());
-            $userGroups = $this->userGroupRepository->findAll();
-        } catch (EntityNotFoundException $e) {
-            return $this->respondInternalServerError($e);
-        }
+        $user = $identityHelper->getUser();
+        $userGroups = $this->userGroupRepository->findAll();
         try {
             return new GroupsResponse($userGroups, $user, $this->normalizerFactory);
         } catch (SerializerExceptionInterface $e) {
@@ -294,14 +277,9 @@ class UserGroupController extends ApiController
         }
     }
 
-    public function getGroupUsers(int $group_id): JsonResponse
+    public function getGroupUsers(int $group_id, JWTIdentityHelper $identityHelper): JsonResponse
     {
-        $jwtUser = $this->getUser();
-        try {
-            $user = $this->userRepository->findOrFail($jwtUser->getUserIdentifier());
-        } catch (EntityNotFoundException $e) {
-            return $this->respondInternalServerError($e);
-        }
+        $user = $identityHelper->getUser();
         try {
             $userGroup = $this->userGroupRepository->findOrFail($group_id);
         } catch (EntityNotFoundException) {
@@ -319,17 +297,12 @@ class UserGroupController extends ApiController
         }
     }
 
-    public function addGroupUser(Request $request, int $group_id): JsonResponse
+    public function addGroupUser(Request $request, int $group_id, JWTIdentityHelper $identityHelper): JsonResponse
     {
         $requestData = json_decode($request->getContent(),true);
         $userId = $requestData["userId"];
 
-        $jwtUser = $this->getUser();
-        try {
-            $currentUser = $this->userRepository->findOrFail($jwtUser->getUserIdentifier());
-        } catch (EntityNotFoundException $e) {
-            return $this->respondInternalServerError($e);
-        }
+        $currentUser = $identityHelper->getUser();
         try {
             $user = $this->userRepository->findByIdOrFail($userId);
         } catch (EntityNotFoundException) {
@@ -373,14 +346,9 @@ class UserGroupController extends ApiController
         }
     }
 
-    public function leaveGroup(int $group_id):JsonResponse
+    public function leaveGroup(int $group_id, JWTIdentityHelper $identityHelper):JsonResponse
     {
-        $jwtUser = $this->getUser();
-        try {
-            $user = $this->userRepository->findOrFail($jwtUser->getUserIdentifier());
-        } catch (EntityNotFoundException $e) {
-            return $this->respondInternalServerError($e);
-        }
+        $user = $identityHelper->getUser();
         try {
             $userGroup = $this->userGroupRepository->findOrFail($group_id);
         } catch (EntityNotFoundException) {
@@ -403,15 +371,9 @@ class UserGroupController extends ApiController
         }
     }
 
-    public function leaveGroupEvent(int $group_id, int $event_id): JsonResponse
+    public function leaveGroupEvent(int $group_id, int $event_id, JWTIdentityHelper $identityHelper): JsonResponse
     {
-        $jwtUser = $this->getUser();
-        try {
-            $currentUser = $this->userRepository->findOrFail($jwtUser->getUserIdentifier());
-        } catch (EntityNotFoundException $e) {
-            return $this->respondInternalServerError($e);
-        }
-
+        $currentUser = $identityHelper->getUser();
         try {
             $userGroup = $this->userGroupRepository->findOrFail($group_id);
         } catch (EntityNotFoundException) {

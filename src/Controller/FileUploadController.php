@@ -10,6 +10,7 @@ use App\Repository\UserRepositoryInterface;
 use App\Request\UserAvatarUploadRequest;
 use App\Service\FileHelper\FileUploadException;
 use App\Service\FileHelper\FileUploadHelper;
+use App\Service\SecurityHelper\JWTIdentityHelper;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -20,15 +21,11 @@ class FileUploadController extends ApiController
         int $user_id,
         Request $request,
         FileUploadHelper $uploadHelper,
-        UserRepositoryInterface $userRepository
+        UserRepositoryInterface $userRepository,
+        JWTIdentityHelper $identityHelper
     ): JsonResponse
     {
-        $jwtUser = $this->getUser();
-        try {
-            $user = $userRepository->findOrFail($jwtUser->getUserIdentifier());
-        } catch (EntityNotFoundException $e) {
-            return $this->respondInternalServerError($e);
-        }
+        $user = $identityHelper->getUser();
         if($user->getId() !== $user_id) {
             return $this->respondUnauthorized();
         }
@@ -53,7 +50,7 @@ class FileUploadController extends ApiController
             unlink($uploadedFile->getPathname());
         }
         $relativeAvatarPath = FileUploadHelper::USER_AVATAR_DIR.'/'.$filename;
-        $user->setAvatarUrl($relativeAvatarPath);
+        $user->getUserData()->setAvatarUrl($relativeAvatarPath);
         try {
             $userRepository->update($user);
         } catch (\Throwable $e) {
