@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Event\UserJoinedEventEvent;
 use App\Factory\NormalizerFactory;
 use App\Model\PrivateEvent;
 use App\Repository\EntityNotFoundException;
@@ -18,6 +19,7 @@ use App\Response\EventResponse;
 use App\Form\PublicEventType;
 use App\Exception\FormException;
 use Symfony\Component\Serializer\Exception\ExceptionInterface as SerializerExceptionInterface;
+use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 class EventController extends ApiController {
 
@@ -25,18 +27,21 @@ class EventController extends ApiController {
     private EventRepositoryInterface $eventRepository;
     private PlaceRepositoryInterface $placeRepository;
     private NormalizerFactory $normalizerFactory;
+    private ?EventDispatcherInterface $eventDispatcher;
 
     public function __construct(
         UserRepositoryInterface         $userRepository,
         EventRepositoryInterface        $eventRepository,
         PlaceRepositoryInterface        $placeRepository,
-        NormalizerFactory               $normalizerFactory
+        NormalizerFactory               $normalizerFactory,
+        ?EventDispatcherInterface       $eventDispatcher = null
     )
     {
         $this->userRepository = $userRepository;
         $this->eventRepository = $eventRepository;
         $this->placeRepository = $placeRepository;
         $this->normalizerFactory = $normalizerFactory;
+        $this->eventDispatcher = $eventDispatcher;
     }
 
     /**
@@ -190,6 +195,10 @@ class EventController extends ApiController {
             );
         } catch (\Throwable $e) {
             return $this->respondInternalServerError($e);
+        }
+        if($this->eventDispatcher !== null) {
+            $userJoinedEvent = new UserJoinedEventEvent($currentUser, $event);
+            $this->eventDispatcher->dispatch($userJoinedEvent, 'app.user_event.joined');
         }
         return $this->respondWithSuccessMessage('Successfully joined event.');
     }

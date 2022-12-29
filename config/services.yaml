@@ -43,6 +43,8 @@ services:
     # please note that last definitions always *replace* previous ones
     app.group_event.add:
         alias: App\Event\AddGroupEventEvent
+    app.user_event.joined:
+        alias: App\Event\UserJoinedEventEvent
 
     App\EventListener\ExceptionListener:
         tags:
@@ -56,6 +58,9 @@ services:
     App\EventListener\AddGroupEventListener:
         tags:
             - { name: kernel.event_listener, event: app.group_event.add, method: onGroupEventAdd}
+    App\EventListener\UserJoinedEventListener:
+        tags:
+            - { name: kernel.event_listener, event: app.user_event.joined, method: onUserJoinedEvent }
 
     App\Serializer\FormExceptionNormalizer:
         tags: [ 'serializer.normalizer' ]
