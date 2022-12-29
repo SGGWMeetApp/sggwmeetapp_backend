@@ -8,7 +8,6 @@ use App\Form\RegistrationType;
 use App\Model\AccountData;
 use App\Model\PhoneNumber;
 use App\Model\UserData;
-use App\Repository\EntityNotFoundException;
 use App\Repository\UniqueConstraintViolationException;
 use App\Repository\UserRepositoryInterface;
 use App\Request\ChangePasswordRequest;

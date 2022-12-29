@@ -24,6 +24,9 @@ interface UserRepositoryInterface
 
     public function findAll(UserFilters $filters): array;
 
+    /**
+     * @throws UniqueConstraintViolationException
+     */
     public function add(User $user): void;
 
     public function update(User $user): void;

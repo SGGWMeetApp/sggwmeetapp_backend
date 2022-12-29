@@ -5,7 +5,6 @@ namespace App\Controller;
 use App\Exception\FormException;
 use App\Form\AvatarUploadType;
 use App\Form\Base64FileUploadType;
-use App\Repository\EntityNotFoundException;
 use App\Repository\UserRepositoryInterface;
 use App\Request\UserAvatarUploadRequest;
 use App\Service\FileHelper\FileUploadException;

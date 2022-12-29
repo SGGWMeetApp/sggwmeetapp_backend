@@ -25,7 +25,6 @@ use App\Response\EventResponse;
 use App\Security\User;
 use App\Serializer\UserNormalizer;
 use App\Service\SecurityHelper\JWTIdentityHelper;
-use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Serializer\Exception\ExceptionInterface as SerializerExceptionInterface;

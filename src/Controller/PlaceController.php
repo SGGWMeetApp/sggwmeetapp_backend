@@ -16,7 +16,6 @@ use App\Repository\PlaceRepositoryInterface;
 use App\Repository\PlaceReviewRepositoryInterface;
 use App\Repository\ReviewAssessmentRepositoryInterface;
 use App\Repository\UniqueConstraintViolationException;
-use App\Repository\UserRepositoryInterface;
 use App\Repository\EventRepositoryInterface;
 use App\Request\PlaceFiltersRequest;
 use App\Request\ReviewAssessmentRequest;
