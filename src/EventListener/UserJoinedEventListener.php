@@ -22,6 +22,9 @@ class UserJoinedEventListener
      */
     public function onUserJoinedEvent(UserJoinedEventEvent $joinedEvent): void
     {
+        if($joinedEvent->getUser()->isEqualTo($joinedEvent->getEvent()->getAuthor())) {
+            return;
+        }
         $email = (new TemplatedEmail())
             ->to($joinedEvent->getEvent()->getAuthor()->getAccountData()->getEmail())
             ->subject('SGGW MeetApp - New user joined your event '.$joinedEvent->getEvent()->getName())

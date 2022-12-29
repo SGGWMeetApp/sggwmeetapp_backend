@@ -1,6 +1,6 @@
 <p>Dear {{username}},</p>
 
-<p>{{ event.author.firstName }} {{ event.author.lastName }} has created a new event &quot;{{ event.name }}&quot;
+<p>{{ event.author.userData.firstName }} {{ event.author.userData.lastName }} has created a new event &quot;{{ event.name }}&quot;
     in group {{ event.userGroup.name }}.</p>
 
 <p>The event begins at {{ event.startDate|date("d/m/Y H:i", "Europe/Berlin") }} Warsaw time and will take place at

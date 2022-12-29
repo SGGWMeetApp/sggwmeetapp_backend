@@ -3,6 +3,7 @@
 namespace App\EventListener;
 
 use App\Event\AddGroupEventEvent;
+use App\Security\User;
 use Symfony\Bridge\Twig\Mime\TemplatedEmail;
 use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 use Symfony\Component\Mailer\MailerInterface;
@@ -26,14 +27,17 @@ class AddGroupEventListener
         $commonContext = [
             'event' => $event->getPrivateEvent()
         ];
+        /** @var User $groupUser */
         foreach ($groupUsers as $groupUser) {
-            $email
-                ->to($groupUser->getEmail())
-                ->context([
-                   'username' => $groupUser->getFirstName().' '.$groupUser->getLastName(),
-                    ...$commonContext
-                ]);
-            $this->mailer->send($email);
+            if(!$event->getPrivateEvent()->getAuthor()->isEqualTo($groupUser)) {
+                $email
+                    ->to($groupUser->getAccountData()->getEmail())
+                    ->context([
+                        'username' => $groupUser->getUserData()->getFirstName().' '.$groupUser->getUserData()->getLastName(),
+                        ...$commonContext
+                    ]);
+                $this->mailer->send($email);
+            }
         }
     }
 }
