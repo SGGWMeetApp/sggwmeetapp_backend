@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Factory\NormalizerFactory;
+use App\Model\PrivateEvent;
 use App\Repository\EntityNotFoundException;
 use App\Response\EventsResponse;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -79,12 +80,7 @@ class EventController extends ApiController {
         try {
             $this->eventRepository->add($publicEvent);
         } catch (UniqueConstraintViolationException $e) {
-            return match ($e->getViolatedConstraint()) {
-                'rating_unq_inx' => $this->setStatusCode(409)
-                    ->respondWithError('BAD_REQUEST', 'Nie wiem co wpisac na razie.'),
-                default => $this->setStatusCode(409)
-                    ->respondWithError('BAD_REQUEST', $e->getMessage()),
-            };
+            return $this->setStatusCode(409)->respondWithError('BAD_REQUEST', $e->getMessage());
         }
         try {
             return new EventResponse($publicEvent, $this->normalizerFactory);
@@ -120,7 +116,7 @@ class EventController extends ApiController {
              $publicEvent = $this->eventRepository->findOrFail($event_id);
              if(!($publicEvent->getCanEdit())){
                 return $this->setStatusCode(409)
-                ->respondWithError('Can_edit=False', 'Event nie ma możliwości edycji.');
+                    ->respondWithError('Can_edit=False', 'Event is not editable.');
              }
              if(!$publicEvent->getAuthor()->isEqualTo($user)) {
                  return $this->respondUnauthorized();
@@ -141,12 +137,7 @@ class EventController extends ApiController {
         try {
             $this->eventRepository->update($publicEvent);
         } catch (UniqueConstraintViolationException $e) {
-            return match ($e->getViolatedConstraint()) {
-                'rating_unq_inx' => $this->setStatusCode(409)
-                    ->respondWithError('BAD_REQUEST', 'Nie wiem co wpisac na razie.'),
-                default => $this->setStatusCode(409)
-                    ->respondWithError('BAD_REQUEST', $e->getMessage()),
-            };
+            return $this->setStatusCode(409)->respondWithError('BAD_REQUEST', $e->getMessage());
         }
         try {
             return new EventResponse($publicEvent, $this->normalizerFactory);
@@ -166,6 +157,83 @@ class EventController extends ApiController {
             return $this->respondInternalServerError($e);
         }
         return new EventsResponse('events', $this->normalizerFactory,  ...$events);
+    }
+
+    public function joinEvent(int $event_id, int $user_id): JsonResponse
+    {
+        $jwtUser = $this->getUser();
+        try {
+            $currentUser = $this->userRepository->findOrFail($jwtUser->getUserIdentifier());
+        } catch (EntityNotFoundException $e) {
+            return $this->respondInternalServerError($e);
+        }
+        if($currentUser->getId() !== $user_id) {
+            return $this->respondUnauthorized();
+        }
+        try {
+            $event = $this->eventRepository->findOrFail($event_id);
+        } catch (EntityNotFoundException) {
+            return $this->respondNotFound('Event not found.');
+        }
+        if ($event instanceof PrivateEvent) {
+            $userGroup = $event->getUserGroup();
+            if (!$userGroup->containsUser($currentUser)) {
+                return $this->respondUnauthorized();
+            }
+        }
+        try {
+            $this->eventRepository->addUserToEventAttenders($currentUser, $event);
+        } catch (UniqueConstraintViolationException) {
+            return $this->setStatusCode(400)->respondWithError(
+                'ALREADY_REGISTERED',
+                'This user is already an attender of this event.'
+            );
+        } catch (\Throwable $e) {
+            return $this->respondInternalServerError($e);
+        }
+        return $this->respondWithSuccessMessage('Successfully joined event.');
+    }
+
+    public function leaveEvent(int $event_id, int $user_id): JsonResponse
+    {
+        $jwtUser = $this->getUser();
+        try {
+            $currentUser = $this->userRepository->findOrFail($jwtUser->getUserIdentifier());
+        } catch (EntityNotFoundException $e) {
+            return $this->respondInternalServerError($e);
+        }
+        if($currentUser->getId() !== $user_id) {
+            return $this->respondUnauthorized();
+        }
+        try {
+            $event = $this->eventRepository->findOrFail($event_id);
+        } catch (EntityNotFoundException) {
+            return $this->respondNotFound('Event not found.');
+        }
+        try {
+            $this->eventRepository->removeUserFromEventAttenders($currentUser, $event);
+        } catch (\Throwable $e) {
+            return $this->respondInternalServerError($e);
+        }
+        return $this->setStatusCode(204)->response([]);
+    }
+
+    /**
+     * @throws SerializerExceptionInterface
+     */
+    public function getUserEvents(int $user_id): JsonResponse
+    {
+        $jwtUser = $this->getUser();
+        try {
+            $currentUser = $this->userRepository->findOrFail($jwtUser->getUserIdentifier());
+        } catch (EntityNotFoundException $e) {
+            return $this->respondInternalServerError($e);
+        }
+        if($currentUser->getId() !== $user_id) {
+            return $this->respondUnauthorized();
+        }
+        $userEvents = $this->eventRepository->findAllForUser($currentUser);
+        return new EventsResponse('events', $this->normalizerFactory,  ...$userEvents);
     }
 
 }
