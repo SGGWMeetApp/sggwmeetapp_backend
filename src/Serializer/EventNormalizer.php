@@ -71,8 +71,8 @@ class EventNormalizer implements NormalizerInterface, DenormalizerInterface
                 $data['last_name'],
                 $data['userdes'],
                 new PhoneNumber(
-                    $data['phone_number_prefix'],
-                    $data['phone_number']
+                    trim($data['phone_number_prefix']),
+                    trim($data['phone_number'])
                 )
             ),
             new AccountData(
@@ -132,8 +132,8 @@ class EventNormalizer implements NormalizerInterface, DenormalizerInterface
                             $data['group_owner_last_name'],
                             $data['group_owner_description'],
                             new PhoneNumber(
-                                $data['group_owner_phone_number_prefix'],
-                                $data['group_owner_phone_number'],
+                                trim($data['group_owner_phone_number_prefix']),
+                                trim($data['group_owner_phone_number']),
                             )
                         ),
                         new AccountData(
