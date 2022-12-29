@@ -8,13 +8,11 @@ use App\Model\UserData;
 use App\Model\UserGroup;
 use App\Model\UserNotificationSettings;
 use Symfony\Component\Security\Core\User\EquatableInterface;
+use Symfony\Component\Security\Core\User\LegacyPasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 
-/**
- * @method string getUserIdentifier()
- */
-class User implements UserInterface, EquatableInterface, PasswordAuthenticatedUserInterface
+class User implements UserInterface, EquatableInterface, PasswordAuthenticatedUserInterface, LegacyPasswordAuthenticatedUserInterface
 {
     private ?int $id;
     private UserData $userData;
@@ -93,9 +91,9 @@ class User implements UserInterface, EquatableInterface, PasswordAuthenticatedUs
     /**
      * @inheritDoc
      */
-    public function getSalt(): string
+    public function getSalt(): ?string
     {
-        return '';
+        return null;
     }
 
     /**
@@ -114,6 +112,11 @@ class User implements UserInterface, EquatableInterface, PasswordAuthenticatedUs
         return $this->getAccountData()->getEmail();
     }
 
+    public function getUserIdentifier(): string
+    {
+        return $this->getAccountData()->getEmail();
+    }
+
     public function isEqualTo(UserInterface $user): bool
     {
         if (!$user instanceof User) {
@@ -123,14 +126,6 @@ class User implements UserInterface, EquatableInterface, PasswordAuthenticatedUs
             return false;
         }
         return true;
-    }
-
-    public function __call(string $name, array $arguments)
-    {
-        if ($name == 'getUserIdentifier') {
-            return $this->getAccountData()->getEmail();
-        }
-        return null;
     }
 
     public function getRegistrationDate(): \DateTimeInterface

@@ -10,9 +10,6 @@ use Symfony\Component\Security\Core\Exception\UserNotFoundException;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Security\Core\User\UserProviderInterface;
 
-/**
- * @method UserInterface loadUserByIdentifier(string $identifier)
- */
 class DatabaseUserProvider implements UserProviderInterface
 {
     private UserRepositoryInterface $userRepository;
@@ -62,11 +59,8 @@ class DatabaseUserProvider implements UserProviderInterface
         return 'Security\User' === $class;
     }
 
-    public function __call(string $name, array $arguments)
+    public function loadUserByIdentifier(string $identifier): UserInterface|User
     {
-        if ($name == 'loadUserByIdentifier') {
-            return $this->getUser($arguments[0]);
-        }
-        return null;
+        return $this->getUser($identifier);
     }
 }
