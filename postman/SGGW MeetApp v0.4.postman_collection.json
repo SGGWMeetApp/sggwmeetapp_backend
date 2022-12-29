@@ -1,7 +1,7 @@
 {
 	"info": {
 		"_postman_id": "46f16653-1927-4278-a879-10090230aa38",
-		"name": "SGGW MeetApp v0.3",
+		"name": "SGGW MeetApp v0.4",
 		"description": "# SGGW MEET_APP REST API\n\nThis collection contains all the requests used in the SGGW MEET_APP backend REST API and should serve as a reference for manual testing of the API.\n\n## Environments\n\nThis collection contains two environments:\n\n- `dev` to be used by app developers when running the API locally (e.g. using symfony server)\n- `prod` to be used by all other users for testing the API which is running on a remote server\n    \n\nIf API won't work for you please check that you have the correct environment enabled. If despite having the correct environment you are receiving errors, please report them to app's developers.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "11125621"
@@ -28,7 +28,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"username\": \"kcwikowski007@yahoo.com\",\r\n    \"password\": \"Password1234\"\r\n}",
+							"raw": "{\r\n    \"username\": \"email@example.com\",\r\n    \"password\": \"password\"\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -66,7 +66,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"email\": \"kcwikowski007@poczta.onet.pl\",\r\n    \"password\": \"7c83kam6zH349k7\",\r\n    \"userData\": {\r\n        \"firstName\": \"Jacob\",\r\n        \"lastName\": \"Ćwikowski\",\r\n        \"phoneNumberPrefix\": \"48\",\r\n        \"phoneNumber\": \"3122311289\",\r\n        \"description\": \"PHP/Symfony developer\"\r\n    }\r\n}",
+							"raw": "{\r\n    \"email\": \"email@example.com\",\r\n    \"password\": \"password\",\r\n    \"userData\": {\r\n        \"firstName\": \"First\",\r\n        \"lastName\": \"Last\",\r\n        \"phoneNumberPrefix\": \"48\",\r\n        \"phoneNumber\": \"111111111\",\r\n        \"description\": \"MeetApp developer\"\r\n    }\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -102,7 +102,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"email\": \"kcwikowski007@gmail.com\"\r\n}",
+							"raw": "{\r\n    \"email\": \"email@example.com\"\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -128,7 +128,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"password\": {\r\n        \"first\": \"Password1234\",\r\n        \"second\": \"Password1234\"\r\n    }\r\n}",
+							"raw": "{\r\n    \"password\": {\r\n        \"first\": \"password\",\r\n        \"second\": \"password\"\r\n    }\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -136,14 +136,14 @@
 							}
 						},
 						"url": {
-							"raw": "{{baseUrl}}/reset_password/handle/e3FfNibsZuXjZop5gX1nN0SfJ75vt6UvEd8rlzRQ",
+							"raw": "{{baseUrl}}/reset_password/handle/xotWZVUsWtTJkbdIGh7ZQZbkYhubthTwuNjiOcii",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
 								"reset_password",
 								"handle",
-								"e3FfNibsZuXjZop5gX1nN0SfJ75vt6UvEd8rlzRQ"
+								"xotWZVUsWtTJkbdIGh7ZQZbkYhubthTwuNjiOcii"
 							]
 						}
 					},
@@ -239,7 +239,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"comment\": \"Cudownie się tam siedzi :)\",\r\n    \"isPositive\": true\r\n}",
+							"raw": "{\r\n    \"comment\": \"It's a wonderful place.\",\r\n    \"isPositive\": true\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -349,7 +349,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"comment\": \"Super się tam spędza czas\",\r\n    \"isPositive\": true\r\n}",
+							"raw": "{\r\n    \"comment\": \"Many interesting exhibitions and initiatives.\",\r\n    \"isPositive\": true\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -357,14 +357,14 @@
 							}
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/places/5/reviews",
+							"raw": "{{baseUrl}}/api/places/13/reviews",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
 								"api",
 								"places",
-								"5",
+								"13",
 								"reviews"
 							]
 						}
@@ -421,7 +421,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"name\": \"Impreza z okazji zakończenia semestru\",\r\n    \"locationId\": 1,\r\n    \"description\": \"Zapraszamy, będzie świetna zabawa :)\",\r\n    \"startDate\": \"2022-01-31T20:30:00.000Z\"\r\n}",
+							"raw": "{\r\n    \"name\": \"End of semester party\",\r\n    \"locationId\": 1,\r\n    \"description\": \"Everybody is invited :)\",\r\n    \"startDate\": \"2022-01-31T20:30:00.000Z\"\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -458,7 +458,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"name\": \"Wiedźmin 2: przeżyjmy to jeszcze raz!\",\r\n    \"locationId\": 1,\r\n    \"description\": \"Ogrywamy Wieśka na 100-calowym ekranie! Dołącz do nas (może nawet dostaniesz kontroler do ręki; gramy ścieżką Iorwetha)\",\r\n    \"startDate\": \"2022-12-23T22:30:00.000Z\"\r\n}",
+							"raw": "{\r\n    \"name\": \"Event Name\",\r\n    \"locationId\": 1,\r\n    \"description\": \"Event Description\",\r\n    \"startDate\": \"2022-12-23T22:30:00.000Z\"\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -507,6 +507,98 @@
 						}
 					},
 					"response": []
+				},
+				{
+					"name": "Add user to event attenders",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwt_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/events/135/attenders/9",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"events",
+								"135",
+								"attenders",
+								"9"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete user from event attenders",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwt_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/events/69/attenders/11",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"events",
+								"69",
+								"attenders",
+								"11"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get user events",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwt_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/users/11/events",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"11",
+								"events"
+							]
+						}
+					},
+					"response": []
 				}
 			]
 		},
@@ -529,14 +621,14 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/groups/15/events",
+							"raw": "{{baseUrl}}/api/groups/22/events",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
 								"api",
 								"groups",
-								"15",
+								"22",
 								"events"
 							]
 						}
@@ -560,7 +652,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"publicEventId\": 56,\r\n    \"locationId\": 3,\r\n    \"name\": \"HTML hacking party\",\r\n    \"description\": \"NASA! We're coming!\",\r\n    \"startDate\": \"2022-12-05T20:00:00.000Z\"\r\n}",
+							"raw": "{\r\n    \"locationId\": 3,\r\n    \"name\": \"HTML hacking party\",\r\n    \"description\": \"NASA! We're coming!\",\r\n    \"startDate\": \"2023-01-05T20:00:00.000Z\"\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -627,14 +719,14 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/groups/15/users",
+							"raw": "{{baseUrl}}/api/groups/22/users",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
 								"api",
 								"groups",
-								"15",
+								"22",
 								"users"
 							]
 						}
@@ -658,7 +750,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{ \r\n    \"userId\": 4\r\n}",
+							"raw": "{ \r\n    \"userId\": 9\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -666,14 +758,14 @@
 							}
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/groups/14/users",
+							"raw": "{{baseUrl}}/api/groups/22/users",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
 								"api",
 								"groups",
-								"14",
+								"22",
 								"users"
 							]
 						}
@@ -818,6 +910,36 @@
 						}
 					},
 					"response": []
+				},
+				{
+					"name": "Get groups for user",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwt_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/users/5/groups",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"5",
+								"groups"
+							]
+						}
+					},
+					"response": []
 				}
 			]
 		},
@@ -840,7 +962,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/groups/11/users/eligible",
+							"raw": "{{baseUrl}}/api/groups/11/users/eligible?namePhrase=klimek",
 							"host": [
 								"{{baseUrl}}"
 							],
@@ -854,8 +976,7 @@
 							"query": [
 								{
 									"key": "namePhrase",
-									"value": "klimek",
-									"disabled": true
+									"value": "klimek"
 								}
 							]
 						}
@@ -908,7 +1029,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"userData\": {\r\n        \"firstName\": \"yahoo\",\r\n        \"lastName\": \"mail\",\r\n        \"description\": \"cos\",\r\n        \"phoneNumber\": \"727111777\",\r\n        \"phoneNumberPrefix\": \"117\"\r\n    }\r\n}",
+							"raw": "{\r\n    \"userData\": {\r\n        \"firstName\": \"First Name\",\r\n        \"lastName\": \"Last Name\",\r\n        \"description\": \"description\",\r\n        \"phoneNumber\": \"111111111\",\r\n        \"phoneNumberPrefix\": \"48\"\r\n    }\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -1054,7 +1175,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"oldPassword\": \"oldPassword\",\r\n    \"newPassword\": \"newPassword\"\r\n}",
+							"raw": "{\r\n    \"oldPassword\": \"Password1234\",\r\n    \"newPassword\": \"NewPassword\"\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
