@@ -71,6 +71,39 @@ class ReviewAssessmentRepository extends BaseRepository implements ReviewAssessm
      * @throws EntityNotFoundException
      * @throws DbalException
      */
+    public function findUserAssessmentsForReviews(int $user_id, array $reviewIds): array
+    {
+        $qMarks = str_repeat('?,', count($reviewIds) - 1) . '?';
+        $assessments = [];
+        foreach ($reviewIds as $id) {
+            $assessments[$id] = ['review_id' => $id, 'isPositive' => null];
+        }
+        $sql = "
+            SELECT DISTINCT
+                rr.rating_id as rating_id,
+                rr.is_up_vote as is_up_vote
+            FROM ".$this->tableName." rr
+            WHERE rr.rating_id IN ($qMarks)";
+        try {
+            $statement = $this->connection->prepare($sql);
+            $result = $statement->executeQuery($reviewIds);
+            $rawAssessments = $result->fetchAllAssociative();
+            foreach ($rawAssessments as $assessment) {
+                $assessments[$assessment['rating_id']]['isPositive'] = $assessment['is_up_vote'];
+            }
+            return $assessments;
+        } catch (DriverException $e) {
+            $this->handleDriverException($e);
+        }
+    }
+
+
+    /**
+     * @throws UniqueConstraintViolationException
+     * @throws DriverException
+     * @throws EntityNotFoundException
+     * @throws DbalException
+     */
     public function add(ReviewAssessment $reviewAssessment): void
     {
         $sql = 'INSERT INTO ' . $this->tableName .

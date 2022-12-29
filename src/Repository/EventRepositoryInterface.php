@@ -5,6 +5,7 @@ namespace App\Repository;
 use App\Model\Event;
 use App\Model\Place;
 use App\Model\UserGroup;
+use App\Security\User;
 
 interface EventRepositoryInterface
 {
@@ -27,4 +28,14 @@ interface EventRepositoryInterface
 
     public function delete(Event $event): void;
 
+    /**
+     * @throws UniqueConstraintViolationException
+     */
+    public function addUserToEventAttenders(User $user, Event $event): void;
+
+    public function removeUserFromEventAttenders(User $user, Event $event): void;
+
+    public function getAttenders(Event $event): array;
+
+    public function findAllForUser(User $user): array;
 }

@@ -2,7 +2,10 @@
 
 namespace App\Serializer;
 
+use App\Model\AccountData;
+use App\Model\PhoneNumber;
 use App\Model\PlaceReview;
+use App\Model\UserData;
 use App\Security\User;
 use Symfony\Component\Serializer\Exception\InvalidArgumentException;
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
@@ -62,15 +65,23 @@ class PlaceReviewNormalizer implements NormalizerInterface, DenormalizerInterfac
             case 'PlaceReview':
                 $user = new User(
                     $data['user_id'],
-                    $data['first_name'],
-                    $data['last_name'],
-                    $data['email'],
-                    $data['password'],
-                    $data['phone_number_prefix'],
-                    $data['phone_number'],
-                    $data['description'],
-                    ['ROLE_USER']);
-                $user->setAvatarUrl($data['avatar_path']);
+                    new UserData(
+                        $data['first_name'],
+                        $data['last_name'],
+                        $data['description'],
+                        new PhoneNumber(
+                            $data['phone_number_prefix'],
+                            $data['phone_number']
+                        )
+                    ),
+                    new AccountData(
+                        $data['email'],
+                        $data['password'],
+                        ['ROLE_USER']
+                    ),
+                    new \DateTime($data['creation_date']),
+                    );
+                $user->getUserData()->setAvatarUrl($data['avatar_path']);
                 $placeReview = new PlaceReview(
                     $data['rating_id'],
                     $data['location_id'],

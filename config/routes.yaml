@@ -35,7 +35,7 @@ events_get_all:
     methods: GET
 place_get_events:
     path: /api/places/{place_id}/events
-    controller: App\Controller\PlaceController::getPlaceEvents
+    controller: App\Controller\PlaceController::getPlaceEventsAction
     methods: GET
 group_get_events:
     path: /api/groups/{group_id}/events
@@ -45,6 +45,26 @@ event_create:
     path: /api/events
     controller: App\Controller\EventController::createPublicEvent
     methods: POST
+event_attender_add:
+    path: /api/events/{event_id}/attenders/{user_id}
+    controller: App\Controller\EventController::joinEvent
+    requirements:
+        user_id: '\d+'
+        event_id: '\d+'
+    methods: POST
+event_attender_delete:
+    path: /api/events/{event_id}/attenders/{user_id}
+    controller: App\Controller\EventController::leaveEvent
+    requirements:
+        event_id: '\d+'
+        user_id: '\d+'
+    methods: DELETE
+user_get_events:
+    path: /api/users/{user_id}/events
+    controller: App\Controller\EventController::getUserEvents
+    requirements:
+        user_id: '\d+'
+    methods: GET
 group_create_event:
     path: /api/groups/{group_id}/events
     controller: App\Controller\UserGroupController::createGroupPrivateEvent

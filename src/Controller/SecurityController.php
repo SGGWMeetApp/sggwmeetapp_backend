@@ -5,6 +5,9 @@ namespace App\Controller;
 use App\Exception\FormException;
 use App\Form\ChangePasswordType;
 use App\Form\RegistrationType;
+use App\Model\AccountData;
+use App\Model\PhoneNumber;
+use App\Model\UserData;
 use App\Repository\EntityNotFoundException;
 use App\Repository\UniqueConstraintViolationException;
 use App\Repository\UserRepositoryInterface;
@@ -35,16 +38,23 @@ class SecurityController extends ApiController
         }
         $user = new User(
             null,
-            $registrationRequest->userData['firstName'],
-            $registrationRequest->userData['lastName'],
-            $registrationRequest->email,
-            $registrationRequest->password,
-            $registrationRequest->userData['phoneNumberPrefix'],
-            $registrationRequest->userData['phoneNumber'],
-            $registrationRequest->userData['description'],
-            ['ROLE_USER']
+            new UserData(
+                $registrationRequest->userData['firstName'],
+                $registrationRequest->userData['lastName'],
+                $registrationRequest->userData['description'],
+                new PhoneNumber(
+                    $registrationRequest->userData['phoneNumberPrefix'],
+                    $registrationRequest->userData['phoneNumber']
+                )
+            ),
+            new AccountData(
+                $registrationRequest->email,
+                $registrationRequest->password,
+                ['ROLE_USER']
+            ),
+            new \DateTime('now')
         );
-        $user->setPassword($passwordHasher->hashPassword($user, $user->getPassword()));
+        $user->getAccountData()->setPassword($passwordHasher->hashPassword($user, $user->getPassword()));
         try {
             $userRepository->add($user);
         } catch (UniqueConstraintViolationException $e) {

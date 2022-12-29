@@ -2,7 +2,10 @@
 
 namespace App\Serializer;
 
+use App\Model\AccountData;
 use App\Model\NotificationSetting;
+use App\Model\PhoneNumber;
+use App\Model\UserData;
 use App\Security\User;
 use League\Flysystem\Filesystem;
 use Symfony\Component\Serializer\Exception\InvalidArgumentException;
@@ -31,13 +34,14 @@ class UserNormalizer implements NormalizerInterface, DenormalizerInterface
         }
         $normalizedUser = [
             'id' => $object->getId(),
-            'email' => $object->getEmail(),
-            'firstName' => $object->getFirstName(),
-            'lastName' => $object->getLastName(),
-            'phoneNumberPrefix' => $object->getPhonePrefix(),
-            'phoneNumber' => $object->getPhone(),
-            'description' => $object->getDescription(),
-            'avatarUrl' => $object->getAvatarUrl() ? $this->filesystem->publicUrl($object->getAvatarUrl()) : null
+            'email' => $object->getAccountData()->getEmail(),
+            'firstName' => $object->getUserData()->getFirstName(),
+            'lastName' => $object->getUserData()->getLastName(),
+            'phoneNumberPrefix' => $object->getUserData()->getPhoneNumber()->getPrefix(),
+            'phoneNumber' => $object->getUserData()->getPhoneNumber()->getNumber(),
+            'description' => $object->getUserData()->getDescription(),
+            'registrationDate' => $object->getRegistrationDate()->format('Y-m-d\TH:i:s.v\Z'),
+            'avatarUrl' => $object->getUserData()->getAvatarUrl() ? $this->filesystem->publicUrl($object->getUserData()->getAvatarUrl()) : null
         ];
         if (array_key_exists('modelProperties', $context) && is_array($context['modelProperties'])) {
             $userProperties = [];
@@ -61,20 +65,30 @@ class UserNormalizer implements NormalizerInterface, DenormalizerInterface
         return $data instanceof User;
     }
 
+    /**
+     * @throws \Exception
+     */
     public function denormalize(mixed $data, string $type, string $format = null, array $context = []): User
     {
         $user = new User(
             $data['user_id'],
-            trim($data['first_name']),
-            trim($data['last_name']),
-            $data['email'],
-            $data['password'],
-            trim($data['phone_number_prefix']),
-            trim($data['phone_number']),
-            trim($data['description']),
-            ['ROLE_USER']
+            new UserData(
+                trim($data['first_name']),
+                trim($data['last_name']),
+                trim($data['description']),
+                new PhoneNumber(
+                    trim($data['phone_number_prefix']),
+                    trim($data['phone_number']),
+                )
+            ),
+            new AccountData(
+                $data['email'],
+                $data['password'],
+                ['ROLE_USER']
+            ),
+            new \DateTime($data['creation_date'])
         );
-        $user->setAvatarUrl($data['avatar_path']);
+        $user->getUserData()->setAvatarUrl($data['avatar_path']);
         $notificationKeys = ['event_notification', 'group_add_notification', 'group_remove_notification'];
         foreach ($notificationKeys as $notificationKey) {
             $user->getNotificationSettings()->addSetting(new NotificationSetting($notificationKey, $data[$notificationKey]));

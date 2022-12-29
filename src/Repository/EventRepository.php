@@ -7,7 +7,9 @@ use App\Model\Place;
 use App\Model\PrivateEvent;
 use App\Model\PublicEvent;
 use App\Model\UserGroup;
+use App\Security\User;
 use App\Serializer\EventNormalizer;
+use App\Serializer\UserNormalizer;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception as DbalException;
 use Doctrine\DBAL\Exception\DriverException;
@@ -17,16 +19,21 @@ class EventRepository extends BaseRepository implements EventRepositoryInterface
 {
     private Connection $connection;
     private EventNormalizer $eventNormalizer;
+    private UserNormalizer $userNormalizer;
+
     private string $tableName = 'app_owner.events';
+    private string $attendersTableName = 'app_owner.event_attenders';
 
     /**
      * @param Connection $connection
      * @param EventNormalizer $eventNormalizer
+     * @param UserNormalizer $userNormalizer
      */
-    public function __construct(Connection $connection, EventNormalizer $eventNormalizer)
+    public function __construct(Connection $connection, EventNormalizer $eventNormalizer, UserNormalizer $userNormalizer)
     {
         $this->connection = $connection;
         $this->eventNormalizer = $eventNormalizer;
+        $this->userNormalizer = $userNormalizer;
     }
     private function getAllEventsQueryString(): string
     {
@@ -54,6 +61,7 @@ class EventRepository extends BaseRepository implements EventRepositoryInterface
                 b.phone_number,
                 b.avatar_path,
                 b.description AS userDes,
+                b.creation_date AS "userRegistrationDate",
                 ARRAY_TO_JSON(ARRAY(SELECT lc.name
                     FROM app_owner.location_categories lc
                     INNER JOIN app_owner.locations_location_categories llc
@@ -186,12 +194,14 @@ class EventRepository extends BaseRepository implements EventRepositoryInterface
      */
     public function findUpcomingPublicEvents(): array
     {
-        $sevenDaysFromNow = new \DateTimeImmutable("+7 day");
+        $sevenDaysFromNow = new \DateTimeImmutable('+7 day');
+        $now = new \DateTimeImmutable('now');
         $sql = $this->getAllEventsQueryString() .
-            sprintf(' WHERE p.is_public = TRUE AND p.start_date < \'%s\'', $sevenDaysFromNow->format(self::DEFAULT_DATETIME_FORMAT));
-
+            ' WHERE p.is_public = TRUE AND p.start_date > :date_low AND p.start_date < :date_high';
         try {
             $statement = $this->connection->prepare($sql);
+            $statement->bindValue('date_low', $now->format(self::DEFAULT_DATETIME_FORMAT));
+            $statement->bindValue('date_high', $sevenDaysFromNow->format(self::DEFAULT_DATETIME_FORMAT));
             $result = $statement->executeQuery();
             $events = [];
             while($data = $result->fetchAssociative()) {
@@ -321,5 +331,93 @@ class EventRepository extends BaseRepository implements EventRepositoryInterface
             $this->handleDriverException($e);
         }
     }
+
+    /**
+     * @throws UniqueConstraintViolationException
+     * @throws DriverException
+     * @throws EntityNotFoundException
+     * @throws DbalException
+     */
+    public function addUserToEventAttenders(User $user, Event $event): void
+    {
+        $sql = 'INSERT INTO '.$this->attendersTableName.' (event_id, user_id) VALUES (:event_id, :user_id)';
+        try {
+            $statement = $this->connection->prepare($sql);
+            $statement->bindValue('event_id', $event->getId());
+            $statement->bindValue('user_id', $user->getId());
+            $statement->executeQuery();
+        } catch (DriverException $e) {
+            $this->handleDriverException($e);
+        }
+    }
+
+    /**
+     * @throws UniqueConstraintViolationException
+     * @throws DriverException
+     * @throws EntityNotFoundException
+     * @throws DbalException
+     */
+    public function removeUserFromEventAttenders(User $user, Event $event): void
+    {
+        $sql = 'DELETE FROM '.$this->attendersTableName.' WHERE event_id=:event_id AND user_id=:user_id';
+        try {
+            $statement = $this->connection->prepare($sql);
+            $statement->bindValue('event_id', $event->getId());
+            $statement->bindValue('user_id', $user->getId());
+            $statement->executeQuery();
+        } catch (DriverException $e) {
+            $this->handleDriverException($e);
+        }
+    }
+
+    /**
+     * @throws UniqueConstraintViolationException
+     * @throws DriverException
+     * @throws EntityNotFoundException
+     * @throws DbalException
+     * @throws \Exception
+     */
+    public function getAttenders(Event $event): array
+    {
+        $sql = 'SELECT * FROM app_owner.users WHERE user_id IN (SELECT user_id FROM '.$this->attendersTableName.' WHERE event_id=:event_id)';
+        try {
+            $statement = $this->connection->prepare($sql);
+            $statement->bindValue('event_id', $event->getId());
+            $result = $statement->executeQuery();
+            $users = [];
+            while ($data = $result->fetchAssociative()) {
+                $users [] = $this->userNormalizer->denormalize($data, User::class);
+            }
+            return $users;
+        } catch (DriverException $e) {
+            $this->handleDriverException($e);
+        }
+    }
+
+    /**
+     * @throws UniqueConstraintViolationException
+     * @throws DriverException
+     * @throws EntityNotFoundException
+     * @throws DbalException
+     * @throws \Exception
+     */
+    public function findAllForUser(User $user): array
+    {
+        $sql = $this->getAllEventsQueryString() . ' WHERE event_id IN 
+        (SELECT event_id FROM '.$this->attendersTableName.' WHERE user_id=:user_id AND is_going=TRUE)';
+        try {
+            $statement = $this->connection->prepare($sql);
+            $statement->bindValue('user_id', $user->getId());
+            $result = $statement->executeQuery();
+            $events = [];
+            while($data = $result->fetchAssociative()) {
+                $events [] = $this->eventNormalizer->denormalize($data, 'Event');
+            }
+            return $events;
+        } catch (DriverException $e) {
+            $this->handleDriverException($e);
+        }
+    }
+
 
 }
