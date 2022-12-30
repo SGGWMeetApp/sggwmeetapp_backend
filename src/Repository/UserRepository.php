@@ -3,11 +3,14 @@
 namespace App\Repository;
 
 use App\Filter\UserFilters;
+use App\Model\NotificationSetting;
+use App\Model\UserNotificationSettings;
 use App\Security\User;
 use App\Serializer\UserNormalizer;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception as DbalException;
 use Doctrine\DBAL\Exception\DriverException;
+use Doctrine\DBAL\ParameterType;
 use Doctrine\DBAL\Query\QueryBuilder;
 use Symfony\Component\Serializer\Exception\ExceptionInterface as SerializerExceptionInterface;
 
@@ -17,10 +20,10 @@ class UserRepository extends BaseRepository implements UserRepositoryInterface
     private string $tableName = 'app_owner.users';
     private UserNormalizer $userNormalizer;
 
-    public function __construct(Connection $connection)
+    public function __construct(Connection $connection, UserNormalizer $userNormalizer)
     {
         $this->connection = $connection;
-        $this->userNormalizer = new UserNormalizer();
+        $this->userNormalizer = $userNormalizer;
     }
 
     /**
@@ -170,11 +173,11 @@ class UserRepository extends BaseRepository implements UserRepositoryInterface
             $statement->bindValue('username', $user->getUserIdentifier());
             $statement->bindValue('email', $user->getUserIdentifier());
             $statement->bindValue('password', $user->getPassword());
-            $statement->bindValue('firstName', $user->getFirstName());
-            $statement->bindValue('lastName', $user->getLastName());
-            $statement->bindValue('phonePrefix', $user->getPhonePrefix());
-            $statement->bindValue('phone', $user->getPhone());
-            $statement->bindValue('description', $user->getDescription());
+            $statement->bindValue('firstName', $user->getUserData()->getFirstName());
+            $statement->bindValue('lastName', $user->getUserData()->getLastName());
+            $statement->bindValue('phonePrefix', $user->getUserData()->getPhoneNumber()->getPrefix());
+            $statement->bindValue('phone', $user->getUserData()->getPhoneNumber()->getNumber());
+            $statement->bindValue('description', $user->getUserData()->getDescription());
             $statement->executeQuery();
         } catch (DriverException $e) {
             $this->handleDriverException($e);
@@ -194,16 +197,60 @@ class UserRepository extends BaseRepository implements UserRepositoryInterface
             last_name = :lastName,
             phone_number_prefix = :phonePrefix,
             phone_number = :phoneNumber,
-            description = :description
+            description = :description,
+            avatar_path = :avatarPath
         WHERE user_id = :userId';
         try {
             $statement = $this->connection->prepare($sql);
-            $statement->bindValue('firstName', $user->getFirstName());
-            $statement->bindValue('lastName', $user->getLastName());
-            $statement->bindValue('phonePrefix', $user->getPhonePrefix());
-            $statement->bindValue('phoneNumber', $user->getPhone());
-            $statement->bindValue('description', $user->getDescription());
+            $statement->bindValue('firstName', $user->getUserData()->getFirstName());
+            $statement->bindValue('lastName', $user->getUserData()->getLastName());
+            $statement->bindValue('phonePrefix', $user->getUserData()->getPhoneNumber()->getPrefix());
+            $statement->bindValue('phoneNumber', $user->getUserData()->getPhoneNumber()->getNumber());
+            $statement->bindValue('description', $user->getUserData()->getDescription());
+            $statement->bindValue('avatarPath', $user->getUserData()->getAvatarUrl());
             $statement->bindValue('userId', $user->getId());
+            $statement->executeQuery();
+        } catch (DriverException $e) {
+            $this->handleDriverException($e);
+        }
+    }
+
+    /**
+     * @throws DriverException
+     * @throws UniqueConstraintViolationException
+     * @throws EntityNotFoundException
+     * @throws DbalException
+     */
+    public function updateUserNotificationSettings(User $user, UserNotificationSettings $userNotificationSettings): void
+    {
+        $queryBuilder = new QueryBuilder($this->connection);
+        $queryBuilder->update($this->tableName);
+        /** @var NotificationSetting $setting */
+        foreach ($userNotificationSettings->getSettings() as $setting) {
+            $queryBuilder
+                ->set($setting->getName(), ':'.$setting->getName())
+                ->setParameter($setting->getName(), $setting->isEnabled(),ParameterType::BOOLEAN);
+        }
+        try {
+            $queryBuilder->executeQuery();
+        } catch (DriverException $e) {
+            $this->handleDriverException($e);
+        }
+    }
+
+    /**
+     * @throws DriverException
+     * @throws UniqueConstraintViolationException
+     * @throws EntityNotFoundException
+     * @throws DbalException
+     */
+    public function updateUserPassword(User $user, string $passwordHash): void
+    {
+        $sql = 'UPDATE '.$this->tableName.' SET password = :password WHERE user_id = :user_id';
+        try {
+            $statement = $this->connection->prepare($sql);
+            $statement->bindValue('password', $passwordHash);
+            $statement->bindValue('user_id', $user->getId());
             $statement->executeQuery();
         } catch (DriverException $e) {
             $this->handleDriverException($e);

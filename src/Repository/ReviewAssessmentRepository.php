@@ -18,11 +18,12 @@ class ReviewAssessmentRepository extends BaseRepository implements ReviewAssessm
 
     /**
      * @param Connection $connection
+     * @param ReviewAssessmentNormalizer $reviewAssessmentNormalizer
      */
-    public function __construct(Connection $connection)
+    public function __construct(Connection $connection, ReviewAssessmentNormalizer $reviewAssessmentNormalizer)
     {
         $this->connection = $connection;
-        $this->reviewAssessmentNormalizer = new ReviewAssessmentNormalizer();
+        $this->reviewAssessmentNormalizer = $reviewAssessmentNormalizer;
     }
 
 
@@ -63,6 +64,39 @@ class ReviewAssessmentRepository extends BaseRepository implements ReviewAssessm
             $this->handleDriverException($e);
         }
     }
+
+    /**
+     * @throws UniqueConstraintViolationException
+     * @throws DriverException
+     * @throws EntityNotFoundException
+     * @throws DbalException
+     */
+    public function findUserAssessmentsForReviews(int $user_id, array $reviewIds): array
+    {
+        $qMarks = str_repeat('?,', count($reviewIds) - 1) . '?';
+        $assessments = [];
+        foreach ($reviewIds as $id) {
+            $assessments[$id] = ['review_id' => $id, 'isPositive' => null];
+        }
+        $sql = "
+            SELECT DISTINCT
+                rr.rating_id as rating_id,
+                rr.is_up_vote as is_up_vote
+            FROM ".$this->tableName." rr
+            WHERE rr.rating_id IN ($qMarks)";
+        try {
+            $statement = $this->connection->prepare($sql);
+            $result = $statement->executeQuery($reviewIds);
+            $rawAssessments = $result->fetchAllAssociative();
+            foreach ($rawAssessments as $assessment) {
+                $assessments[$assessment['rating_id']]['isPositive'] = $assessment['is_up_vote'];
+            }
+            return $assessments;
+        } catch (DriverException $e) {
+            $this->handleDriverException($e);
+        }
+    }
+
 
     /**
      * @throws UniqueConstraintViolationException

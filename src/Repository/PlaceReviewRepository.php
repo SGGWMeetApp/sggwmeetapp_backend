@@ -15,9 +15,9 @@ class PlaceReviewRepository extends BaseRepository implements PlaceReviewReposit
     private PlaceReviewNormalizer $objectNormalizer;
     private string $tableName = 'app_owner.location_ratings';
 
-    public function __construct(Connection $connection)
+    public function __construct(Connection $connection, PlaceReviewNormalizer $placeReviewNormalizer)
     {
-        $this->objectNormalizer = new PlaceReviewNormalizer();
+        $this->objectNormalizer = $placeReviewNormalizer;
         $this->connection = $connection;
     }
 

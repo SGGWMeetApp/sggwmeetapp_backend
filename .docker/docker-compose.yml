@@ -1,4 +1,4 @@
-version: "3"
+version: "3.3"
 
 services:
     php:
@@ -6,6 +6,9 @@ services:
             context: ./php
             args:
                 TIMEZONE: ${TIMEZONE}
+        depends_on:
+            rabbitmq:
+                condition: service_healthy
         volumes:
             - symfony_dockerized_app_sync:/var/www/symfony/
         networks:
@@ -13,6 +16,8 @@ services:
     nginx:
         build:
             context: ./nginx
+        depends_on:
+            - php
         volumes:
             - symfony_dockerized_app_sync:/var/www/symfony/
         ports:
@@ -21,10 +26,44 @@ services:
             - symfony
         env_file:
             - .env.nginx.local
+    rabbitmq:
+        build:
+            context: ./rabbitmq
+        volumes:
+            - rabbitmq:/var/lib/rabbitmq:cached
+        networks:
+            - symfony
+        healthcheck:
+            test: rabbitmq-diagnostics -q ping
+            interval: 5s
+            timeout: 10s
+            retries: 5
+    mercure:
+        image: dunglas/mercure
+        restart: unless-stopped
+        ports:
+            - "80"
+        environment:
+            SERVER_NAME: ':80'
+            MERCURE_PUBLISHER_JWT_KEY: ${MERCURE_HUB_PUBLISHER_JWT_SECRET}
+            MERCURE_SUBSCRIBER_JWT_KEY: ${MERCURE_HUB_SUBSCRIBER_JWT_SECRET}
+            # Set the URL of your Symfony project (without trailing slash!) as value of the cors_origins directive
+            MERCURE_EXTRA_DIRECTIVES: |
+                cors_origins ${MERCURE_HUB_CORS_ORIGINS}
+        networks:
+            - symfony
+        # Comment the following line to disable the development mode
+        command: /usr/bin/caddy run -config /etc/caddy/Caddyfile.dev
+        volumes:
+            - mercure_data:/data
+            - mercure_config:/config
 
 volumes:
     symfony_dockerized_app_sync:
         external: true
+    rabbitmq:
+    mercure_data:
+    mercure_config:
 
 networks:
     symfony:

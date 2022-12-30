@@ -2,79 +2,74 @@
 
 namespace App\Security;
 
+use App\Model\AccountData;
+use App\Model\NotificationSetting;
+use App\Model\UserData;
 use App\Model\UserGroup;
+use App\Model\UserNotificationSettings;
 use Symfony\Component\Security\Core\User\EquatableInterface;
+use Symfony\Component\Security\Core\User\LegacyPasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 
-/**
- * @method string getUserIdentifier()
- */
-class User implements UserInterface, EquatableInterface, PasswordAuthenticatedUserInterface
+class User implements UserInterface, EquatableInterface, PasswordAuthenticatedUserInterface, LegacyPasswordAuthenticatedUserInterface
 {
-    private ?int    $id;
-    private string  $firstName;
-    private string  $lastName;
-    private string  $email;
-    private string  $password;
-    private array   $roles;
-    private string  $phonePrefix;
-    private string  $phone;
-    private ?string $description;
+    private ?int $id;
+    private UserData $userData;
+    private AccountData $accountData;
     private array $userGroups;
+    private UserNotificationSettings $notificationSettings;
+    private \DateTimeInterface $registrationDate;
 
-    public function __construct($id, $firstName, $lastName, $email, $password, $phonePrefix, $phone, $description, $roles, $userGroups=[])
+    public function __construct($id, $userData, $accountData, $registrationDate, $userGroups=[])
     {
         $this->id = $id;
-        $this->firstName = $firstName;
-        $this->lastName = $lastName;
-        $this->email = $email;
-        $this->password = $password;
-        $this->roles = $roles;
-        $this->phonePrefix = $phonePrefix;
-        $this->phone = $phone;
-        $this->description = $description;
-        $this->userGroups[] = $userGroups;
-    }
-
-    /**
-     * @return array
-     */
-    public function getUserGroups(): array
-    {
-        return $this->userGroups;
-    }
-
-    /**
-     * @param array $userGroups
-     */
-    public function setUserGroups(array $userGroups): void
-    {
+        $this->userData = $userData;
+        $this->accountData = $accountData;
+        $this->registrationDate = $registrationDate;
         $this->userGroups = $userGroups;
+        $this->notificationSettings = new UserNotificationSettings();
     }
 
-    /**
-     * @param UserGroup $userGroup
-     */
-    public function addGroup(UserGroup $userGroup): void
-    {
-        $this->userGroups[] = $userGroup;
-    }
-
-    /**
-     * @return int|null
-     */
     public function getId(): ?int
     {
         return $this->id;
     }
 
-    /**
-     * @param int|null $id
-     */
     public function setId(?int $id): void
     {
         $this->id = $id;
+    }
+
+    /**
+     * @return UserData
+     */
+    public function getUserData(): UserData
+    {
+        return $this->userData;
+    }
+
+    /**
+     * @return AccountData
+     */
+    public function getAccountData(): AccountData
+    {
+        return $this->accountData;
+    }
+
+    public function getUserGroups(): array
+    {
+        return $this->userGroups;
+    }
+
+    public function setUserGroups(array $userGroups): void
+    {
+        $this->userGroups = $userGroups;
+    }
+
+    public function addGroup(UserGroup $userGroup): void
+    {
+        $this->userGroups[] = $userGroup;
     }
 
     /**
@@ -82,7 +77,7 @@ class User implements UserInterface, EquatableInterface, PasswordAuthenticatedUs
      */
     public function getRoles(): array
     {
-        return $this->roles;
+        return $this->getAccountData()->getRoles();
     }
 
     /**
@@ -90,15 +85,15 @@ class User implements UserInterface, EquatableInterface, PasswordAuthenticatedUs
      */
     public function getPassword(): string
     {
-        return $this->password;
+        return $this->getAccountData()->getPassword();
     }
 
     /**
      * @inheritDoc
      */
-    public function getSalt(): string
+    public function getSalt(): ?string
     {
-        return '';
+        return null;
     }
 
     /**
@@ -114,7 +109,12 @@ class User implements UserInterface, EquatableInterface, PasswordAuthenticatedUs
      */
     public function getUsername(): string
     {
-        return $this->email;
+        return $this->getAccountData()->getEmail();
+    }
+
+    public function getUserIdentifier(): string
+    {
+        return $this->getAccountData()->getEmail();
     }
 
     public function isEqualTo(UserInterface $user): bool
@@ -128,73 +128,25 @@ class User implements UserInterface, EquatableInterface, PasswordAuthenticatedUs
         return true;
     }
 
-    public function __call(string $name, array $arguments)
+    public function getRegistrationDate(): \DateTimeInterface
     {
-        if ($name == 'getUserIdentifier') {
-            return $this->email;
+        return $this->registrationDate;
+    }
+
+    public function getNotificationSettings(): UserNotificationSettings
+    {
+        return $this->notificationSettings;
+    }
+
+    public function setNotificationSettings(array $newSettings): UserNotificationSettings
+    {
+        $allSettings = $this->notificationSettings->getSettings();
+        /** @var NotificationSetting $setting */
+        foreach ($allSettings as $setting) {
+            if (array_key_exists($setting->getName(), $newSettings)) {
+                $setting->setEnabled($newSettings[$setting->getName()]);
+            }
         }
-        return null;
+        return $this->notificationSettings;
     }
-
-    public function getFirstName(): string
-    {
-        return $this->firstName;
-    }
-
-    public function setFirstName(string $firstName): void
-    {
-        $this->firstName = $firstName;
-    }
-
-    public function getLastName(): string
-    {
-        return $this->lastName;
-    }
-
-    public function setLastName(string $lastName): void
-    {
-        $this->lastName = $lastName;
-    }
-
-    public function setPassword(string $password): void
-    {
-        $this->password = $password;
-    }
-
-    public function getEmail(): string
-    {
-        return $this->email;
-    }
-
-    public function getPhonePrefix(): string
-    {
-        return $this->phonePrefix;
-    }
-
-    public function setPhonePrefix(string $phonePrefix): void
-    {
-        $this->phonePrefix = $phonePrefix;
-    }
-
-
-    public function getPhone(): string
-    {
-        return $this->phone;
-    }
-
-    public function setPhone(string $phone): void
-    {
-        $this->phone = $phone;
-    }
-
-    public function getDescription(): ?string
-    {
-        return $this->description;
-    }
-
-    public function setDescription(?string $description): void
-    {
-        $this->description = $description;
-    }
-
 }

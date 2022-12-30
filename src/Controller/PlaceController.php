@@ -3,26 +3,28 @@
 namespace App\Controller;
 
 use App\Exception\FormException;
+use App\Factory\NormalizerFactory;
 use App\Filter\PlaceFilters;
 use App\Form\PlaceFiltersType;
 use App\Form\PlaceReviewType;
 use App\Form\ReviewAssessmentType;
+use App\Model\Place;
 use App\Model\PlaceReview;
 use App\Model\ReviewAssessment;
 use App\Repository\EntityNotFoundException;
 use App\Repository\PlaceRepositoryInterface;
 use App\Repository\PlaceReviewRepositoryInterface;
-use App\Repository\PublicEventRepositoryInterface;
 use App\Repository\ReviewAssessmentRepositoryInterface;
 use App\Repository\UniqueConstraintViolationException;
-use App\Repository\UserRepositoryInterface;
+use App\Repository\EventRepositoryInterface;
 use App\Request\PlaceFiltersRequest;
 use App\Request\ReviewAssessmentRequest;
 use App\Request\ReviewPlaceRequest;
+use App\Response\EventsResponse;
 use App\Response\PlaceReviewResponse;
 use App\Serializer\PlaceNormalizer;
 use App\Serializer\PlaceReviewNormalizer;
-use App\Serializer\PublicEventNormalizer;
+use App\Service\SecurityHelper\JWTIdentityHelper;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Serializer\Exception\ExceptionInterface as SerializerExceptionInterface;
@@ -35,7 +37,10 @@ class PlaceController extends ApiController
     public function getPlaceDetailsAction(
         int $place_id,
         PlaceRepositoryInterface $placeRepository,
-        PlaceReviewRepositoryInterface $placeReviewRepository
+        PlaceReviewRepositoryInterface $placeReviewRepository,
+        PlaceNormalizer $placeNormalizer,
+        PlaceReviewNormalizer $placeReviewsNormalizer,
+        ReviewAssessmentRepositoryInterface $reviewAssessmentRepository
     ): JsonResponse
     {
         try {
@@ -43,13 +48,15 @@ class PlaceController extends ApiController
         } catch (EntityNotFoundException) {
             return $this->respondNotFound();
         }
-        $placeNormalizer = new PlaceNormalizer();
         $normalizedPlace = $placeNormalizer->normalize($place);
         $placeReviews = $placeReviewRepository->findAllForPlace($place_id);
-        $placeReviewsNormalizer = new PlaceReviewNormalizer();
+        $reviewIds = array_map(fn($value) => $value->getReviewId(), $placeReviews);
+        $userAssessments = $reviewAssessmentRepository->findUserAssessmentsForReviews(11, $reviewIds);
         $normalizedReviews = [];
         foreach($placeReviews as $placeReview) {
-            $normalizedReviews [] = $placeReviewsNormalizer->normalize($placeReview);
+            $normalizedReview = $placeReviewsNormalizer->normalize($placeReview);
+            $normalizedReview['userVote'] = $userAssessments[$normalizedReview['id']]['isPositive'];
+            $normalizedReviews [] = $normalizedReview;
         }
 
         return $this->response([
@@ -64,12 +71,16 @@ class PlaceController extends ApiController
     /**
      * @throws SerializerExceptionInterface
      */
-    public function getPlacesAction(Request $request, PlaceRepositoryInterface $placeRepository): JsonResponse
+    public function getPlacesAction(
+        Request $request,
+        PlaceRepositoryInterface $placeRepository,
+        PlaceNormalizer $placeNormalizer
+    ): JsonResponse
     {
         $placeFilters = $this->createPlaceFiltersFromRequest($request);
         $places = $placeRepository->findAll($placeFilters);
-        $placeNormalizer = new PlaceNormalizer();
         $normalizedPlaces = [];
+        /** @var Place $place */
         foreach($places as $place) {
             $normalizedPlace = $placeNormalizer->normalize($place);
             $normalizedPlaces [] = [
@@ -103,8 +114,10 @@ class PlaceController extends ApiController
      */
     public function getPlaceEventsAction(
         int $place_id,
-        PlaceRepositoryInterface $placeRepository,
-        PublicEventRepositoryInterface $publicEventRepository
+        PlaceRepositoryInterface        $placeRepository,
+        EventRepositoryInterface        $eventRepository,
+        NormalizerFactory               $normalizerFactory,
+        JWTIdentityHelper               $identityHelper
     ): JsonResponse
     {
         try {
@@ -112,13 +125,9 @@ class PlaceController extends ApiController
         } catch (EntityNotFoundException) {
             return $this->respondNotFound();
         }
-        $placeEvents = $publicEventRepository->findAllForPlace($place);
-        $publicEventNormalizer = new PublicEventNormalizer();
-        $normalizedEvents = [];
-        foreach ($placeEvents as $event) {
-            $normalizedEvents [] = $publicEventNormalizer->normalize($event);
-        }
-        return $this->response(["events" => $normalizedEvents]);
+        $placeEvents = $eventRepository->findAllPublicEventsForPlace($place);
+        $userAttendance = $eventRepository->checkUserAttendance($identityHelper->getUser(), ...$placeEvents);
+        return new EventsResponse('events', $normalizerFactory, $userAttendance, ...$placeEvents);
     }
 
     public function addReview(
@@ -126,7 +135,8 @@ class PlaceController extends ApiController
         int $place_id,
         PlaceRepositoryInterface $placeRepository,
         PlaceReviewRepositoryInterface $placeReviewRepository,
-        UserRepositoryInterface $userRepository
+        NormalizerFactory $normalizerFactory,
+        JWTIdentityHelper $identityHelper
     ): JsonResponse
     {
         $requestData = json_decode($request->getContent(),true);
@@ -137,12 +147,7 @@ class PlaceController extends ApiController
         } catch (EntityNotFoundException) {
             return $this->respondNotFound();
         }
-        $jwtUser = $this->getUser();
-        try {
-            $user = $userRepository->findOrFail($jwtUser->getUserIdentifier());
-        } catch (EntityNotFoundException $e) {
-            return $this->respondInternalServerError($e);
-        }
+        $user = $identityHelper->getUser();
         $placeReview = new PlaceReview(null, $place_id, $user, $addReviewRequest->isPositive, $addReviewRequest->comment);
         try {
             $placeReviewRepository->add($placeReview);
@@ -154,7 +159,11 @@ class PlaceController extends ApiController
                     ->respondWithError('BAD_REQUEST', $e->getMessage()),
             };
         }
-        return new PlaceReviewResponse($placeReview);
+        try {
+            return new PlaceReviewResponse($placeReview, $normalizerFactory);
+        } catch (SerializerExceptionInterface $e) {
+            return $this->respondInternalServerError($e);
+        }
     }
 
     private function handleAddPlaceReviewRequest(ReviewPlaceRequest $request, mixed $requestData): void
@@ -171,18 +180,14 @@ class PlaceController extends ApiController
         int $place_id,
         int $review_id,
         PlaceReviewRepositoryInterface $placeReviewRepository,
-        UserRepositoryInterface $userRepository
+        NormalizerFactory $normalizerFactory,
+        JWTIdentityHelper $identityHelper
     ): JsonResponse
     {
         $requestData = json_decode($request->getContent(),true);
         $updateReviewRequest = new ReviewPlaceRequest();
         $this->handleAddPlaceReviewRequest($updateReviewRequest, $requestData);
-        $jwtUser = $this->getUser();
-        try {
-            $user = $userRepository->findOrFail($jwtUser->getUserIdentifier());
-        } catch (EntityNotFoundException $e) {
-            return $this->respondInternalServerError($e);
-        }
+        $user = $identityHelper->getUser();
         try {
             $placeReview = $placeReviewRepository->findOrFail($place_id, $review_id);
         } catch (EntityNotFoundException) {
@@ -195,14 +200,18 @@ class PlaceController extends ApiController
             ->setIsPositive($updateReviewRequest->isPositive)
             ->setComment($updateReviewRequest->comment);
         $placeReviewRepository->update($placeReview);
-        return new PlaceReviewResponse($placeReview);
+        try {
+            return new PlaceReviewResponse($placeReview, $normalizerFactory);
+        } catch (SerializerExceptionInterface $e) {
+            return $this->respondInternalServerError($e);
+        }
     }
 
     public function reviewAssessment(
         Request $request,
         int $place_id,
         int $review_id,
-        UserRepositoryInterface $userRepository,
+        JWTIdentityHelper $identityHelper,
         PlaceReviewRepositoryInterface $placeReviewRepository,
         ReviewAssessmentRepositoryInterface $reviewAssessmentRepository
     ): JsonResponse
@@ -217,12 +226,7 @@ class PlaceController extends ApiController
         if ($requestData['isPositive'] === null) {
             $reviewAssessmentRequest->isPositive = null;
         }
-        $jwtUser = $this->getUser();
-        try {
-            $reviewer = $userRepository->findOrFail($jwtUser->getUserIdentifier());
-        } catch (EntityNotFoundException $e) {
-            return $this->respondInternalServerError($e);
-        }
+        $reviewer = $identityHelper->getUser();
         try {
             $placeReview = $placeReviewRepository->findOrFail($place_id, $review_id);
         } catch (EntityNotFoundException) {

@@ -3,11 +3,17 @@
 namespace App\Controller;
 
 use App\Exception\FormException;
+use App\Form\ChangePasswordType;
 use App\Form\RegistrationType;
+use App\Model\AccountData;
+use App\Model\PhoneNumber;
+use App\Model\UserData;
 use App\Repository\UniqueConstraintViolationException;
 use App\Repository\UserRepositoryInterface;
+use App\Request\ChangePasswordRequest;
 use App\Request\RegisterUserRequest;
 use App\Security\User;
+use App\Service\SecurityHelper\JWTIdentityHelper;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -32,16 +38,23 @@ class SecurityController extends ApiController
         }
         $user = new User(
             null,
-            $registrationRequest->userData['firstName'],
-            $registrationRequest->userData['lastName'],
-            $registrationRequest->email,
-            $registrationRequest->password,
-            $registrationRequest->userData['phoneNumberPrefix'],
-            $registrationRequest->userData['phoneNumber'],
-            $registrationRequest->userData['description'],
-            ['ROLE_USER']
+            new UserData(
+                $registrationRequest->userData['firstName'],
+                $registrationRequest->userData['lastName'],
+                $registrationRequest->userData['description'],
+                new PhoneNumber(
+                    $registrationRequest->userData['phoneNumberPrefix'],
+                    $registrationRequest->userData['phoneNumber']
+                )
+            ),
+            new AccountData(
+                $registrationRequest->email,
+                $registrationRequest->password,
+                ['ROLE_USER']
+            ),
+            new \DateTime('now')
         );
-        $user->setPassword($passwordHasher->hashPassword($user, $user->getPassword()));
+        $user->getAccountData()->setPassword($passwordHasher->hashPassword($user, $user->getPassword()));
         try {
             $userRepository->add($user);
         } catch (UniqueConstraintViolationException $e) {
@@ -59,5 +72,34 @@ class SecurityController extends ApiController
             return $this->respondInternalServerError($e);
         }
         return $this->response(['token' => $JWTManager->create($user)]);
+    }
+
+    public function changePassword(
+        Request $request,
+        UserPasswordHasherInterface $passwordHasher,
+        UserRepositoryInterface $userRepository,
+        JWTIdentityHelper $identityHelper
+    ): JsonResponse
+    {
+        $requestData = json_decode($request->getContent(),true);
+        $changePasswordRequest = new ChangePasswordRequest();
+        $form = $this->createForm(ChangePasswordType::class, $changePasswordRequest);
+        $form->submit($requestData);
+
+        if (!$form->isValid()) {
+            throw new FormException($form);
+        }
+        if ($changePasswordRequest->newPassword === $changePasswordRequest->oldPassword) {
+            return $this
+                ->setStatusCode(400)
+                ->respondWithError('BAD_REQUEST', 'New password cannot be the same as old password.');
+        }
+        $currentUser = $identityHelper->getUser();
+        if(!$passwordHasher->isPasswordValid($currentUser, $changePasswordRequest->oldPassword)) {
+            return $this->setStatusCode(409)->respondWithError('WRONG_PASSWORD', 'Old password is incorrect.');
+        }
+        $newPasswordEncoded = $passwordHasher->hashPassword($currentUser, $changePasswordRequest->newPassword);
+        $userRepository->updateUserPassword($currentUser, $newPasswordEncoded);
+        return $this->respondWithSuccessMessage('Password changed successfully.');
     }
 }

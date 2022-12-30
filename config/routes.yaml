@@ -9,6 +9,16 @@ register:
 api_login_check:
     path: /api/login_check
     methods: POST
+app_handle_reset_password:
+    path: /reset_password/handle/{token}
+    controller: App\Controller\ResetPasswordController::handlePasswordResetAction
+    requirements:
+        token: '.*'
+    methods: POST
+app_request_reset_password:
+    path: /reset_password
+    controller: App\Controller\ResetPasswordController::requestPasswordResetAction
+    methods: POST
 places_get_all:
     path: /api/places
     controller: App\Controller\PlaceController::getPlacesAction
@@ -21,7 +31,7 @@ place_get_details:
     methods: GET
 events_get_all:
     path: /api/events
-    controller: App\Controller\EventController::getPublicEventsAction
+    controller: App\Controller\EventController::getPublicEvents
     methods: GET
 place_get_events:
     path: /api/places/{place_id}/events
@@ -29,15 +39,35 @@ place_get_events:
     methods: GET
 group_get_events:
     path: /api/groups/{group_id}/events
-    controller: App\Controller\UserGroupController::getGroupPrivateEventsAction
+    controller: App\Controller\UserGroupController::getGroupPrivateEvents
     methods: GET
 event_create:
     path: /api/events
     controller: App\Controller\EventController::createPublicEvent
     methods: POST
+event_attender_add:
+    path: /api/events/{event_id}/attenders/{user_id}
+    controller: App\Controller\EventController::joinEvent
+    requirements:
+        user_id: '\d+'
+        event_id: '\d+'
+    methods: POST
+event_attender_delete:
+    path: /api/events/{event_id}/attenders/{user_id}
+    controller: App\Controller\EventController::leaveEvent
+    requirements:
+        event_id: '\d+'
+        user_id: '\d+'
+    methods: DELETE
+user_get_events:
+    path: /api/users/{user_id}/events
+    controller: App\Controller\EventController::getUserEvents
+    requirements:
+        user_id: '\d+'
+    methods: GET
 group_create_event:
     path: /api/groups/{group_id}/events
-    controller: App\Controller\UserGroupController::createGroupPrivateEventAction
+    controller: App\Controller\UserGroupController::createGroupPrivateEvent
     methods: POST
 event_update:
     path: /api/events/{event_id}
@@ -47,7 +77,7 @@ event_update:
     methods: PUT
 events_get_upcoming:
     path: /api/events/upcoming
-    controller: App\Controller\EventController::getUpcomingEventsAction
+    controller: App\Controller\EventController::getUpcomingEvents
     methods: GET
 place_review_add:
     path: /api/places/{place_id}/reviews
@@ -72,6 +102,10 @@ place_review_assessment_votes:
 groups_get_all:
     path: /api/groups
     controller: App\Controller\UserGroupController::getGroups
+    methods: GET
+groups_get_user_groups:
+    path: /api/users/{user_id}/groups
+    controller: App\Controller\UserGroupController::getGroupsForUser
     methods: GET
 create_group:
     path: /api/groups
@@ -113,6 +147,22 @@ edit_user_data:
     requirements:
         user_id: '\d+'
     methods: PATCH
+get_user_notification_settings:
+    path: /api/users/{user_id}/notification_settings
+    controller: App\Controller\UserController::getUserNotificationSettings
+    requirements:
+        user_id: '\d+'
+    methods: GET
+edit_user_notification_settings:
+    path: /api/users/{user_id}/notification_settings
+    controller: App\Controller\UserController::updateUserNotificationSettings
+    requirements:
+        user_id: '\d+'
+    methods: PATCH
+change_user_password:
+    path: /api/change_password
+    controller: App\Controller\SecurityController::changePassword
+    methods: POST
 enable_event_notifications:
     path: /api/groups/{group_id}/events/{event_id}/notifications
     controller: App\Controller\UserGroupController::enableGroupEventNotifications
@@ -127,3 +177,10 @@ leave_group_event:
         group_id: '\d+'
         event_id: '\d+'
     methods: DELETE
+# UPLOADS
+upload_user_avatar:
+    path: /api/user/{user_id}/avatar
+    controller: App\Controller\FileUploadController::uploadUserAvatar
+    requirements:
+        user_id: '\d+'
+    methods: POST

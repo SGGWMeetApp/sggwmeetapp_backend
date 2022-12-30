@@ -20,11 +20,12 @@ class UserGroupRepository extends BaseRepository implements UserGroupRepositoryI
 
     /**
      * @param Connection $connection
+     * @param UserGroupNormalizer $userGroupNormalizer
      */
-    public function __construct(Connection $connection)
+    public function __construct(Connection $connection, UserGroupNormalizer $userGroupNormalizer)
     {
         $this->connection = $connection;
-        $this->userGroupNormalizer = new UserGroupNormalizer();
+        $this->userGroupNormalizer = $userGroupNormalizer;
     }
 
     /**
@@ -48,13 +49,15 @@ class UserGroupRepository extends BaseRepository implements UserGroupRepositoryI
                     u2.email,
                     u2.phone_number_prefix,
                     u2.phone_number,
-                    u2.description
+                    u2.description,
+                    u2.creation_date
                 FROM user_groups ug2
                 JOIN users_user_groups uug2 on ug2.group_id = uug2.group_id
                 JOIN users u2 on uug2.user_id = u2.user_id
                 WHERE ug2.group_id = ug.group_id
             ) d 
-        ) as users
+        ) as users,
+        (SELECT COUNT(event_id) FROM app_owner.events ev WHERE ev.group_id = ug.group_id AND start_date > CURRENT_TIMESTAMP) AS incoming_events_count
         FROM user_groups ug
         JOIN users_user_groups uug on ug.group_id = uug.group_id
         JOIN users u on u.user_id = uug.user_id 
@@ -99,13 +102,15 @@ class UserGroupRepository extends BaseRepository implements UserGroupRepositoryI
                     u2.email,
                     u2.phone_number_prefix,
                     u2.phone_number,
-                    u2.description
+                    u2.description,
+                    u2.creation_date
                 FROM user_groups ug2
                 JOIN users_user_groups uug2 on ug2.group_id = uug2.group_id
                 JOIN users u2 on uug2.user_id = u2.user_id
                 WHERE ug2.group_id = ug.group_id 
             ) d 
-        ) as users
+        ) AS users,
+        (SELECT COUNT(event_id) FROM app_owner.events ev WHERE ev.group_id = ug.group_id AND start_date > CURRENT_TIMESTAMP) AS incoming_events_count
         FROM user_groups ug
         JOIN users_user_groups uug on ug.group_id = uug.group_id
         JOIN users u on u.user_id = uug.user_id 
@@ -146,13 +151,15 @@ class UserGroupRepository extends BaseRepository implements UserGroupRepositoryI
                     u2.email,
                     u2.phone_number_prefix,
                     u2.phone_number,
-                    u2.description
+                    u2.description,
+                    u2.creation_date
                 FROM user_groups ug2
                 JOIN users_user_groups uug2 on ug2.group_id = uug2.group_id
                 JOIN users u2 on uug2.user_id = u2.user_id
                 WHERE ug2.group_id = ug.group_id 
             ) d 
-        ) as users
+        ) as users,
+        (SELECT COUNT(event_id) FROM app_owner.events ev WHERE ev.group_id = ug.group_id AND start_date > CURRENT_TIMESTAMP) AS incoming_events_count
         FROM user_groups ug
         JOIN users_user_groups uug on ug.group_id = uug.group_id
         JOIN users u on u.user_id = uug.user_id 
@@ -237,9 +244,25 @@ class UserGroupRepository extends BaseRepository implements UserGroupRepositoryI
         }
     }
 
+    /**
+     * @throws DbalException\DriverException
+     * @throws EntityNotFoundException
+     * @throws DbalException
+     * @throws UniqueConstraintViolationException
+     */
     public function update(UserGroup $userGroup): void
     {
-        // TODO: Implement update() method.
+        $sql = 'UPDATE ' . $this->tableName .
+            ' SET name = :name, owner_id = :ownerId WHERE group_id = :groupId';
+        try {
+            $statement = $this->connection->prepare($sql);
+            $statement->bindValue('name', $userGroup->getName());
+            $statement->bindValue('ownerId', $userGroup->getOwner()->getId(), ParameterType::INTEGER);
+            $statement->bindValue('groupId', $userGroup->getGroupId());
+            $statement->executeQuery();
+        } catch (DbalException\DriverException $e) {
+            $this->handleDriverException($e);
+        }
     }
 
     /**

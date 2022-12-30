@@ -14,6 +14,10 @@
 /config/jwt/*.pem
 ###< lexik/jwt-authentication-bundle ###
 
+###> php version ###
+/.php-version
+###< php version ###
+
 ###> deploying ###
 /deploy.tar
 /deploy.zip

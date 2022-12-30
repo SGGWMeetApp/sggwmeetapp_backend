@@ -11,6 +11,8 @@ interface ReviewAssessmentRepositoryInterface
      */
     public function findOrFail(int $placeId, int $reviewId, int $reviewerId): ReviewAssessment;
 
+    public function findUserAssessmentsForReviews(int $user_id, array $reviewIds): array;
+
     public function add(ReviewAssessment $reviewAssessment): void;
 
     public function update(ReviewAssessment $reviewAssessment): void;
