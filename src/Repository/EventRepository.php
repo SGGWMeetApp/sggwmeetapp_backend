@@ -413,6 +413,9 @@ class EventRepository extends BaseRepository implements EventRepositoryInterface
             $result = $statement->executeQuery();
             $events = [];
             while($data = $result->fetchAssociative()) {
+                if($data['group_id'] !== null) {
+                    $data = array_merge($data, $this->findGroupOwner($data['group_id']));
+                }
                 $events [] = $this->eventNormalizer->denormalize($data, 'Event');
             }
             return $events;
