@@ -456,5 +456,44 @@ class EventRepository extends BaseRepository implements EventRepositoryInterface
         return $attendance;
     }
 
+    /**
+     * @throws DriverException
+     * @throws EntityNotFoundException
+     * @throws DbalException
+     */
+    public function findUpcommingEventAttenders(int $upcommingTimeInMinutes, int $notificationIntervalInMinutes): array
+    {
+        $events = $this->getUpcommingEvents($upcommingTimeInMinutes, $notificationIntervalInMinutes);
+        $eventAttenders = [];
+        foreach ($events as $event) {
+            $eventAttenders[$event->getId()] = $this->getAttenders(Event $event);
+        }
+        return $eventAttenders;
+    }
+
+    /**
+     * @throws DriverException
+     * @throws DbalException
+     */
+    private function getUpcommingEvents(int $upcommingTimeInMinutes, int $notificationIntervalInMinutes): array
+    {
+        $upcommingLowTime = new \DateTimeImmutable('+'. $upcommingTimeInMinutes - $notificationIntervalInMinutes .' minute');
+        $upcomminghighTime = new \DateTimeImmutable('+' . $upcommingTimeInMinutes + $notificationIntervalInMinutes .' minute');
+        $sql = $this->getAllEventsQueryString() .
+            ' WHERE p.start_date < :date_low AND p.start_date > :date_high';
+        try {
+            $statement = $this->connection->prepare($sql);
+            $statement->bindValue('date_low', $upcommingLowTime->format(self::DEFAULT_DATETIME_FORMAT));
+            $statement->bindValue('date_high', $upcomminghighTime->format(self::DEFAULT_DATETIME_FORMAT));
+            $result = $statement->executeQuery();
+            $events = [];
+            while($data = $result->fetchAssociative()) {
+                $events [] = $this->eventNormalizer->denormalize($data, 'Event');
+            }
+            return $events;
+        } catch (DriverException $e) {
+            $this->handleDriverException($e);
+        }
+    }
 
 }
