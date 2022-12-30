@@ -466,7 +466,10 @@ class EventRepository extends BaseRepository implements EventRepositoryInterface
         $events = $this->getUpcommingEvents($upcommingTimeInMinutes, $notificationIntervalInMinutes);
         $eventAttenders = [];
         foreach ($events as $event) {
-            $eventAttenders[] = [$event, $this->getAttenders(Event $event)];
+            $eventAttenders[] = [
+                'event' => $event, 
+                'attenders' => $this->getAttenders(Event $event)
+            ];
         }
         return $eventAttenders;
     }
