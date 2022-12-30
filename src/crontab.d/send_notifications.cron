@@ -1,0 +1,1 @@
+*/5 * * * * php <>/bin/console app:send-notification
