@@ -20,10 +20,10 @@ use App\Repository\EventRepositoryInterface;
 use App\Request\PlaceFiltersRequest;
 use App\Request\ReviewAssessmentRequest;
 use App\Request\ReviewPlaceRequest;
+use App\Response\EventsResponse;
 use App\Response\PlaceReviewResponse;
 use App\Serializer\PlaceNormalizer;
 use App\Serializer\PlaceReviewNormalizer;
-use App\Serializer\EventNormalizer;
 use App\Service\SecurityHelper\JWTIdentityHelper;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -116,7 +116,8 @@ class PlaceController extends ApiController
         int $place_id,
         PlaceRepositoryInterface        $placeRepository,
         EventRepositoryInterface        $eventRepository,
-        EventNormalizer                 $eventNormalizer
+        NormalizerFactory               $normalizerFactory,
+        JWTIdentityHelper               $identityHelper
     ): JsonResponse
     {
         try {
@@ -125,11 +126,8 @@ class PlaceController extends ApiController
             return $this->respondNotFound();
         }
         $placeEvents = $eventRepository->findAllPublicEventsForPlace($place);
-        $normalizedEvents = [];
-        foreach ($placeEvents as $event) {
-            $normalizedEvents [] = $eventNormalizer->normalize($event);
-        }
-        return $this->response(["events" => $normalizedEvents]);
+        $userAttendance = $eventRepository->checkUserAttendance($identityHelper->getUser(), ...$placeEvents);
+        return new EventsResponse('events', $normalizerFactory, $userAttendance, ...$placeEvents);
     }
 
     public function addReview(

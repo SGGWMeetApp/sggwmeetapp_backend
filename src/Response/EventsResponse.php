@@ -10,16 +10,20 @@ use Symfony\Component\Serializer\Exception\ExceptionInterface as SerializerExcep
 class EventsResponse extends JsonResponse
 {
     private NormalizerFactory $normalizerFactory;
+    private array $userAttendance;
+
     /**
      * @throws SerializerExceptionInterface
      */
     public function __construct(
         ?string                 $collectionName,
         NormalizerFactory       $normalizerFactory,
+        array                   $userAttendance,
         Event                   ...$events
     )
     {
         $this->normalizerFactory = $normalizerFactory;
+        $this->userAttendance = $userAttendance;
         if ($collectionName === null) {
             parent::__construct($this->responseData($events));
         } else {
@@ -38,7 +42,11 @@ class EventsResponse extends JsonResponse
         $eventNormalizer = $this->normalizerFactory->getNormalizer($events[0]);
         $normalizedEvents = [];
         foreach($events as $event) {
-            $normalizedEvents [] = $eventNormalizer->normalize($event);
+            $attendance = $this->userAttendance[$event->getId()] ?? null;
+            $normalizedEvents [] = [
+                ...$eventNormalizer->normalize($event),
+                'userAttends' => $attendance !== null ? $attendance['attends'] : false
+            ];
         }
         return $normalizedEvents;
     }

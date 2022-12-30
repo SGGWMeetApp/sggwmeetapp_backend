@@ -38,4 +38,12 @@ interface EventRepositoryInterface
     public function getAttenders(Event $event): array;
 
     public function findAllForUser(User $user): array;
+
+    /**
+     * Returns pairs of (int event_id, bool attends). Array is indexed using event ids.
+     * @param User $user
+     * @param Event ...$events
+     * @return array
+     */
+    public function checkUserAttendance(User $user, Event ...$events): array;
 }

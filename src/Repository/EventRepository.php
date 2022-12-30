@@ -14,6 +14,7 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception as DbalException;
 use Doctrine\DBAL\Exception\DriverException;
 use Doctrine\DBAL\ParameterType;
+use Doctrine\DBAL\Query\QueryBuilder;
 
 class EventRepository extends BaseRepository implements EventRepositoryInterface
 {
@@ -417,6 +418,38 @@ class EventRepository extends BaseRepository implements EventRepositoryInterface
         } catch (DriverException $e) {
             $this->handleDriverException($e);
         }
+    }
+
+    /**
+     * @throws DriverException
+     * @throws UniqueConstraintViolationException
+     * @throws EntityNotFoundException
+     * @throws DbalException
+     */
+    public function checkUserAttendance(User $user, Event ...$events): array
+    {
+        $attendance = [];
+        foreach ($events as $event) {
+            $attendance[$event->getId()] = [
+                'event_id' => $event->getId(),
+                'attends' => false
+            ];
+        }
+        $queryBuilder = new QueryBuilder($this->connection);
+        $queryBuilder
+            ->select('user_id, event_id')
+            ->from($this->attendersTableName)
+            ->where('user_id=:user_id')
+            ->setParameter('user_id', $user->getId(), ParameterType::INTEGER);
+        try {
+            $result = $queryBuilder->executeQuery();
+            while($data = $result->fetchAssociative()) {
+                $attendance[$data['event_id']]['attends'] = true;
+            }
+        } catch (DriverException $e) {
+            $this->handleDriverException($e);
+        }
+        return $attendance;
     }
 
 

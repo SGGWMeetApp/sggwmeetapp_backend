@@ -44,14 +44,15 @@ class EventController extends ApiController {
     /**
      * @throws SerializerExceptionInterface
      */
-    public function getPublicEvents(): JsonResponse
+    public function getPublicEvents(JWTIdentityHelper $identityHelper): JsonResponse
     {
         try {
             $events= $this->eventRepository->findAllPublicEvents();
         } catch (\Throwable $e) {
             return $this->respondInternalServerError($e);
         }
-        return new EventsResponse('events', $this->normalizerFactory, ...$events);
+        $userAttendance = $this->eventRepository->checkUserAttendance($identityHelper->getUser(), ...$events);
+        return new EventsResponse('events', $this->normalizerFactory, $userAttendance, ...$events);
     }
 
     public function createPublicEvent(Request $request, JWTIdentityHelper $identityHelper): JsonResponse
@@ -140,14 +141,15 @@ class EventController extends ApiController {
     /**
      * @throws SerializerExceptionInterface
      */
-    public function getUpcomingEvents(): JsonResponse
+    public function getUpcomingEvents(JWTIdentityHelper $identityHelper): JsonResponse
     {
         try {
             $events = $this->eventRepository->findUpcomingPublicEvents();
         } catch (\Throwable $e) {
             return $this->respondInternalServerError($e);
         }
-        return new EventsResponse('events', $this->normalizerFactory,  ...$events);
+        $userAttendance = $this->eventRepository->checkUserAttendance($identityHelper->getUser(), ...$events);
+        return new EventsResponse('events', $this->normalizerFactory, $userAttendance, ...$events);
     }
 
     public function joinEvent(int $event_id, int $user_id, JWTIdentityHelper $identityHelper): JsonResponse
@@ -213,7 +215,8 @@ class EventController extends ApiController {
             return $this->respondUnauthorized();
         }
         $userEvents = $this->eventRepository->findAllForUser($currentUser);
-        return new EventsResponse('events', $this->normalizerFactory,  ...$userEvents);
+        $userAttendance = $this->eventRepository->checkUserAttendance($identityHelper->getUser(), ...$userEvents);
+        return new EventsResponse('events', $this->normalizerFactory, $userAttendance,  ...$userEvents);
     }
 
 }
