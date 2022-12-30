@@ -75,7 +75,8 @@ class EventRepository extends BaseRepository implements EventRepositoryInterface
                 )) AS photo_paths,
                 ug.group_id,
                 ug.name as group_name,
-                ug.owner_id as group_owner_id
+                ug.owner_id as group_owner_id,
+                (SELECT COUNT(ea.user_id) FROM app_owner.event_attenders ea WHERE ea.event_id = p.event_id) as "attendersCount"
                 FROM ' . $this->tableName .' p
                 INNER JOIN app_owner.users b ON p.owner_id = b.user_id
                 INNER JOIN app_owner.locations l ON p.location_id = l.location_id

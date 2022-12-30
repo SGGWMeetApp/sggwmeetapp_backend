@@ -47,7 +47,8 @@ class EventNormalizer implements NormalizerInterface, DenormalizerInterface
                 'modelProperties' => UserNormalizer::AUTHOR_PROPERTIES
             ]),
             'canEdit' => $object->getCanEdit(),
-            'notification24hEnabled' => $object->isNotificationsEnabled()
+            'notification24hEnabled' => $object->isNotificationsEnabled(),
+            'attendersCount' => $object->getAttendersCount()
         ];
     }
 
@@ -104,7 +105,7 @@ class EventNormalizer implements NormalizerInterface, DenormalizerInterface
         }
 
         if($data['is_public']) {
-            return new PublicEvent(
+            $event = new PublicEvent(
                 $data['event_id'],
                 $data['eventname'],
                 $place,
@@ -115,7 +116,7 @@ class EventNormalizer implements NormalizerInterface, DenormalizerInterface
                 $data['notification_enabled']
             );
         } else {
-            return new PrivateEvent(
+            $event = new PrivateEvent(
                 $data['event_id'],
                 $data['eventname'],
                 $place,
@@ -148,8 +149,8 @@ class EventNormalizer implements NormalizerInterface, DenormalizerInterface
                 $data['notification_enabled']
             );
         }
-
-
+        $event->setAttendersCount($data['attendersCount']);
+        return $event;
     }
 
     public function supportsDenormalization(mixed $data, string $type, string $format = null, array $context = []): bool

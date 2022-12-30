@@ -14,6 +14,7 @@ abstract class Event
     private User $author;
     private bool $canEdit;
     private bool $notificationsEnabled;
+    private int  $attendersCount = 0;
 
     /**
      * @param int|null $id
@@ -129,6 +130,19 @@ abstract class Event
     public function setNotificationsEnabled(bool $notificationsEnabled): void
     {
         $this->notificationsEnabled = $notificationsEnabled;
+    }
+
+    /**
+     * @return int
+     */
+    public function getAttendersCount(): int
+    {
+        return $this->attendersCount;
+    }
+
+    public function setAttendersCount(int $attendersCount): void
+    {
+        $this->attendersCount = $attendersCount;
     }
 
     public function isEqualTo(Event $event): bool
