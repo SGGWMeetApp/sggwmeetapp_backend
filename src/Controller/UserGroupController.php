@@ -74,7 +74,8 @@ class UserGroupController extends ApiController
         }
 
         $privateEvents = $this->eventRepository->findAllForGroup($userGroup);
-        return new EventsResponse('events', $this->normalizerFactory, ...$privateEvents);
+        $userAttendance = $this->eventRepository->checkUserAttendance($identityHelper->getUser(), ...$privateEvents);
+        return new EventsResponse('events', $this->normalizerFactory, $userAttendance, ...$privateEvents);
     }
 
     /**
