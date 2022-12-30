@@ -48,7 +48,7 @@ interface EventRepositoryInterface
     public function checkUserAttendance(User $user, Event ...$events): array;
 
     /**
-     * Returns pairs of (int event_id, array user_id). 
+     * Returns pairs of (Event $event, [User $user]).
      * @param int $upcommingTimeInMinutes
      * @param int $notificationIntervalInMinutes
      * @return array
