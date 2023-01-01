@@ -73,6 +73,7 @@ class PlaceRepository extends BaseRepository implements PlaceRepositoryInterface
                     WHERE lcp.location_id = p.location_id
                 )) AS photo_paths,
                 p.text_location,
+                p.menu AS menu_path,
                 p.ratings_number AS reviews_count'
             )
             ->from($this->tableName, 'p');

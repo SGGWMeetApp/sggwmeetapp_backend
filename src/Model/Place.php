@@ -12,6 +12,7 @@ class Place
     private ?float $ratingPercent;
     private array $categoryCodes;
     private array $photoPaths;
+    private ?string $menuPath = null;
     private int $reviewsCount = 0;
 
     /**
@@ -115,6 +116,22 @@ class Place
     public function setReviewsCount(int $reviewsCount): void
     {
         $this->reviewsCount = $reviewsCount;
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getMenuPath(): ?string
+    {
+        return $this->menuPath;
+    }
+
+    /**
+     * @param string|null $menuPath
+     */
+    public function setMenuPath(?string $menuPath): void
+    {
+        $this->menuPath = $menuPath;
     }
 
 }
