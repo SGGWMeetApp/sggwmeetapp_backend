@@ -1,0 +1,186 @@
+index:
+    path: /
+    controller: App\Controller\AppInfoController::appInfo
+    methods: GET
+register:
+    path: /register
+    controller: App\Controller\SecurityController::register
+    methods: POST
+api_login_check:
+    path: /api/login_check
+    methods: POST
+app_handle_reset_password:
+    path: /reset_password/handle/{token}
+    controller: App\Controller\ResetPasswordController::handlePasswordResetAction
+    requirements:
+        token: '.*'
+    methods: POST
+app_request_reset_password:
+    path: /reset_password
+    controller: App\Controller\ResetPasswordController::requestPasswordResetAction
+    methods: POST
+places_get_all:
+    path: /api/places
+    controller: App\Controller\PlaceController::getPlacesAction
+    methods: GET
+place_get_details:
+    path: /api/places/{place_id}
+    controller: App\Controller\PlaceController::getPlaceDetailsAction
+    requirements:
+        place_id: '\d+'
+    methods: GET
+events_get_all:
+    path: /api/events
+    controller: App\Controller\EventController::getPublicEvents
+    methods: GET
+place_get_events:
+    path: /api/places/{place_id}/events
+    controller: App\Controller\PlaceController::getPlaceEventsAction
+    methods: GET
+group_get_events:
+    path: /api/groups/{group_id}/events
+    controller: App\Controller\UserGroupController::getGroupPrivateEvents
+    methods: GET
+event_create:
+    path: /api/events
+    controller: App\Controller\EventController::createPublicEvent
+    methods: POST
+event_attender_add:
+    path: /api/events/{event_id}/attenders/{user_id}
+    controller: App\Controller\EventController::joinEvent
+    requirements:
+        user_id: '\d+'
+        event_id: '\d+'
+    methods: POST
+event_attender_delete:
+    path: /api/events/{event_id}/attenders/{user_id}
+    controller: App\Controller\EventController::leaveEvent
+    requirements:
+        event_id: '\d+'
+        user_id: '\d+'
+    methods: DELETE
+user_get_events:
+    path: /api/users/{user_id}/events
+    controller: App\Controller\EventController::getUserEvents
+    requirements:
+        user_id: '\d+'
+    methods: GET
+group_create_event:
+    path: /api/groups/{group_id}/events
+    controller: App\Controller\UserGroupController::createGroupPrivateEvent
+    methods: POST
+event_update:
+    path: /api/events/{event_id}
+    controller: App\Controller\EventController::updateEvent
+    requirements:
+        place_id: '\d+'
+    methods: PUT
+events_get_upcoming:
+    path: /api/events/upcoming
+    controller: App\Controller\EventController::getUpcomingEvents
+    methods: GET
+place_review_add:
+    path: /api/places/{place_id}/reviews
+    controller: App\Controller\PlaceController::addReview
+    requirements:
+        place_id: '\d+'
+    methods: POST
+place_review_edit:
+    path: /api/places/{place_id}/reviews/{review_id}
+    controller: App\Controller\PlaceController::editReview
+    requirements:
+        place_id: '\d+'
+        review_id: '\d+'
+    methods: PUT
+place_review_assessment_votes:
+    path: /api/places/{place_id}/reviews/{review_id}/votes
+    controller: App\Controller\PlaceController::reviewAssessment
+    requirements:
+        place_id: '\d+'
+        review_id: '\d+'
+    methods: POST
+groups_get_all:
+    path: /api/groups
+    controller: App\Controller\UserGroupController::getGroups
+    methods: GET
+groups_get_user_groups:
+    path: /api/users/{user_id}/groups
+    controller: App\Controller\UserGroupController::getGroupsForUser
+    methods: GET
+create_group:
+    path: /api/groups
+    controller: App\Controller\UserGroupController::createGroup
+    methods: POST
+group_users_get_all:
+    path: /api/groups/{group_id}/users
+    controller: App\Controller\UserGroupController::getGroupUsers
+    requirements:
+        place_id: '\d+'
+    methods: GET
+add_user_to_group:
+    path: /api/groups/{group_id}/users
+    controller: App\Controller\UserGroupController::addGroupUser
+    requirements:
+        group_id: '\d+'
+    methods: POST
+leave_group:
+    path: /api/groups/{group_id}/users
+    controller: App\Controller\UserGroupController::leaveGroup
+    requirements:
+        group_id: '\d+'
+    methods: DELETE
+search_users:
+    path: /api/groups/{group_id}/users/eligible
+    controller: App\Controller\UserController::getUsersEligibleForGroupAction
+    requirements:
+        group_id: '\d+'
+    methods: GET
+get_user_data:
+    path: /api/users/{user_id}
+    controller: App\Controller\UserController::getUserData
+    requirements:
+        user_id: '\d+'
+    methods: GET
+edit_user_data:
+    path: /api/users/{user_id}
+    controller: App\Controller\UserController::editUserData
+    requirements:
+        user_id: '\d+'
+    methods: PATCH
+get_user_notification_settings:
+    path: /api/users/{user_id}/notification_settings
+    controller: App\Controller\UserController::getUserNotificationSettings
+    requirements:
+        user_id: '\d+'
+    methods: GET
+edit_user_notification_settings:
+    path: /api/users/{user_id}/notification_settings
+    controller: App\Controller\UserController::updateUserNotificationSettings
+    requirements:
+        user_id: '\d+'
+    methods: PATCH
+change_user_password:
+    path: /api/change_password
+    controller: App\Controller\SecurityController::changePassword
+    methods: POST
+enable_event_notifications:
+    path: /api/groups/{group_id}/events/{event_id}/notifications
+    controller: App\Controller\UserGroupController::enableGroupEventNotifications
+    requirements:
+        group_id: '\d+'
+        event_id: '\d+'
+    methods: POST
+leave_group_event:
+    path: /api/groups/{group_id}/events/{event_id}
+    controller: App\Controller\UserGroupController::leaveGroupEvent
+    requirements:
+        group_id: '\d+'
+        event_id: '\d+'
+    methods: DELETE
+# UPLOADS
+upload_user_avatar:
+    path: /api/user/{user_id}/avatar
+    controller: App\Controller\FileUploadController::uploadUserAvatar
+    requirements:
+        user_id: '\d+'
+    methods: POST
