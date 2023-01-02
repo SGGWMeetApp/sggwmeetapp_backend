@@ -8,14 +8,17 @@ use App\Model\Event;
 use Symfony\Component\Mime\Email;
 use Symfony\Component\Mime\Address;
 use Symfony\Component\Mailer\MailerInterface;
+use Psr\Log\LoggerInterface;
 
 class SendEventNotification implements NotificationSenderInterface
 {
     private MailerInterface $mailer;
+    private LoggerInterface $logger;
 
-    public function __construct(MailerInterface $mailer)
+    public function __construct(MailerInterface $mailer, LoggerInterface $logger)
     {
         $this->mailer = $mailer;
+        $this->logger = $logger;
     }
 
     public function sendNotifications(array $eventAttenders): bool
@@ -23,12 +26,18 @@ class SendEventNotification implements NotificationSenderInterface
         $sentSuccesfully = [];
         foreach ($eventAttenders as $key) {
             foreach ($eventAttenders[$key]['attenders'] as $attenders) {
-                foreach($attenders as $attender) {
+                foreach ($attenders as $attender) {
                     $notification = $this->createNotification(
-                        $attender->getAccountData()->getEmail(), 
+                        $attender->getAccountData()->getEmail(),
                         $eventAttenders[$key]['event']
                     );
-                    $sentSuccesfully[] = $this->sendNotification($notification);
+                    $result = $this->sendNotification($notification);
+                    $sentSuccesfully[] = $result;
+                    if ($result) {
+                        $this->logger->info('Notification email for user_id ' . $attender->getId() . ' for event_id ' . $eventAttenders[$key]['event']->getId() . ' was succesfully send');
+                    } else {
+                        $this->logger->error('Notification email for user_id ' . $attender->getId() . ' for event_id ' . $eventAttenders[$key]['event']->getId() . ' failed');
+                    }
                 }
             }
         }
@@ -45,12 +54,14 @@ class SendEventNotification implements NotificationSenderInterface
             ->text($event->getName());
     }
 
-    private function sendNotification (Email $email): bool
+    private function sendNotification(Email $email): bool
     {
         try {
             $this->mailer->send($email);
             return true;
         } catch (\Throwable $e) {
+            $this->logger->error('Notification error message failed - class SendEventNotification');
+            $this->logger->error('ERROR MSG: ' . $e->getMessage());
             return false;
         }
     }
