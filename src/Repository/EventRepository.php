@@ -38,50 +38,7 @@ class EventRepository extends BaseRepository implements EventRepositoryInterface
     }
     private function getAllEventsQueryString(): string
     {
-        return '
-            SELECT
-                p.event_id,
-                p.location_id,
-                l.name AS locName,
-                l.description AS locDes,
-                l.lat,
-                l.long,
-                l.text_location AS text_location,
-                l.rating_pct,
-                p.name AS eventName,
-                p.description AS evntDes,
-                p.start_date,
-                p.can_edit,
-                p.is_public,
-                p.notification_enabled,
-                b.user_id,
-                b.first_name,
-                b.last_name,
-                b.email,
-                b.phone_number_prefix,
-                b.phone_number,
-                b.avatar_path,
-                b.description AS userDes,
-                b.creation_date AS "userRegistrationDate",
-                ARRAY_TO_JSON(ARRAY(SELECT lc.name
-                    FROM app_owner.location_categories lc
-                    INNER JOIN app_owner.locations_location_categories llc
-                    ON llc.category_id = lc.category_id
-                    WHERE llc.location_id = p.location_id
-                )) AS category_names,
-                ARRAY_TO_JSON(ARRAY(SELECT lcp.photo_path
-                    FROM app_owner.location_photos lcp
-                    WHERE lcp.location_id = p.location_id
-                )) AS photo_paths,
-                ug.group_id,
-                ug.name as group_name,
-                ug.owner_id as group_owner_id,
-                (SELECT COUNT(ea.user_id) FROM app_owner.event_attenders ea WHERE ea.event_id = p.event_id) as "attendersCount"
-                FROM ' . $this->tableName .' p
-                INNER JOIN app_owner.users b ON p.owner_id = b.user_id
-                INNER JOIN app_owner.locations l ON p.location_id = l.location_id
-                LEFT OUTER JOIN app_owner.user_groups ug ON (p.group_id = ug.group_id)
-        ';
+        return 'SELECT * FROM all_events';
     }
 
     /**
@@ -120,7 +77,7 @@ class EventRepository extends BaseRepository implements EventRepositoryInterface
      */
     public function findAllPublicEvents(): array
     {
-        $sql = $this->getAllEventsQueryString() . 'WHERE p.is_public = TRUE';
+        $sql = $this->getAllEventsQueryString() . 'WHERE is_public = TRUE';
         try {
             $statement = $this->connection->prepare($sql);
             $result = $statement->executeQuery();
@@ -143,7 +100,7 @@ class EventRepository extends BaseRepository implements EventRepositoryInterface
      */
     public function findAllPublicEventsForPlace(Place $place): array
     {
-        $sql = $this->getAllEventsQueryString() . ' WHERE p.location_id = :locationId AND p.is_public = TRUE';
+        $sql = $this->getAllEventsQueryString() . ' WHERE location_id = :locationId AND is_public = TRUE';
         try {
             $statement = $this->connection->prepare($sql);
             $statement->bindValue('locationId', $place->getId());
@@ -167,7 +124,7 @@ class EventRepository extends BaseRepository implements EventRepositoryInterface
      */
     public function findAllForGroup(UserGroup $userGroup): array
     {
-       $sql = $this->getAllEventsQueryString() . ' WHERE p.group_id = :groupId';
+       $sql = $this->getAllEventsQueryString() . ' WHERE group_id = :groupId';
 
         try {
             $statement = $this->connection->prepare($sql);
@@ -199,7 +156,7 @@ class EventRepository extends BaseRepository implements EventRepositoryInterface
         $sevenDaysFromNow = new \DateTimeImmutable('+7 day');
         $now = new \DateTimeImmutable('now');
         $sql = $this->getAllEventsQueryString() .
-            ' WHERE p.is_public = TRUE AND p.start_date > :date_low AND p.start_date < :date_high';
+            ' WHERE is_public = TRUE AND start_date > :date_low AND start_date < :date_high';
         try {
             $statement = $this->connection->prepare($sql);
             $statement->bindValue('date_low', $now->format(self::DEFAULT_DATETIME_FORMAT));
