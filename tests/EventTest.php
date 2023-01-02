@@ -14,8 +14,16 @@ class EventTest extends TestCase
 
     public function testEventId(): void
     {
-        //nie od tego zaczałem
-       // $event = new PrivateEvent(1,"Nazwa", new Place(),"opis","12.12.2022 00:00:00", new User(), new UserGroup(), True, True);
+     
+      /* $event = new PrivateEvent(
+        1,
+       "Nazwa", 
+       new Place(1,"Nazwa",new GeoLocation(18.2, 178.3),"Lokacja","Opis",0.1),
+       "opis","12.12.2022 00:00:00", 
+       new User(),
+       new UserGroup(),
+       True,
+       True);*/
         
         //$event ->setId(10);
         //$this ->assertEquals($event->getId(),10);
