@@ -9,26 +9,24 @@ use Symfony\Component\Mime\Email;
 use Symfony\Component\Mime\Address;
 use Symfony\Component\Mailer\MailerInterface;
 
-class SendEventNotification
+class SendEventNotification implements NotificationSenderInterface
 {
-    private array $eventAttenders;
     private MailerInterface $mailer;
 
-    public function __construct(array $eventAttenders, MailerInterface $mailer)
+    public function __construct(MailerInterface $mailer)
     {
-        $this->eventAttenders = $eventAttenders;
         $this->mailer = $mailer;
     }
 
-    public function sendNotifications(): bool
+    public function sendNotifications(array $eventAttenders): bool
     {
         $sentSuccesfully = [];
-        foreach ($this->eventAttenders as $key) {
-            foreach ($this->eventAttenders[$key]['attenders'] as $attenders) {
+        foreach ($eventAttenders as $key) {
+            foreach ($eventAttenders[$key]['attenders'] as $attenders) {
                 foreach($attenders as $attender) {
                     $notification = $this->createNotification(
                         $attender->getAccountData()->getEmail(), 
-                        $this->eventAttenders[$key]['event']
+                        $eventAttenders[$key]['event']
                     );
                     $sentSuccesfully[] = $this->sendNotification($notification);
                 }
@@ -39,8 +37,7 @@ class SendEventNotification
 
     private function createNotification(string $email, Event $event): Email
     {
-        $now = new \DateTime('now');
-        $emailTitle = 'Upcomming event for you'
+        $emailTitle = 'Upcomming event for you';
         return (new Email())
             ->from(new Address('123@example.com', 'SGGW Meet App'))
             ->to($email)
