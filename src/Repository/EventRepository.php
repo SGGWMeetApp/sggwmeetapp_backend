@@ -468,7 +468,7 @@ class EventRepository extends BaseRepository implements EventRepositoryInterface
         foreach ($events as $event) {
             $eventAttenders[] = [
                 'event' => $event, 
-                'attenders' => $this->getAttenders(Event $event)
+                'attenders' => $this->getAttenders($event)
             ];
         }
         return $eventAttenders;
@@ -483,7 +483,7 @@ class EventRepository extends BaseRepository implements EventRepositoryInterface
         $upcommingLowTime = new \DateTimeImmutable('+'. $upcommingTimeInMinutes - $notificationIntervalInMinutes .' minute');
         $upcomminghighTime = new \DateTimeImmutable('+' . $upcommingTimeInMinutes + $notificationIntervalInMinutes .' minute');
         $sql = $this->getAllEventsQueryString() .
-            ' WHERE p.start_date < :date_low AND p.start_date > :date_high';
+            ' WHERE p.start_date > :date_low AND p.start_date < :date_high';
         try {
             $statement = $this->connection->prepare($sql);
             $statement->bindValue('date_low', $upcommingLowTime->format(self::DEFAULT_DATETIME_FORMAT));
