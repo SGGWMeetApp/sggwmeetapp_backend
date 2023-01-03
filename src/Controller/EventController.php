@@ -219,4 +219,29 @@ class EventController extends ApiController {
         return new EventsResponse('events', $this->normalizerFactory, $userAttendance,  ...$userEvents);
     }
 
+    public function deleteEvent(int $event_id, JWTIdentityHelper $identityHelper): JsonResponse
+    {
+        try {
+            $event = $this->eventRepository->findOrFail($event_id);
+        } catch (EntityNotFoundException) {
+            return $this->respondNotFound();
+        }
+        $user = $identityHelper->getUser();
+        if ($event instanceof PrivateEvent) {
+            if (!$user->isEqualTo($event->getUserGroup()->getOwner())) {
+                return $this->respondUnauthorized();
+            }
+        } else {
+            if (!$user->isEqualTo($event->getAuthor())) {
+                return $this->respondUnauthorized();
+            }
+        }
+        try {
+            $this->eventRepository->delete($event);
+        } catch (\Throwable $e) {
+            $this->respondInternalServerError($e);
+        }
+        return $this->setStatusCode(204)->response([]);
+    }
+
 }
