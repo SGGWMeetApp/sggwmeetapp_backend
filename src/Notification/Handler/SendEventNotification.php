@@ -3,6 +3,8 @@
 namespace App\Notification\Handler;
 
 use App\Model\Event;
+use App\Security\User;
+use Symfony\Bridge\Twig\Mime\TemplatedEmail;
 use Symfony\Component\Mime\Email;
 use Symfony\Component\Mailer\MailerInterface;
 use Psr\Log\LoggerInterface;
@@ -23,8 +25,10 @@ class SendEventNotification implements NotificationSenderInterface
         $sentSuccessfully = [];
         foreach ($eventAttenders as $key) {
             foreach ($eventAttenders[$key]['attenders'] as $attenders) {
+                /** @var User $attender */
                 foreach ($attenders as $attender) {
                     $notification = $this->createNotification(
+                        $attender->getUserData()->getFirstName().' '.$attender->getUserData()->getLastName(),
                         $attender->getAccountData()->getEmail(),
                         $eventAttenders[$key]['event']
                     );
@@ -41,13 +45,17 @@ class SendEventNotification implements NotificationSenderInterface
         return array_key_exists(false, $sentSuccessfully);
     }
 
-    private function createNotification(string $email, Event $event): Email
+    private function createNotification(string $name, string $email, Event $event): Email
     {
-        $emailTitle = 'Upcoming event for you';
-        return (new Email())
+        $emailSubject = 'SGGW MeetApp - Upcoming Event Notification';
+        return (new TemplatedEmail())
             ->to($email)
-            ->subject($emailTitle)
-            ->text($event->getName());
+            ->subject($emailSubject)
+            ->htmlTemplate('event/upcoming_event_notification_email.html.twig')
+            ->context([
+                'username' => $name,
+                'event' => $event
+            ]);
     }
 
     private function sendNotification(Email $email): bool
