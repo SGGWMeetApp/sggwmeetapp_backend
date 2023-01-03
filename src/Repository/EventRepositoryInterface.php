@@ -49,10 +49,10 @@ interface EventRepositoryInterface
 
     /**
      * Returns pairs of (Event $event, [User $user]).
-     * @param int $upcommingTimeInMinutes
+     * @param int $upcomingTimeInMinutes
      * @param int $notificationIntervalInMinutes
      * @return array
      */
-    public function findUpcommingEventAttenders(int $upcommingTimeInMinutes, int $notificationIntervalInMinutes): array;
+    public function findUpcomingEventAttenders(int $upcomingTimeInMinutes, int $notificationIntervalInMinutes): array;
 
 }

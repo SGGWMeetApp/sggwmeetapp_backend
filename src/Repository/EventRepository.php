@@ -460,10 +460,11 @@ class EventRepository extends BaseRepository implements EventRepositoryInterface
      * @throws DriverException
      * @throws EntityNotFoundException
      * @throws DbalException
+     * @throws UniqueConstraintViolationException
      */
-    public function findUpcommingEventAttenders(int $upcommingTimeInMinutes, int $notificationIntervalInMinutes): array
+    public function findUpcomingEventAttenders(int $upcomingTimeInMinutes, int $notificationIntervalInMinutes): array
     {
-        $events = $this->getUpcommingEvents($upcommingTimeInMinutes, $notificationIntervalInMinutes);
+        $events = $this->getUpcomingEvents($upcomingTimeInMinutes, $notificationIntervalInMinutes);
         $eventAttenders = [];
         foreach ($events as $event) {
             $eventAttenders[] = [
@@ -475,19 +476,28 @@ class EventRepository extends BaseRepository implements EventRepositoryInterface
     }
 
     /**
-     * @throws DriverException
+     * @param int $upcomingTimeInMinutes
+     * @param int $notificationIntervalInMinutes
+     * @return array
      * @throws DbalException
+     * @throws DriverException
+     * @throws EntityNotFoundException
+     * @throws UniqueConstraintViolationException
+     * @throws \Exception
      */
-    private function getUpcommingEvents(int $upcommingTimeInMinutes, int $notificationIntervalInMinutes): array
+    private function getUpcomingEvents(int $upcomingTimeInMinutes, int $notificationIntervalInMinutes): array
     {
-        $upcommingLowTime = new \DateTimeImmutable('+'. $upcommingTimeInMinutes - $notificationIntervalInMinutes .' minute');
-        $upcomminghighTime = new \DateTimeImmutable('+' . $upcommingTimeInMinutes + $notificationIntervalInMinutes .' minute');
+        $currentDateTime = new \DateTimeImmutable('now');
+        $upcomingLowTime = (new \DateTimeImmutable($currentDateTime->format('Y-m-d H:i')))
+            ->modify('+'. $upcomingTimeInMinutes - $notificationIntervalInMinutes .' minutes');
+        $upcomingHighTime = (new \DateTimeImmutable($currentDateTime->format('Y-m-d H:i')))
+            ->modify('+'. $upcomingTimeInMinutes + $notificationIntervalInMinutes .' minutes');
         $sql = $this->getAllEventsQueryString() .
-            ' WHERE p.start_date > :date_low AND p.start_date < :date_high';
+            ' WHERE p.start_date > :date_low AND p.start_date <= :date_high';
         try {
             $statement = $this->connection->prepare($sql);
-            $statement->bindValue('date_low', $upcommingLowTime->format(self::DEFAULT_DATETIME_FORMAT));
-            $statement->bindValue('date_high', $upcomminghighTime->format(self::DEFAULT_DATETIME_FORMAT));
+            $statement->bindValue('date_low', $upcomingLowTime->format(self::DEFAULT_DATETIME_FORMAT));
+            $statement->bindValue('date_high', $upcomingHighTime->format(self::DEFAULT_DATETIME_FORMAT));
             $result = $statement->executeQuery();
             $events = [];
             while($data = $result->fetchAssociative()) {

@@ -8,7 +8,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 use App\Repository\EventRepositoryInterface;
 use App\Notification\Handler\NotificationSenderInterface;
 
-class SendEventNotificationEmailsCommand extends Command
+class SendEventNotificationCommand extends Command
 {
     protected static $defaultName = 'app:send-notifications';
     private EventRepositoryInterface $eventRepository;
@@ -27,8 +27,8 @@ class SendEventNotificationEmailsCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $eventAttenders = $this->eventRepository->findUpcommingEventAttenders(30, 5);
-        $sentSuccesfully = $this->notificationSender->sendNotifications($eventAttenders);
-        return ($sentSuccesfully)? 0 : 1;
+        $eventAttenders = $this->eventRepository->findUpcomingEventAttenders(30, 5);
+        $sentSuccessfully = $this->notificationSender->sendNotifications($eventAttenders);
+        return ($sentSuccessfully)? 0 : 1;
     }
 }
