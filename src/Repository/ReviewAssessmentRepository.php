@@ -73,6 +73,7 @@ class ReviewAssessmentRepository extends BaseRepository implements ReviewAssessm
      */
     public function findUserAssessmentsForReviews(int $user_id, array $reviewIds): array
     {
+        if (count($reviewIds) < 1) return [];
         $qMarks = str_repeat('?,', count($reviewIds) - 1) . '?';
         $assessments = [];
         foreach ($reviewIds as $id) {
