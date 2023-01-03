@@ -45,6 +45,10 @@ event_create:
     path: /api/events
     controller: App\Controller\EventController::createPublicEvent
     methods: POST
+event_delete:
+    path: /api/events/{event_id}
+    controller: App\Controller\EventController::deleteEvent
+    methods: DELETE
 event_attender_add:
     path: /api/events/{event_id}/attenders/{user_id}
     controller: App\Controller\EventController::joinEvent
@@ -111,6 +115,10 @@ create_group:
     path: /api/groups
     controller: App\Controller\UserGroupController::createGroup
     methods: POST
+delete_group:
+    path: //api/groups/{group_id}
+    controller: App\Controller\UserGroupController::deleteGroup
+    methods: DELETE
 group_users_get_all:
     path: /api/groups/{group_id}/users
     controller: App\Controller\UserGroupController::getGroupUsers

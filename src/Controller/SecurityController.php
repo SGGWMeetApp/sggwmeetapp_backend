@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Exception\FormException;
+use App\Factory\NormalizerFactory;
 use App\Form\ChangePasswordType;
 use App\Form\RegistrationType;
 use App\Model\AccountData;
@@ -18,14 +19,19 @@ use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
+use Symfony\Component\Serializer\Exception\ExceptionInterface as SerializerExceptionInterface;
 
 class SecurityController extends ApiController
 {
+    /**
+     * @throws SerializerExceptionInterface
+     */
     public function register(
         Request $request,
         UserPasswordHasherInterface $passwordHasher,
         JWTTokenManagerInterface $JWTManager,
-        UserRepositoryInterface $userRepository
+        UserRepositoryInterface $userRepository,
+        NormalizerFactory $normalizerFactory
     ): JsonResponse
     {
         $requestData = json_decode($request->getContent(),true);
@@ -71,7 +77,10 @@ class SecurityController extends ApiController
         } catch (\Throwable $e) {
             return $this->respondInternalServerError($e);
         }
-        return $this->response(['token' => $JWTManager->create($user)]);
+        return $this->response([
+            'token' => $JWTManager->create($user),
+            'userData' => $normalizerFactory->getNormalizer($user)->normalize($user)
+        ]);
     }
 
     public function changePassword(

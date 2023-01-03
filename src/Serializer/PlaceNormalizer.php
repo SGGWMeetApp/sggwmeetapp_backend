@@ -12,7 +12,7 @@ use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 class PlaceNormalizer implements NormalizerInterface, DenormalizerInterface
 {
     private Filesystem $filesystem;
-    public const LOCATION_PROPERTIES = ['name'];
+    public const LOCATION_PROPERTIES = ['id','name'];
 
     public function __construct(Filesystem $uploadsFilesystem)
     {
