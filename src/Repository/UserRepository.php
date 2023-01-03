@@ -167,7 +167,7 @@ class UserRepository extends BaseRepository implements UserRepositoryInterface
         $sql = "INSERT INTO " . $this->tableName .
         " (username, email, password, first_name, last_name, phone_number_prefix, phone_number, description)
         VALUES
-        (:username, :email, :password, :firstName, :lastName, :phonePrefix, :phone, :description)";
+        (:username, :email, :password, :firstName, :lastName, :phonePrefix, :phone, :description) RETURNING user_id";
         try {
             $statement = $this->connection->prepare($sql);
             $statement->bindValue('username', $user->getUserIdentifier());
@@ -178,7 +178,11 @@ class UserRepository extends BaseRepository implements UserRepositoryInterface
             $statement->bindValue('phonePrefix', $user->getUserData()->getPhoneNumber()->getPrefix());
             $statement->bindValue('phone', $user->getUserData()->getPhoneNumber()->getNumber());
             $statement->bindValue('description', $user->getUserData()->getDescription());
-            $statement->executeQuery();
+            $result = $statement->executeQuery();
+            $data = $result->fetchAssociative();
+            if ($data) {
+                $user->setId($data['user_id']);
+            }
         } catch (DriverException $e) {
             $this->handleDriverException($e);
         }
