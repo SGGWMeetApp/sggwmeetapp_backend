@@ -371,6 +371,25 @@ class UserGroupController extends ApiController
         }
     }
 
+    public function deleteGroup(int $group_id, JWTIdentityHelper $identityHelper): JsonResponse
+    {
+        $user = $identityHelper->getUser();
+        try {
+            $userGroup = $this->userGroupRepository->findOrFail($group_id);
+        } catch (EntityNotFoundException) {
+            return $this->respondNotFound();
+        }
+        if(!$user->isEqualTo($userGroup->getOwner())) {
+            return $this->respondUnauthorized();
+        }
+        try {
+            $this->userGroupRepository->delete($userGroup);
+        } catch (\Throwable $e) {
+            return $this->respondInternalServerError($e);
+        }
+        return $this->setStatusCode(204)->response([]);
+    }
+
     public function leaveGroupEvent(int $group_id, int $event_id, JWTIdentityHelper $identityHelper): JsonResponse
     {
         $currentUser = $identityHelper->getUser();
