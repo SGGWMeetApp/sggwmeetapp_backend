@@ -48,7 +48,6 @@ class SendEventNotification implements NotificationSenderInterface
     {
         $emailTitle = 'Upcomming event for you';
         return (new Email())
-            ->from(new Address('123@example.com', 'SGGW Meet App'))
             ->to($email)
             ->subject($emailTitle)
             ->text($event->getName());
