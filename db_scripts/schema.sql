@@ -1,4 +1,6 @@
 -- RUN AS app_owner USER
+DROP TABLE IF EXISTS user_subscriptions CASCADE;
+
 DROP TABLE IF EXISTS rating_reviews CASCADE;
 
 DROP TABLE IF EXISTS event_notifications CASCADE;
@@ -68,6 +70,14 @@ CREATE TABLE user_groups (
     name varchar(255) NOT NULL,
     owner_id integer NOT NULL,
     FOREIGN KEY (owner_id) REFERENCES users (user_id) ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+CREATE TABLE user_subscriptions (
+    subscription_id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    user_id integer NOT NULL,
+    subscription_hash varchar(255) NOT NULL,
+    subscription text NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users (user_id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 CREATE TABLE users_user_groups (
@@ -194,7 +204,7 @@ BEGIN
     UPDATE
         locations
     SET
-        ratings_number = ratings.positives,
+        ratings_number = ratings.ratings_num,
         rating_pct = CASE WHEN (ratings.ratings_num = 0) THEN
             NULL
         ELSE
@@ -229,7 +239,7 @@ BEGIN
     UPDATE
         locations
     SET
-        ratings_number = ratings.positives,
+        ratings_number = ratings.ratings_num,
         rating_pct = CASE WHEN (ratings.ratings_num = 0) THEN
             NULL
         ELSE
