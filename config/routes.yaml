@@ -19,6 +19,9 @@ app_request_reset_password:
     path: /reset_password
     controller: App\Controller\ResetPasswordController::requestPasswordResetAction
     methods: POST
+bentools_webpush:
+    prefix: /api/webpush
+    resource: '@WebPushBundle/Resources/config/routing.xml'
 places_get_all:
     path: /api/places
     controller: App\Controller\PlaceController::getPlacesAction
