@@ -194,7 +194,7 @@ BEGIN
     UPDATE
         locations
     SET
-        ratings_number = ratings.positives,
+        ratings_number = ratings.ratings_num,
         rating_pct = CASE WHEN (ratings.ratings_num = 0) THEN
             NULL
         ELSE
@@ -229,7 +229,7 @@ BEGIN
     UPDATE
         locations
     SET
-        ratings_number = ratings.positives,
+        ratings_number = ratings.ratings_num,
         rating_pct = CASE WHEN (ratings.ratings_num = 0) THEN
             NULL
         ELSE
