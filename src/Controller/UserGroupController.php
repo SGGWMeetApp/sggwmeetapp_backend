@@ -105,7 +105,7 @@ class UserGroupController extends ApiController
         }
         if($this->eventDispatcher !== null && $responseData['event'] !== null) {
             $addGroupEventEvent = new AddGroupEventEvent($responseData['event']);
-            $this->eventDispatcher->dispatch($addGroupEventEvent, 'app.group_event.add');
+            $this->eventDispatcher->dispatch($addGroupEventEvent, AddGroupEventEvent::NAME);
         }
         return $responseData['response'];
     }

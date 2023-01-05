@@ -55,12 +55,10 @@ services:
     App\EventListener\JWTAuthFailureListener:
         tags:
             - { name: kernel.event_listener, event: lexik_jwt_authentication.on_authentication_failure, method: onJWTAuthenticationFailure}
-    App\EventListener\AddGroupEventListener:
+
+    App\Repository\UserSubscriptionRepository:
         tags:
-            - { name: kernel.event_listener, event: app.group_event.add, method: onGroupEventAdd}
-    App\EventListener\UserJoinedEventListener:
-        tags:
-            - { name: kernel.event_listener, event: app.user_event.joined, method: onUserJoinedEvent }
+            - { name: bentools_webpush.subscription_manager, user_class: 'App\Security\User' }
 
     App\Serializer\FormExceptionNormalizer:
         tags: [ 'serializer.normalizer' ]

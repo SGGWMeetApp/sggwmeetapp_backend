@@ -181,7 +181,7 @@ class EventController extends ApiController {
         }
         if($this->eventDispatcher !== null) {
             $userJoinedEvent = new UserJoinedEventEvent($currentUser, $event);
-            $this->eventDispatcher->dispatch($userJoinedEvent, 'app.user_event.joined');
+            $this->eventDispatcher->dispatch($userJoinedEvent, UserJoinedEventEvent::NAME);
         }
         return $this->respondWithSuccessMessage('Successfully joined event.');
     }
