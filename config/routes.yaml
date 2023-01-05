@@ -131,6 +131,13 @@ add_user_to_group:
     requirements:
         group_id: '\d+'
     methods: POST
+delete_user_from_group:
+    path: /api/groups/{group_id}/users/{user_id}
+    controller: App\Controller\UserGroupController::deleteUserFromGroup
+    requirements:
+        group_id: '\d+'
+        user_id: '\d+'
+    methods: DELETE
 leave_group:
     path: /api/groups/{group_id}/users
     controller: App\Controller\UserGroupController::leaveGroup
