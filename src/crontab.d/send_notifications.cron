@@ -1,1 +1,1 @@
-*/5 * * * * docker exec -it sggwmeetapp_dockerized-php-1 php /var/www/symfony/bin/console app:send-notification
+*/5 * * * * docker exec sggwmeetapp_dockerized-php-1 php /var/www/symfony/bin/console app:send-notification
