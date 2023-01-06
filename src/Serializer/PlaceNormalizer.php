@@ -12,7 +12,7 @@ use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 class PlaceNormalizer implements NormalizerInterface, DenormalizerInterface
 {
     private Filesystem $filesystem;
-    public const LOCATION_PROPERTIES = ['name'];
+    public const LOCATION_PROPERTIES = ['id','name'];
 
     public function __construct(Filesystem $uploadsFilesystem)
     {
@@ -44,6 +44,7 @@ class PlaceNormalizer implements NormalizerInterface, DenormalizerInterface
             "description" => $object->getDescription(),
             "locationCategoryCodes" => $object->getCategoryCodes(),
             "photoPath" => count($publicPhotoPaths) > 0 ? $publicPhotoPaths[0] : null,
+            "menuPath" => $object->getMenuPath() !== null ? $this->filesystem->publicUrl($object->getMenuPath()): null
         ];
 
         if (array_key_exists('modelProperties', $context) && is_array($context['modelProperties'])) {
@@ -87,6 +88,7 @@ class PlaceNormalizer implements NormalizerInterface, DenormalizerInterface
         foreach ($photoPaths as $path) {
             $place->addPhotoPath($path);
         }
+        $place->setMenuPath($data['menu_path']);
         $place->setReviewsCount($data['reviews_count']);
         return $place;
     }

@@ -105,7 +105,7 @@ class UserGroupController extends ApiController
         }
         if($this->eventDispatcher !== null && $responseData['event'] !== null) {
             $addGroupEventEvent = new AddGroupEventEvent($responseData['event']);
-            $this->eventDispatcher->dispatch($addGroupEventEvent, 'app.group_event.add');
+            $this->eventDispatcher->dispatch($addGroupEventEvent, AddGroupEventEvent::NAME);
         }
         return $responseData['response'];
     }
@@ -346,6 +346,39 @@ class UserGroupController extends ApiController
         }
     }
 
+    public function deleteUserFromGroup(int $group_id, int $user_id, JWTIdentityHelper $identityHelper): JsonResponse
+    {
+        $user = $identityHelper->getUser();
+        try {
+            $userGroup = $this->userGroupRepository->findOrFail($group_id);
+        } catch (EntityNotFoundException) {
+            return $this->respondNotFound();
+        }
+        try {
+            if ($userGroup->getOwner()->isEqualTo($user) && $userGroup->getOwner()->getId() === $user_id) {
+                return $this->setStatusCode(400)->respondWithError(
+                    'CANNOT_DELETE_ADMIN',
+                    'Group admin cannot be deleted from group. Delete the group instead.'
+                );
+            } else {
+                $wantsToDeleteSelf = $userGroup->containsUser($user) && $user_id === $user->getId();
+                if (!$userGroup->getOwner()->isEqualTo($user) && !$wantsToDeleteSelf) {
+                    return $this->respondUnauthorized();
+                }
+                $this->userGroupRepository->deleteUserFromGroup($group_id, $user_id);
+            }
+        } catch (\Throwable $e) {
+            return $this->respondInternalServerError($e);
+        }
+        $userGroups = $this->userGroupRepository->findAllGroupsForUser($user->getId());
+
+        try {
+            return new GroupsResponse($userGroups, $user, $this->normalizerFactory);
+        } catch (SerializerExceptionInterface $e) {
+            return $this->respondInternalServerError($e);
+        }
+    }
+
     public function leaveGroup(int $group_id, JWTIdentityHelper $identityHelper):JsonResponse
     {
         $user = $identityHelper->getUser();
@@ -369,6 +402,25 @@ class UserGroupController extends ApiController
         } catch (SerializerExceptionInterface $e) {
             return $this->respondInternalServerError($e);
         }
+    }
+
+    public function deleteGroup(int $group_id, JWTIdentityHelper $identityHelper): JsonResponse
+    {
+        $user = $identityHelper->getUser();
+        try {
+            $userGroup = $this->userGroupRepository->findOrFail($group_id);
+        } catch (EntityNotFoundException) {
+            return $this->respondNotFound();
+        }
+        if(!$user->isEqualTo($userGroup->getOwner())) {
+            return $this->respondUnauthorized();
+        }
+        try {
+            $this->userGroupRepository->delete($userGroup);
+        } catch (\Throwable $e) {
+            return $this->respondInternalServerError($e);
+        }
+        return $this->setStatusCode(204)->response([]);
     }
 
     public function leaveGroupEvent(int $group_id, int $event_id, JWTIdentityHelper $identityHelper): JsonResponse

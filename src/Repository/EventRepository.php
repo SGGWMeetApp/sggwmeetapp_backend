@@ -120,7 +120,7 @@ class EventRepository extends BaseRepository implements EventRepositoryInterface
      */
     public function findAllPublicEvents(): array
     {
-        $sql = $this->getAllEventsQueryString() . 'WHERE p.is_public = TRUE';
+        $sql = $this->getAllEventsQueryString() . 'WHERE p.is_public = TRUE ORDER BY p.start_date DESC';
         try {
             $statement = $this->connection->prepare($sql);
             $result = $statement->executeQuery();
@@ -143,7 +143,7 @@ class EventRepository extends BaseRepository implements EventRepositoryInterface
      */
     public function findAllPublicEventsForPlace(Place $place): array
     {
-        $sql = $this->getAllEventsQueryString() . ' WHERE p.location_id = :locationId AND p.is_public = TRUE';
+        $sql = $this->getAllEventsQueryString() . ' WHERE p.location_id = :locationId AND p.is_public = TRUE ORDER BY p.start_date DESC';
         try {
             $statement = $this->connection->prepare($sql);
             $statement->bindValue('locationId', $place->getId());
@@ -167,7 +167,7 @@ class EventRepository extends BaseRepository implements EventRepositoryInterface
      */
     public function findAllForGroup(UserGroup $userGroup): array
     {
-       $sql = $this->getAllEventsQueryString() . ' WHERE p.group_id = :groupId';
+       $sql = $this->getAllEventsQueryString() . ' WHERE p.group_id = :groupId ORDER BY p.start_date DESC';
 
         try {
             $statement = $this->connection->prepare($sql);
@@ -199,7 +199,7 @@ class EventRepository extends BaseRepository implements EventRepositoryInterface
         $sevenDaysFromNow = new \DateTimeImmutable('+7 day');
         $now = new \DateTimeImmutable('now');
         $sql = $this->getAllEventsQueryString() .
-            ' WHERE p.is_public = TRUE AND p.start_date > :date_low AND p.start_date < :date_high';
+            ' WHERE p.is_public = TRUE AND p.start_date > :date_low AND p.start_date < :date_high ORDER BY p.start_date DESC';
         try {
             $statement = $this->connection->prepare($sql);
             $statement->bindValue('date_low', $now->format(self::DEFAULT_DATETIME_FORMAT));
@@ -406,7 +406,7 @@ class EventRepository extends BaseRepository implements EventRepositoryInterface
     public function findAllForUser(User $user): array
     {
         $sql = $this->getAllEventsQueryString() . ' WHERE event_id IN 
-        (SELECT event_id FROM '.$this->attendersTableName.' WHERE user_id=:user_id AND is_going=TRUE)';
+        (SELECT event_id FROM '.$this->attendersTableName.' WHERE user_id=:user_id AND is_going=TRUE) ORDER BY p.start_date DESC';
         try {
             $statement = $this->connection->prepare($sql);
             $statement->bindValue('user_id', $user->getId());

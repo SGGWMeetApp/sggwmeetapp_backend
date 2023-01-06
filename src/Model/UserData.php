@@ -104,5 +104,9 @@ class UserData
         $this->avatarUrl = $avatarUrl;
     }
 
+    public function getFullName(): string
+    {
+        return $this->firstName.' '.$this->lastName;
+    }
 
 }

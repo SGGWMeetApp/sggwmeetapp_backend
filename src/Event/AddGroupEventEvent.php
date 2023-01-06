@@ -7,6 +7,7 @@ use Symfony\Contracts\EventDispatcher\Event as SymfonyEvent;
 
 class AddGroupEventEvent extends SymfonyEvent
 {
+    public const NAME = 'group_event.add';
 
     private PrivateEvent $privateEvent;
 

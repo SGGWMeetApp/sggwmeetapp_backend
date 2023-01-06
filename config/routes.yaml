@@ -19,6 +19,9 @@ app_request_reset_password:
     path: /reset_password
     controller: App\Controller\ResetPasswordController::requestPasswordResetAction
     methods: POST
+bentools_webpush:
+    prefix: /api/webpush
+    resource: '@WebPushBundle/Resources/config/routing.xml'
 places_get_all:
     path: /api/places
     controller: App\Controller\PlaceController::getPlacesAction
@@ -45,6 +48,10 @@ event_create:
     path: /api/events
     controller: App\Controller\EventController::createPublicEvent
     methods: POST
+event_delete:
+    path: /api/events/{event_id}
+    controller: App\Controller\EventController::deleteEvent
+    methods: DELETE
 event_attender_add:
     path: /api/events/{event_id}/attenders/{user_id}
     controller: App\Controller\EventController::joinEvent
@@ -111,6 +118,10 @@ create_group:
     path: /api/groups
     controller: App\Controller\UserGroupController::createGroup
     methods: POST
+delete_group:
+    path: //api/groups/{group_id}
+    controller: App\Controller\UserGroupController::deleteGroup
+    methods: DELETE
 group_users_get_all:
     path: /api/groups/{group_id}/users
     controller: App\Controller\UserGroupController::getGroupUsers
@@ -123,6 +134,13 @@ add_user_to_group:
     requirements:
         group_id: '\d+'
     methods: POST
+delete_user_from_group:
+    path: /api/groups/{group_id}/users/{user_id}
+    controller: App\Controller\UserGroupController::deleteUserFromGroup
+    requirements:
+        group_id: '\d+'
+        user_id: '\d+'
+    methods: DELETE
 leave_group:
     path: /api/groups/{group_id}/users
     controller: App\Controller\UserGroupController::leaveGroup
