@@ -28,7 +28,7 @@ class SendEventNotification implements NotificationSenderInterface
                 /** @var User $attender */
                 foreach ($attenders as $attender) {
                     $notification = $this->createNotification(
-                        $attender->getUserData()->getFirstName().' '.$attender->getUserData()->getLastName(),
+                        $attender->getUserData()->getFullName(),
                         $attender->getAccountData()->getEmail(),
                         $eventAttenders[$key]['event']
                     );
