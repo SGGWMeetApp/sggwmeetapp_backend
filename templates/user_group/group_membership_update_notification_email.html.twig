@@ -1,0 +1,5 @@
+{% if statusChange == 'granted' %}
+    {% include 'user_group/membership_granted_notification.html.twig' %}
+{% else %}
+    {% include 'user_group/group_membership_revoked.html.twig' %}
+{% endif %}

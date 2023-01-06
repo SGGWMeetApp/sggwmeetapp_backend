@@ -3,9 +3,11 @@
 namespace App\Serializer;
 
 use App\Model\AccountData;
+use App\Model\NotificationSetting;
 use App\Model\PhoneNumber;
 use App\Model\UserData;
 use App\Model\UserGroup;
+use App\Model\UserNotificationSettings;
 use App\Security\User;
 
 use Symfony\Component\Serializer\Exception\InvalidArgumentException;
@@ -101,6 +103,9 @@ class UserGroupNormalizer implements NormalizerInterface, DenormalizerInterface
                 ),
                 new \DateTime($userData->creation_date)
             );
+            foreach (UserNotificationSettings::NOTIFICATION_NAMES as $notificationName) {
+                $user->getNotificationSettings()->addSetting(new NotificationSetting($notificationName, $userData->$notificationName));
+            }
             $userGroup->addUser($user);
 
             if($user->getId() == $data["owner_id"]) {

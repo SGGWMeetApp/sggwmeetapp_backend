@@ -3,6 +3,8 @@
 namespace App\Controller;
 
 use App\Event\AddGroupEventEvent;
+use App\Event\GroupMembershipStatus;
+use App\Event\UserGroupMembershipUpdateEvent;
 use App\Exception\FormException;
 use App\Form\PrivateEventType;
 use App\Factory\NormalizerFactory;
@@ -10,6 +12,7 @@ use App\Form\UserGroupDataType;
 use App\Model\PrivateEvent;
 use App\Model\PublicEvent;
 use App\Model\UserGroup;
+use App\Model\UserNotificationSettings;
 use App\Repository\PlaceRepositoryInterface;
 use App\Repository\EventRepositoryInterface;
 use App\Repository\UniqueConstraintViolationException;
@@ -335,6 +338,16 @@ class UserGroupController extends ApiController
         }
 
         try {
+            if($this->eventDispatcher !== null &&
+                $user->getNotificationSettings()->getSettingByName(UserNotificationSettings::GROUP_ADD_NOTIFICATION)->isEnabled()
+            ) {
+                $userAddedToGroupEvent = new UserGroupMembershipUpdateEvent(
+                    $userGroup,
+                    $user,
+                    GroupMembershipStatus::GRANTED
+                );
+                $this->eventDispatcher->dispatch($userAddedToGroupEvent, UserGroupMembershipUpdateEvent::NAME);
+            }
             return $this->response([
                 ...$this->normalizerFactory->getNormalizer($user)->normalize($user, 'json', [
                     'modelProperties' => UserNormalizer::AUTHOR_PROPERTIES
@@ -371,7 +384,16 @@ class UserGroupController extends ApiController
             return $this->respondInternalServerError($e);
         }
         $userGroups = $this->userGroupRepository->findAllGroupsForUser($user->getId());
-
+        if($this->eventDispatcher !== null &&
+            $user->getNotificationSettings()->getSettingByName(UserNotificationSettings::GROUP_REMOVE_NOTIFICATION)->isEnabled()
+        ) {
+            $membershipRevokedEvent = new UserGroupMembershipUpdateEvent(
+                $userGroup,
+                $this->userRepository->findByIdOrFail($user_id),
+                GroupMembershipStatus::REVOKED
+            );
+            $this->eventDispatcher->dispatch($membershipRevokedEvent, UserGroupMembershipUpdateEvent::NAME);
+        }
         try {
             return new GroupsResponse($userGroups, $user, $this->normalizerFactory);
         } catch (SerializerExceptionInterface $e) {

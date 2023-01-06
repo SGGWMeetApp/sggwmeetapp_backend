@@ -123,7 +123,10 @@ class UserGroupRepository extends BaseRepository implements UserGroupRepositoryI
                             u2.phone_number_prefix,
                             u2.phone_number,
                             u2.description,
-                            u2.creation_date
+                            u2.creation_date,
+                            u2.event_notification,
+                            u2.group_add_notification,
+                            u2.group_remove_notification
                         FROM user_groups ug2
                         JOIN users_user_groups uug2 on ug2.group_id = uug2.group_id
                         JOIN users u2 on uug2.user_id = u2.user_id

@@ -6,6 +6,7 @@ use App\Model\AccountData;
 use App\Model\NotificationSetting;
 use App\Model\PhoneNumber;
 use App\Model\UserData;
+use App\Model\UserNotificationSettings;
 use App\Security\User;
 use League\Flysystem\Filesystem;
 use Symfony\Component\Serializer\Exception\InvalidArgumentException;
@@ -89,8 +90,7 @@ class UserNormalizer implements NormalizerInterface, DenormalizerInterface
             new \DateTime($data['creation_date'])
         );
         $user->getUserData()->setAvatarUrl($data['avatar_path']);
-        $notificationKeys = ['event_notification', 'group_add_notification', 'group_remove_notification'];
-        foreach ($notificationKeys as $notificationKey) {
+        foreach (UserNotificationSettings::NOTIFICATION_NAMES as $notificationKey) {
             $user->getNotificationSettings()->addSetting(new NotificationSetting($notificationKey, $data[$notificationKey]));
         }
         return $user;

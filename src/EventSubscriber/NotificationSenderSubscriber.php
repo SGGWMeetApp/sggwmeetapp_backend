@@ -4,7 +4,11 @@ namespace App\EventSubscriber;
 
 use App\Event\AddGroupEventEvent;
 use App\Event\AppEventEvents;
+use App\Event\GroupEvents;
+use App\Event\GroupMembershipStatus;
+use App\Event\UserGroupMembershipUpdateEvent;
 use App\Event\UserJoinedEventEvent;
+use App\Model\UserNotificationSettings;
 use App\Security\User;
 use BenTools\WebPushBundle\Model\Message\PushNotification;
 use BenTools\WebPushBundle\Model\Subscription\UserSubscriptionManagerRegistry;
@@ -56,6 +60,10 @@ class NotificationSenderSubscriber implements EventSubscriberInterface
             AppEventEvents::USER_JOINED_EVENT => [
                 ['onUserJoinedEventSendPushNotification', 20],
                 ['onUserJoinedEventSendEmail', 10]
+            ],
+            GroupEvents::MEMBERSHIP_STATUS_CHANGE => [
+                ['onUserGroupMembershipStatusChangeSendPushNotification', 20],
+                ['onUserGroupMembershipStatusChangeSendEmail', 10]
             ]
         ];
     }
@@ -64,21 +72,25 @@ class NotificationSenderSubscriber implements EventSubscriberInterface
     {
         $groupUsers = $event->getPrivateEvent()->getUserGroup()->getUsers();
         foreach ($groupUsers as $groupUser) {
-            $subscriptions = $this->userSubscriptionManager->findByUser($groupUser);
-            $notification = new PushNotification('New Event!', [
-                PushNotification::BODY => 'New event is waiting for you in '.
-                    $event->getPrivateEvent()->getUserGroup()->getName().' group.'
-            ]);
-            $responses = [];
-            try {
-                $responses = $this->pushMessageSender->push($notification->createMessage(), $subscriptions);
-            } catch (\ErrorException $e) {
-                $this->logger->error($e);
-            }
+            if(!$event->getPrivateEvent()->getAuthor()->isEqualTo($groupUser) &&
+                $groupUser->getNotificationSettings()->getSettingByName(UserNotificationSettings::EVENT_NOTIFICATION)->isEnabled()
+            ) {
+                $subscriptions = $this->userSubscriptionManager->findByUser($groupUser);
+                $notification = new PushNotification('New Event!', [
+                    PushNotification::BODY => 'New event is waiting for you in '.
+                        $event->getPrivateEvent()->getUserGroup()->getName().' group.'
+                ]);
+                $responses = [];
+                try {
+                    $responses = $this->pushMessageSender->push($notification->createMessage(), $subscriptions);
+                } catch (\ErrorException $e) {
+                    $this->logger->error($e);
+                }
 
-            foreach ($responses as $response) {
-                if ($response->isExpired()) {
-                    $this->userSubscriptionManager->delete($response->getSubscription());
+                foreach ($responses as $response) {
+                    if ($response->isExpired()) {
+                        $this->userSubscriptionManager->delete($response->getSubscription());
+                    }
                 }
             }
         }
@@ -99,7 +111,10 @@ class NotificationSenderSubscriber implements EventSubscriberInterface
         ];
         /** @var User $groupUser */
         foreach ($groupUsers as $groupUser) {
-            if(!$event->getPrivateEvent()->getAuthor()->isEqualTo($groupUser)) {
+            if(
+                !$event->getPrivateEvent()->getAuthor()->isEqualTo($groupUser) &&
+                $groupUser->getNotificationSettings()->getSettingByName(UserNotificationSettings::EVENT_NOTIFICATION)->isEnabled()
+            ) {
                 $email
                     ->to($groupUser->getAccountData()->getEmail())
                     ->context([
@@ -152,6 +167,60 @@ class NotificationSenderSubscriber implements EventSubscriberInterface
                     ' '.$joinedEvent->getEvent()->getAuthor()->getUserData()->getLastName(),
                 'event' => $joinedEvent->getEvent(),
                 'joinedUser' => $joinedEvent->getUser()
+            ]);
+        $this->mailer->send($email);
+    }
+
+    public function onUserGroupMembershipStatusChangeSendPushNotification(UserGroupMembershipUpdateEvent $membershipUpdateEvent): void
+    {
+        $subscriptions = $this->userSubscriptionManager->findByUser($membershipUpdateEvent->getUser());
+        $pushMessageContents = $this->getPushNotificationForMembershipUpdateEvent($membershipUpdateEvent);
+        $notification = new PushNotification(
+            $pushMessageContents['title'], [
+                PushNotification::BODY => $pushMessageContents['message']
+        ]);
+        $responses = [];
+        try {
+            $responses = $this->pushMessageSender->push($notification->createMessage(), $subscriptions);
+        } catch (\ErrorException $e) {
+            $this->logger->error($e);
+        }
+        foreach ($responses as $response) {
+            if ($response->isExpired()) {
+                $this->userSubscriptionManager->delete($response->getSubscription());
+            }
+        }
+    }
+
+    private function getPushNotificationForMembershipUpdateEvent(UserGroupMembershipUpdateEvent $membershipUpdateEvent): array
+    {
+        return match ($membershipUpdateEvent->getMembershipStatus()) {
+            GroupMembershipStatus::GRANTED => [
+                'title' => 'You have a new Group!',
+                'message' => $membershipUpdateEvent->getUserGroup()->getOwner()->getUserData()->getFullName() .
+                    ' added you to group ' . $membershipUpdateEvent->getUserGroup()->getName()
+            ],
+            GroupMembershipStatus::REVOKED => [
+                'title' => 'You were removed from Group!',
+                'message' => $membershipUpdateEvent->getUserGroup()->getOwner()->getUserData()->getFullName() .
+                    ' removed you from group ' . $membershipUpdateEvent->getUserGroup()->getName()
+            ]
+        };
+    }
+
+    /**
+     * @throws TransportExceptionInterface
+     */
+    public function onUserGroupMembershipStatusChangeSendEmail(UserGroupMembershipUpdateEvent $membershipUpdateEvent): void
+    {
+        $email = (new TemplatedEmail())
+            ->to($membershipUpdateEvent->getUser()->getAccountData()->getEmail())
+            ->subject('SGGW MeetApp - Joined group '.$membershipUpdateEvent->getUserGroup()->getName())
+            ->htmlTemplate('user_group/group_membership_update_notification_email.html.twig')
+            ->context([
+                'username' => $membershipUpdateEvent->getUser()->getUserData()->getFullName(),
+                'userGroup' => $membershipUpdateEvent->getUserGroup(),
+                'statusChange' => $membershipUpdateEvent->getMembershipStatus()->value
             ]);
         $this->mailer->send($email);
     }
