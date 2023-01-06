@@ -29,6 +29,6 @@ class SendEventNotificationCommand extends Command
     {
         $eventAttenders = $this->eventRepository->findUpcomingEventAttenders(30, 5);
         $sentSuccessfully = $this->notificationSender->sendNotifications($eventAttenders);
-        return ($sentSuccessfully)? 0 : 1;
+        return $sentSuccessfully ? Command::SUCCESS : Command::FAILURE;
     }
 }

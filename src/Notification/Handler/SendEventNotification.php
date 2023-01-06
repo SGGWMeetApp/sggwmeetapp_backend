@@ -42,7 +42,7 @@ class SendEventNotification implements NotificationSenderInterface
                 }
             }
         }
-        return array_key_exists(false, $sentSuccessfully);
+        return !in_array(false, $sentSuccessfully);
     }
 
     private function createNotification(string $name, string $email, Event $event): Email
