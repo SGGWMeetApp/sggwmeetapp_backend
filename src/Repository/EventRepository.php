@@ -489,7 +489,7 @@ class EventRepository extends BaseRepository implements EventRepositoryInterface
     {
         $currentDateTime = new \DateTimeImmutable('now');
         $upcomingLowTime = (new \DateTimeImmutable($currentDateTime->format('Y-m-d H:i')))
-            ->modify('+'. $upcomingTimeInMinutes - $notificationIntervalInMinutes .' minutes');
+            ->modify('+'. $upcomingTimeInMinutes .' minutes');
         $upcomingHighTime = (new \DateTimeImmutable($currentDateTime->format('Y-m-d H:i')))
             ->modify('+'. $upcomingTimeInMinutes + $notificationIntervalInMinutes .' minutes');
         $sql = $this->getAllEventsQueryString() .

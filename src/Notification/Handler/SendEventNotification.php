@@ -28,22 +28,20 @@ class SendEventNotification implements NotificationSenderInterface
                 ->info('There are notifications to be sent! Sending notifications to '.count($eventAttenders).
                     ' event attenders.');
         }
-        foreach ($eventAttenders as $key) {
-            foreach ($eventAttenders[$key]['attenders'] as $attenders) {
-                /** @var User $attender */
-                foreach ($attenders as $attender) {
-                    $notification = $this->createNotification(
-                        $attender->getUserData()->getFullName(),
-                        $attender->getAccountData()->getEmail(),
-                        $eventAttenders[$key]['event']
-                    );
-                    $result = $this->sendNotification($notification);
-                    $sentSuccessfully[] = $result;
-                    if ($result) {
-                        $this->logger->info('Notification email for user_id ' . $attender->getId() . ' for event_id ' . $eventAttenders[$key]['event']->getId() . ' was successfully send');
-                    } else {
-                        $this->logger->error('Notification email for user_id ' . $attender->getId() . ' for event_id ' . $eventAttenders[$key]['event']->getId() . ' failed');
-                    }
+        foreach ($eventAttenders as $attenderEventObject) {
+            /** @var User $attender */
+            foreach ($attenderEventObject['attenders'] as $attender) {
+                $notification = $this->createNotification(
+                    $attender->getUserData()->getFullName(),
+                    $attender->getAccountData()->getEmail(),
+                    $attenderEventObject['event']
+                );
+                $result = $this->sendNotification($notification);
+                $sentSuccessfully[] = $result;
+                if ($result) {
+                    $this->logger->info('Notification email for user_id ' . $attender->getId() . ' for event_id ' . $attenderEventObject['event']->getId() . ' was successfully send');
+                } else {
+                    $this->logger->error('Notification email for user_id ' . $attender->getId() . ' for event_id ' . $attenderEventObject['event']->getId() . ' failed');
                 }
             }
         }
