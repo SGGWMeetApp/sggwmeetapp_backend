@@ -6,6 +6,7 @@ use App\Event\UserJoinedEventEvent;
 use App\Factory\NormalizerFactory;
 use App\Model\PrivateEvent;
 use App\Repository\EntityNotFoundException;
+use App\Repository\UserGroupRepositoryInterface;
 use App\Response\EventsResponse;
 use App\Service\SecurityHelper\JWTIdentityHelper;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -152,7 +153,12 @@ class EventController extends ApiController {
         return new EventsResponse('events', $this->normalizerFactory, $userAttendance, ...$events);
     }
 
-    public function joinEvent(int $event_id, int $user_id, JWTIdentityHelper $identityHelper): JsonResponse
+    public function joinEvent(
+        int $event_id,
+        int $user_id,
+        UserGroupRepositoryInterface $userGroupRepository,
+        JWTIdentityHelper $identityHelper
+    ): JsonResponse
     {
         $currentUser = $identityHelper->getUser();
         if($currentUser->getId() !== $user_id) {
@@ -164,7 +170,8 @@ class EventController extends ApiController {
             return $this->respondNotFound('Event not found.');
         }
         if ($event instanceof PrivateEvent) {
-            $userGroup = $event->getUserGroup();
+            $userGroupId = $event->getUserGroup()->getGroupId();
+            $userGroup = $userGroupRepository->findOrFail($userGroupId);
             if (!$userGroup->containsUser($currentUser)) {
                 return $this->respondUnauthorized();
             }
@@ -181,7 +188,7 @@ class EventController extends ApiController {
         }
         if($this->eventDispatcher !== null) {
             $userJoinedEvent = new UserJoinedEventEvent($currentUser, $event);
-            $this->eventDispatcher->dispatch($userJoinedEvent, 'app.user_event.joined');
+            $this->eventDispatcher->dispatch($userJoinedEvent, UserJoinedEventEvent::NAME);
         }
         return $this->respondWithSuccessMessage('Successfully joined event.');
     }

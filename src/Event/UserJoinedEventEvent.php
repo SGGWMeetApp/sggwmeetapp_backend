@@ -8,6 +8,8 @@ use Symfony\Contracts\EventDispatcher\Event as SymfonyEvent;
 
 class UserJoinedEventEvent extends SymfonyEvent
 {
+    public const NAME = 'user_event.joined';
+
     private User $user;
     private Event $event;
 

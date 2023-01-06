@@ -66,7 +66,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"email\": \"email@example.com\",\r\n    \"password\": \"password\",\r\n    \"userData\": {\r\n        \"firstName\": \"firstName\",\r\n        \"lastName\": \"lastName\",\r\n        \"phoneNumberPrefix\": \"48\",\r\n        \"phoneNumber\": \"111111111\",\r\n        \"description\": \"description\"\r\n    }\r\n}",
+							"raw": "{\r\n    \"email\": \"email@example.com\",\r\n    \"password\": \"Password1234\",\r\n    \"userData\": {\r\n        \"firstName\": \"firstName\",\r\n        \"lastName\": \"lastName\",\r\n        \"phoneNumberPrefix\": \"48\",\r\n        \"phoneNumber\": \"111111111\",\r\n        \"description\": \"description\"\r\n    }\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -278,14 +278,14 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/places/3",
+							"raw": "{{baseUrl}}/api/places/26",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
 								"api",
 								"places",
-								"3"
+								"26"
 							]
 						}
 					},
@@ -524,14 +524,14 @@
 						"method": "POST",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/events/146/attenders/11",
+							"raw": "{{baseUrl}}/api/events/162/attenders/11",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
 								"api",
 								"events",
-								"146",
+								"162",
 								"attenders",
 								"11"
 							]
@@ -650,14 +650,14 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/groups/22/events",
+							"raw": "{{baseUrl}}/api/groups/14/events",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
 								"api",
 								"groups",
-								"22",
+								"14",
 								"events"
 							]
 						}
@@ -681,7 +681,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"locationId\": 3,\r\n    \"name\": \"HTML hacking party\",\r\n    \"description\": \"NASA! We're coming!\",\r\n    \"startDate\": \"2023-01-05T20:00:00.000Z\"\r\n}",
+							"raw": "{\r\n    \"locationId\": 3,\r\n    \"name\": \"HTML hacking party\",\r\n    \"description\": \"NASA! We're coming!\",\r\n    \"startDate\": \"2023-01-07T20:00:00.000Z\"\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -689,14 +689,14 @@
 							}
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/groups/22/events",
+							"raw": "{{baseUrl}}/api/groups/14/events",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
 								"api",
 								"groups",
-								"22",
+								"14",
 								"events"
 							]
 						}
@@ -748,14 +748,14 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/groups/22/users",
+							"raw": "{{baseUrl}}/api/groups/14/users",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
 								"api",
 								"groups",
-								"22",
+								"14",
 								"users"
 							]
 						}
@@ -779,7 +779,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{ \r\n    \"userId\": 9\r\n}",
+							"raw": "{ \r\n    \"userId\": 5\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -787,14 +787,14 @@
 							}
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/groups/22/users",
+							"raw": "{{baseUrl}}/api/groups/14/users",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
 								"api",
 								"groups",
-								"22",
+								"14",
 								"users"
 							]
 						}
@@ -994,6 +994,37 @@
 								"api",
 								"groups",
 								"25"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete user from group",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwt_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/groups/14/users/11",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"groups",
+								"14",
+								"users",
+								"11"
 							]
 						}
 					},

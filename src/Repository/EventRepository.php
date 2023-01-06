@@ -120,7 +120,7 @@ class EventRepository extends BaseRepository implements EventRepositoryInterface
      */
     public function findAllPublicEvents(): array
     {
-        $sql = $this->getAllEventsQueryString() . 'WHERE p.is_public = TRUE';
+        $sql = $this->getAllEventsQueryString() . 'WHERE p.is_public = TRUE ORDER BY p.start_date DESC';
         try {
             $statement = $this->connection->prepare($sql);
             $result = $statement->executeQuery();
@@ -143,7 +143,7 @@ class EventRepository extends BaseRepository implements EventRepositoryInterface
      */
     public function findAllPublicEventsForPlace(Place $place): array
     {
-        $sql = $this->getAllEventsQueryString() . ' WHERE p.location_id = :locationId AND p.is_public = TRUE';
+        $sql = $this->getAllEventsQueryString() . ' WHERE p.location_id = :locationId AND p.is_public = TRUE ORDER BY p.start_date DESC';
         try {
             $statement = $this->connection->prepare($sql);
             $statement->bindValue('locationId', $place->getId());
@@ -167,7 +167,7 @@ class EventRepository extends BaseRepository implements EventRepositoryInterface
      */
     public function findAllForGroup(UserGroup $userGroup): array
     {
-       $sql = $this->getAllEventsQueryString() . ' WHERE p.group_id = :groupId';
+       $sql = $this->getAllEventsQueryString() . ' WHERE p.group_id = :groupId ORDER BY p.start_date DESC';
 
         try {
             $statement = $this->connection->prepare($sql);
@@ -199,7 +199,7 @@ class EventRepository extends BaseRepository implements EventRepositoryInterface
         $sevenDaysFromNow = new \DateTimeImmutable('+7 day');
         $now = new \DateTimeImmutable('now');
         $sql = $this->getAllEventsQueryString() .
-            ' WHERE p.is_public = TRUE AND p.start_date > :date_low AND p.start_date < :date_high';
+            ' WHERE p.is_public = TRUE AND p.start_date > :date_low AND p.start_date < :date_high ORDER BY p.start_date DESC';
         try {
             $statement = $this->connection->prepare($sql);
             $statement->bindValue('date_low', $now->format(self::DEFAULT_DATETIME_FORMAT));
@@ -406,7 +406,7 @@ class EventRepository extends BaseRepository implements EventRepositoryInterface
     public function findAllForUser(User $user): array
     {
         $sql = $this->getAllEventsQueryString() . ' WHERE event_id IN 
-        (SELECT event_id FROM '.$this->attendersTableName.' WHERE user_id=:user_id AND is_going=TRUE)';
+        (SELECT event_id FROM '.$this->attendersTableName.' WHERE user_id=:user_id AND is_going=TRUE) ORDER BY p.start_date DESC';
         try {
             $statement = $this->connection->prepare($sql);
             $statement->bindValue('user_id', $user->getId());
@@ -456,5 +456,57 @@ class EventRepository extends BaseRepository implements EventRepositoryInterface
         return $attendance;
     }
 
+    /**
+     * @throws DriverException
+     * @throws EntityNotFoundException
+     * @throws DbalException
+     * @throws UniqueConstraintViolationException
+     */
+    public function findUpcomingEventAttenders(int $upcomingTimeInMinutes, int $notificationIntervalInMinutes): array
+    {
+        $events = $this->getUpcomingEvents($upcomingTimeInMinutes, $notificationIntervalInMinutes);
+        $eventAttenders = [];
+        foreach ($events as $event) {
+            $eventAttenders[] = [
+                'event' => $event, 
+                'attenders' => $this->getAttenders($event)
+            ];
+        }
+        return $eventAttenders;
+    }
+
+    /**
+     * @param int $upcomingTimeInMinutes
+     * @param int $notificationIntervalInMinutes
+     * @return array
+     * @throws DbalException
+     * @throws DriverException
+     * @throws EntityNotFoundException
+     * @throws UniqueConstraintViolationException
+     * @throws \Exception
+     */
+    private function getUpcomingEvents(int $upcomingTimeInMinutes, int $notificationIntervalInMinutes): array
+    {
+        $currentDateTime = new \DateTimeImmutable('now');
+        $upcomingLowTime = (new \DateTimeImmutable($currentDateTime->format('Y-m-d H:i')))
+            ->modify('+'. $upcomingTimeInMinutes .' minutes');
+        $upcomingHighTime = (new \DateTimeImmutable($currentDateTime->format('Y-m-d H:i')))
+            ->modify('+'. $upcomingTimeInMinutes + $notificationIntervalInMinutes .' minutes');
+        $sql = $this->getAllEventsQueryString() .
+            ' WHERE p.start_date > :date_low AND p.start_date <= :date_high';
+        try {
+            $statement = $this->connection->prepare($sql);
+            $statement->bindValue('date_low', $upcomingLowTime->format(self::DEFAULT_DATETIME_FORMAT));
+            $statement->bindValue('date_high', $upcomingHighTime->format(self::DEFAULT_DATETIME_FORMAT));
+            $result = $statement->executeQuery();
+            $events = [];
+            while($data = $result->fetchAssociative()) {
+                $events [] = $this->eventNormalizer->denormalize($data, 'Event');
+            }
+            return $events;
+        } catch (DriverException $e) {
+            $this->handleDriverException($e);
+        }
+    }
 
 }
