@@ -4,6 +4,16 @@ namespace App\Model;
 
 class UserNotificationSettings
 {
+    public const EVENT_NOTIFICATION = 'event_notification';
+    public const GROUP_ADD_NOTIFICATION = 'group_add_notification';
+    public const GROUP_REMOVE_NOTIFICATION = 'group_remove_notification';
+
+    public const NOTIFICATION_NAMES = [
+        self::EVENT_NOTIFICATION,
+        self::GROUP_ADD_NOTIFICATION,
+        self::GROUP_REMOVE_NOTIFICATION
+    ];
+
     private array $settings;
 
     public function __construct()

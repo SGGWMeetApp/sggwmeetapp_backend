@@ -8,6 +8,7 @@ use App\Event\GroupEvents;
 use App\Event\GroupMembershipStatus;
 use App\Event\UserGroupMembershipUpdateEvent;
 use App\Event\UserJoinedEventEvent;
+use App\Model\UserNotificationSettings;
 use App\Security\User;
 use BenTools\WebPushBundle\Model\Message\PushNotification;
 use BenTools\WebPushBundle\Model\Subscription\UserSubscriptionManagerRegistry;
@@ -71,21 +72,25 @@ class NotificationSenderSubscriber implements EventSubscriberInterface
     {
         $groupUsers = $event->getPrivateEvent()->getUserGroup()->getUsers();
         foreach ($groupUsers as $groupUser) {
-            $subscriptions = $this->userSubscriptionManager->findByUser($groupUser);
-            $notification = new PushNotification('New Event!', [
-                PushNotification::BODY => 'New event is waiting for you in '.
-                    $event->getPrivateEvent()->getUserGroup()->getName().' group.'
-            ]);
-            $responses = [];
-            try {
-                $responses = $this->pushMessageSender->push($notification->createMessage(), $subscriptions);
-            } catch (\ErrorException $e) {
-                $this->logger->error($e);
-            }
+            if(!$event->getPrivateEvent()->getAuthor()->isEqualTo($groupUser) &&
+                $groupUser->getNotificationSettings()->getSettingByName(UserNotificationSettings::EVENT_NOTIFICATION)->isEnabled()
+            ) {
+                $subscriptions = $this->userSubscriptionManager->findByUser($groupUser);
+                $notification = new PushNotification('New Event!', [
+                    PushNotification::BODY => 'New event is waiting for you in '.
+                        $event->getPrivateEvent()->getUserGroup()->getName().' group.'
+                ]);
+                $responses = [];
+                try {
+                    $responses = $this->pushMessageSender->push($notification->createMessage(), $subscriptions);
+                } catch (\ErrorException $e) {
+                    $this->logger->error($e);
+                }
 
-            foreach ($responses as $response) {
-                if ($response->isExpired()) {
-                    $this->userSubscriptionManager->delete($response->getSubscription());
+                foreach ($responses as $response) {
+                    if ($response->isExpired()) {
+                        $this->userSubscriptionManager->delete($response->getSubscription());
+                    }
                 }
             }
         }
@@ -106,7 +111,10 @@ class NotificationSenderSubscriber implements EventSubscriberInterface
         ];
         /** @var User $groupUser */
         foreach ($groupUsers as $groupUser) {
-            if(!$event->getPrivateEvent()->getAuthor()->isEqualTo($groupUser)) {
+            if(
+                !$event->getPrivateEvent()->getAuthor()->isEqualTo($groupUser) &&
+                $groupUser->getNotificationSettings()->getSettingByName(UserNotificationSettings::EVENT_NOTIFICATION)->isEnabled()
+            ) {
                 $email
                     ->to($groupUser->getAccountData()->getEmail())
                     ->context([
