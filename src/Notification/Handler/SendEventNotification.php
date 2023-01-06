@@ -23,6 +23,11 @@ class SendEventNotification implements NotificationSenderInterface
     public function sendNotifications(array $eventAttenders): bool
     {
         $sentSuccessfully = [];
+        if(count($eventAttenders) > 0) {
+            $this->logger
+                ->info('There are notifications to be sent! Sending notifications to '.count($eventAttenders).
+                    ' event attenders.');
+        }
         foreach ($eventAttenders as $key) {
             foreach ($eventAttenders[$key]['attenders'] as $attenders) {
                 /** @var User $attender */
