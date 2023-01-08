@@ -279,7 +279,11 @@ class EventRepository extends BaseRepository implements EventRepositoryInterface
             if ($data) {
                 $event->setId($data['event_id']);
             }
-            $this->addUserToEventAttenders($event->getAuthor(), $event);
+            if ($event instanceof PrivateEvent) {
+                $this->addUserToEventAttenders($event->getUserGroup()->getOwner(), $event);
+            } else {
+                $this->addUserToEventAttenders($event->getAuthor(), $event);
+            }
             $event->setAttendersCount($event->getAttendersCount() + 1);
         } catch (\Exception $e) {
             $this->connection->rollBack();
