@@ -135,7 +135,7 @@ class UserGroupController extends ApiController
         $userGroup->addEvent($privateEvent);
         return [
             'event' => $privateEvent,
-            'response' => new EventResponse($privateEvent, $this->normalizerFactory)
+            'response' => new EventResponse($privateEvent, true, $this->normalizerFactory)
         ];
     }
 
@@ -169,7 +169,7 @@ class UserGroupController extends ApiController
         $userGroup->addEvent($privateEvent);
         return [
             'event' => $privateEvent,
-            'response' => new EventResponse($privateEvent, $this->normalizerFactory)
+            'response' => new EventResponse($privateEvent, true, $this->normalizerFactory)
         ];
     }
 
@@ -219,7 +219,15 @@ class UserGroupController extends ApiController
         $privateEvent->setNotificationsEnabled($enableNotification);
         $this->eventRepository->update($privateEvent);
 
-        return new EventResponse($privateEvent, $this->normalizerFactory);
+        $attenders = $this->eventRepository->getAttenders($privateEvent);
+        $userAttends = false;
+        foreach ($attenders as $attender) {
+            if ($user->isEqualTo($attender)) {
+                $userAttends = true;
+            }
+        }
+
+        return new EventResponse($privateEvent, $userAttends, $this->normalizerFactory);
     }
 
     public function createGroup(
