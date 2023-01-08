@@ -262,6 +262,7 @@ class EventRepository extends BaseRepository implements EventRepositoryInterface
         $sql = 'INSERT INTO ' . $this->tableName .
             ' (group_id, location_id, start_date, name, description, owner_id, is_public, can_edit, notification_enabled)
         VALUES(:groupId, :locationID, :startDate, :name, :description, :ownerID, :isPublic, :canEdit, :notificationEnabled) RETURNING event_id';
+        $this->connection->beginTransaction();
         try {
             $statement = $this->connection->prepare($sql);
             $statement->bindValue('groupId', $groupId);
@@ -278,9 +279,17 @@ class EventRepository extends BaseRepository implements EventRepositoryInterface
             if ($data) {
                 $event->setId($data['event_id']);
             }
-        } catch (DriverException $e) {
-            $this->handleDriverException($e);
+            $this->addUserToEventAttenders($event->getAuthor(), $event);
+            $event->setAttendersCount($event->getAttendersCount() + 1);
+        } catch (\Exception $e) {
+            $this->connection->rollBack();
+            if ($e instanceof DriverException) {
+                $this->handleDriverException($e);
+            } else {
+                throw $e;
+            }
         }
+        $this->connection->commit();
     }
 
     /**
