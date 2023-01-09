@@ -58,7 +58,7 @@ class ResetPasswordRequestRepository extends BaseRepository implements ResetPass
         $sql = 'SELECT requested_at FROM ' . $this->tableName . ' WHERE user_id = :user_id ORDER BY requested_at DESC LIMIT 1';
         try {
             $statement = $this->connection->prepare($sql);
-            $statement->bindValue('user_id', $user->getUserId());
+            $statement->bindValue('user_id', $user->getId());
             $result = $statement->executeQuery();
             if($data = $result->fetchAssociative()) {
                 return new \DateTime($data['requested_at']);
@@ -165,7 +165,7 @@ class ResetPasswordRequestRepository extends BaseRepository implements ResetPass
         $sql = "DELETE FROM $tableName WHERE id IN (SELECT id FROM $tableName WHERE user_id = :user_id ORDER BY id DESC LIMIT 1)";
         try {
             $statement = $this->connection->prepare($sql);
-            $statement->bindValue('user_id', $user->getUserId());
+            $statement->bindValue('user_id', $user->getId());
             $statement->executeQuery();
         } catch (DriverException $e) {
             $this->handleDriverException($e);
