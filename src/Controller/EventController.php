@@ -81,7 +81,7 @@ class EventController extends ApiController {
             return $this->setStatusCode(409)->respondWithError('BAD_REQUEST', $e->getMessage());
         }
         try {
-            return new EventResponse($publicEvent, $this->normalizerFactory);
+            return new EventResponse($publicEvent, true, $this->normalizerFactory);
         } catch (SerializerExceptionInterface $e) {
             return $this->respondInternalServerError($e);
         }
@@ -132,8 +132,15 @@ class EventController extends ApiController {
         } catch (UniqueConstraintViolationException $e) {
             return $this->setStatusCode(409)->respondWithError('BAD_REQUEST', $e->getMessage());
         }
+        $attenders = $this->eventRepository->getAttenders($publicEvent);
+        $userAttends = false;
+        foreach ($attenders as $attender) {
+            if ($user->isEqualTo($attender)) {
+                $userAttends = true;
+            }
+        }
         try {
-            return new EventResponse($publicEvent, $this->normalizerFactory);
+            return new EventResponse($publicEvent, $userAttends, $this->normalizerFactory);
         } catch (SerializerExceptionInterface $e) {
             return $this->respondInternalServerError($e);
         }

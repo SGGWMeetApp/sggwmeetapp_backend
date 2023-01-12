@@ -101,14 +101,8 @@ class ResetPasswordController extends ApiController
         string $token = null
     ): Response
     {
-        if ($token) {
-            $this->storeTokenInSession($token);
-            return $this->redirectToRoute('app_handle_reset_password', ['token' => ''], 307);
-        }
-
-        $token = $this->getTokenFromSession();
         if (null === $token) {
-            return $this->respondNotFound('No reset password token found in the URL or in the session.');
+            return $this->respondNotFound('No reset password token found in the URL.');
         }
 
         try {

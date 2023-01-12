@@ -1,5 +1,7 @@
 twig:
     default_path: '%kernel.project_dir%/templates'
+    globals:
+        reset_password_url: '%env(resolve:PASSWORD_RESET_URL)%'
 
 when@test:
     twig:
