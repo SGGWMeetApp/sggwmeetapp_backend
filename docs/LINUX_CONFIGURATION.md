@@ -4,8 +4,15 @@
 If you are using a Linux distribution such as Ubuntu, xUbuntu, Debian, etc. the configuration is pretty straightforward.
 
 In order not to install and configure everything by yourself this repository provides a `docker-compose.yml` file which
-is located in `.docker` directory which resides in project root directory. To get the project up and running execute the
-following commands in the terminal (in project root directory):
+is located in `.docker` directory which resides in project root directory.
+
+Before starting the containers go to `<<project_root>>/.docker`, open the `.env` file and set the `REPO_DIR` variable to the local project
+location, for example:
+```
+REPO_DIR=/home/username/app_dir
+```
+
+To get the project up and running execute the following commands in the terminal (in project root directory):
 ```
 cd .docker
 docker-compose up
@@ -14,17 +21,11 @@ Please note, that you need to have both Docker and docker-compose installed for 
 versions from the Internet. This project was tested with Docker version `20.10.21` and docker-compose version `2.14.0`.
 Versions prior to these may not work.
 
-## Configuring for development
-When using Linux in development it is highly recommended to use the `docker-sync` extension. It will synchronize the files
-between the linux file system and the container's file system as you write code. You can find the relevant documentation
-on how to install `docker-sync` [here](https://docker-sync.readthedocs.io/en/latest/getting-started/installation.html).
-
-Note: you might need to install ruby and its gems if they are not already installed.
-
-After the installation execute these commands starting in the project root directory:
+## Development
+When using docker containers the code you write will automatically be synced with the one residing in containers. If
+something seems to not sync or be cached it might be a good idea to exec into the php container and clear the cache using:
 ```
-cd .docker
-docker-sync-stack start
+php bin/console cache:clear
 ```
 
 ## Common pitfalls
