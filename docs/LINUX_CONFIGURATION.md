@@ -6,7 +6,7 @@ If you are using a Linux distribution such as Ubuntu, xUbuntu, Debian, etc. the 
 In order not to install and configure everything by yourself this repository provides a `docker-compose.yml` file which
 is located in `.docker` directory which resides in project root directory.
 
-Before starting the containers go to `<<project_root>>/.docker` and set the `REPO_DIR` variable to the local project
+Before starting the containers go to `<<project_root>>/.docker`, open the `.env` file and set the `REPO_DIR` variable to the local project
 location, for example:
 ```
 REPO_DIR=/home/username/app_dir
